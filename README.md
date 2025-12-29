@@ -1,5 +1,13 @@
 # Agent Skills for Context Engineering
 
+> **⚠️ 学习用途复刻版本**
+> 
+> 本仓库为学习目的复刻自 [muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
+> 
+> 原作者：Muratcan Koylan
+> 
+> 仅用于个人学习和研究，不用于商业用途
+
 A comprehensive, open collection of Agent Skills focused on context engineering principles for building production-grade AI agent systems. These skills teach the art and science of curating context to maximize agent effectiveness across any agent platform.
 
 ## What is Context Engineering?
@@ -78,6 +86,8 @@ This repository is configured as a **Claude Code Plugin**, allowing you to load 
 2. Install the **Skills Install** the context engineering suite:
    ```bash
    /plugin install context-engineering@context-engineering-marketplace
+
+> **注意**：以上安装命令指向原作者仓库，请根据实际需要使用
    
 <img width="1014" height="894" alt="Screenshot 2025-12-26 at 12 34 47 PM" src="https://github.com/user-attachments/assets/f79aaf03-fd2d-4c71-a630-7027adeb9bfe" />
 
@@ -164,6 +174,12 @@ Feel free to contact [Muratcan Koylan](https://x.com/koylanai) for collaboration
 ## License
 
 MIT License - see LICENSE file for details.
+
+## 原作者信息
+
+- **原仓库**：[muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
+- **原作者**：Muratcan Koylan
+- **许可证**：MIT
 
 ## References
 
