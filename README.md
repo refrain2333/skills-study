@@ -1,187 +1,159 @@
-# Agent Skills for Context Engineering
+# 智能体上下文工程技能集
 
 > **⚠️ 学习用途复刻版本**
 > 
 > 本仓库为学习目的复刻自 [muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
 > 
-> 原作者：Muratcan Koylan
+> 原作者：Muratcan Koylan | 许可证：MIT
 > 
 > 仅用于个人学习和研究，不用于商业用途
 
-A comprehensive, open collection of Agent Skills focused on context engineering principles for building production-grade AI agent systems. These skills teach the art and science of curating context to maximize agent effectiveness across any agent platform.
+一个全面、开放的智能体技能集合，专注于上下文工程原则，用于构建生产级 AI 智能体系统。这些技能传授通过精心策划上下文来最大化智能体效能的艺术和科学，适用于任何智能体平台。
 
-## What is Context Engineering?
+## 什么是上下文工程？
 
-Context engineering is the discipline of managing the language model's context window. Unlike prompt engineering, which focuses on crafting effective instructions, context engineering addresses the holistic curation of all information that enters the model's limited attention budget: system prompts, tool definitions, retrieved documents, message history, and tool outputs.
+上下文工程是管理语言模型上下文窗口的学科。与关注于制作有效指令的提示词工程不同，上下文工程处理进入模型有限注意力预算的所有信息的整体策划：系统提示词、工具定义、检索文档、消息历史和工具输出。
 
-The fundamental challenge is that context windows are constrained not by raw token capacity but by attention mechanics. As context length increases, models exhibit predictable degradation patterns: the "lost-in-the-middle" phenomenon, U-shaped attention curves, and attention scarcity. Effective context engineering means finding the smallest possible set of high-signal tokens that maximize the likelihood of desired outcomes.
+根本挑战是上下文窗口受到的限制不是原始token容量，而是注意力机制。随着上下文长度增加，模型表现出可预见的退化模式："迷失在中间"现象、U形注意力曲线和注意力稀缺。有效的上下文工程意味着找到最小的高信号token集合，最大化期望结果的可能性。
 
-## Skills Overview
+## 技能概览
 
-### Foundational Skills
+### 基础技能
 
-These skills establish the foundational understanding required for all subsequent context engineering work.
+这些技能建立了所有后续上下文工程工作所需的基础理解。
 
-| Skill | Description |
+| 技能 | 描述 |
 |-------|-------------|
-| [context-fundamentals](skills/context-fundamentals/) | Understand what context is, why it matters, and the anatomy of context in agent systems |
-| [context-degradation](skills/context-degradation/) | Recognize patterns of context failure: lost-in-middle, poisoning, distraction, and clash |
-| [context-compression](skills/context-compression/) | Design and evaluate compression strategies for long-running sessions |
+| [context-fundamentals](skills/context-fundamentals/) | 理解什么是上下文、为什么重要，以及智能体系统中上下文的剖析 |
+| [context-degradation](skills/context-degradation/) | 识别上下文失败的模式：迷失在中间、中毒、分心和冲突 |
+| [context-compression](skills/context-compression/) | 为长时间运行的会话设计和评估压缩策略 |
 
-### Architectural Skills
+### 架构技能
 
-These skills cover the patterns and structures for building effective agent systems.
+这些技能涵盖构建有效智能体系统的模式和结构。
 
-| Skill | Description |
+| 技能 | 描述 |
 |-------|-------------|
-| [multi-agent-patterns](skills/multi-agent-patterns/) | Master orchestrator, peer-to-peer, and hierarchical multi-agent architectures |
-| [memory-systems](skills/memory-systems/) | Design short-term, long-term, and graph-based memory architectures |
-| [tool-design](skills/tool-design/) | Build tools that agents can use effectively |
+| [multi-agent-patterns](skills/multi-agent-patterns/) | 掌握编排者、点对点和分层多智能体架构 |
+| [memory-systems](skills/memory-systems/) | 设计短期、长期和基于图的内存架构 |
+| [tool-design](skills/tool-design/) | 构建智能体可以有效使用的工具 |
 
-### Operational Skills
+### 运营技能
 
-These skills address the ongoing operation and optimization of agent systems.
+这些技能处理智能体系统的持续运营和优化。
 
-| Skill | Description |
+| 技能 | 描述 |
 |-------|-------------|
-| [context-optimization](skills/context-optimization/) | Apply compaction, masking, and caching strategies |
-| [evaluation](skills/evaluation/) | Build evaluation frameworks for agent systems |
-| [advanced-evaluation](skills/advanced-evaluation/) | Master LLM-as-a-Judge techniques: direct scoring, pairwise comparison, rubric generation, and bias mitigation |
+| [context-optimization](skills/context-optimization/) | 应用紧缩、屏蔽和缓存策略 |
+| [evaluation](skills/evaluation/) | 构建智能体系统的评估框架 |
+| [advanced-evaluation](skills/advanced-evaluation/) | 掌握 LLM 即评判器技术：直接评分、配对比较、评分标准生成和偏差缓解 |
 
-### Development Methodology
+### 开发方法论
 
-These skills cover the meta-level practices for building LLM-powered projects.
+这些技能涵盖构建 LLM 驱动项目的元级别实践。
 
-| Skill | Description |
+| 技能 | 描述 |
 |-------|-------------|
-| [project-development](skills/project-development/) | **NEW** Design and build LLM projects from ideation through deployment, including task-model fit analysis, pipeline architecture, and structured output design |
+| [project-development](skills/project-development/) | 从理想到部署设计和构建 LLM 项目，包括任务-模型拟合分析、管道架构和结构化输出设计 |
 
-## Design Philosophy
+## 设计理念
 
-### Progressive Disclosure
+### 渐进式披露
 
-Each skill is structured for efficient context use. At startup, agents load only skill names and descriptions. Full content loads only when a skill is activated for relevant tasks.
+每项技能的结构都考虑了有效的上下文使用。启动时，智能体仅加载技能名称和描述。只有在为相关任务激活技能时，完整内容才会加载。
 
-### Platform Agnosticism
+### 平台无关性
 
-These skills focus on transferable principles rather than vendor-specific implementations. The patterns work across Claude Code, Cursor, and any agent platform that supports skills or allows custom instructions.
+这些技能专注于可转移原则而非特定供应商的实现。这些模式适用于 Claude Code、Cursor 和任何支持技能或允许自定义指令的智能体平台。
 
-### Conceptual Foundation with Practical Examples
+### 概念基础与实践示例
 
-Scripts and examples demonstrate concepts using Python pseudocode that works across environments without requiring specific dependency installations.
+脚本和示例使用在任何环境中都能运行的 Python 伪代码演示概念，无需特定依赖安装。
 
-## Usage
+## 学习路径
 
-### Usage with Claude Code
+### 快速开始（1小时）
 
-This repository is configured as a **Claude Code Plugin**, allowing you to load context engineering skills directly into your agent development environment.
+1. 阅读本 README 了解项目结构
+2. 打开 `SKILL.md` 查看技能总览
+3. 选择一个感兴趣的技能模块开始深入
 
-### Installation
+### 系统学习（8-10小时）
 
-1. **Add the Marketplace**
-   Run this command in Claude Code to add this repository as a plugin source:
-   ```bash
-   /plugin marketplace add muratcankoylan/Agent-Skills-for-Context-Engineering
+1. **基础层**：学习三个基础技能
+   - context-fundamentals
+   - context-degradation
+   - context-compression
 
-2. Install the **Skills Install** the context engineering suite:
-   ```bash
-   /plugin install context-engineering@context-engineering-marketplace
+2. **架构层**：学习三个架构技能
+   - multi-agent-patterns
+   - memory-systems
+   - tool-design
 
-> **注意**：以上安装命令指向原作者仓库，请根据实际需要使用
-   
-<img width="1014" height="894" alt="Screenshot 2025-12-26 at 12 34 47 PM" src="https://github.com/user-attachments/assets/f79aaf03-fd2d-4c71-a630-7027adeb9bfe" />
+3. **运营层**：学习三个运营技能
+   - context-optimization
+   - evaluation
+   - advanced-evaluation
 
-### For Cursor & Codex & IDE
+4. **项目层**：学习项目开发方法
+   - project-development
 
-Copy skill content into `.rules` or create project-specific Skills folders. The skills provide the context and guidelines that agent needs for effective context engineering and agent design.
+### 实践应用
 
-### For Custom Implementations
+查看 `examples/` 文件夹中的完整项目示例：
 
-Extract the principles and patterns from any skill and implement them in your agent framework. The skills are deliberately platform-agnostic.
-
-## Examples
-
-The [examples](examples/) folder contains complete system designs that demonstrate how multiple skills work together in practice.
-
-| Example | Description | Skills Applied |
+| 示例 | 描述 | 关键技能 |
 |---------|-------------|----------------|
-| [x-to-book-system](examples/x-to-book-system/) | Multi-agent system that monitors X accounts and generates daily synthesized books | multi-agent-patterns, memory-systems, context-optimization, tool-design, evaluation |
-| [llm-as-judge-skills](examples/llm-as-judge-skills/) | Production-ready LLM evaluation tools with TypeScript implementation, 19 passing tests | advanced-evaluation, tool-design, context-fundamentals, evaluation |
-| [book-sft-pipeline](examples/book-sft-pipeline/) | **NEW** Train models to write in any author's style. Includes Gertrude Stein case study with 70% human score on Pangram, $2 total cost | project-development, context-compression, multi-agent-patterns, evaluation |
+| [llm-as-judge-skills](examples/llm-as-judge-skills/) | LLM 评估工具，TypeScript 实现 | 高级评估、工具设计 |
+| [book-sft-pipeline](examples/book-sft-pipeline/) | 模型微调训练流程 | 项目开发、上下文压缩 |
+| [x-to-book-system](examples/x-to-book-system/) | 多智能体内容生成系统 | 多智能体模式、内存系统 |
 
-Each example includes:
-- Complete PRD with architecture decisions
-- Skills mapping showing which concepts informed each decision
-- Implementation guidance
-
-### LLM-as-Judge Skills Example
-
-The [llm-as-judge-skills](examples/llm-as-judge-skills/) example is a complete TypeScript implementation demonstrating:
-
-- **Direct Scoring**: Evaluate responses against weighted criteria with rubric support
-- **Pairwise Comparison**: Compare responses with position bias mitigation
-- **Rubric Generation**: Create domain-specific evaluation standards
-- **EvaluatorAgent**: High-level agent combining all evaluation capabilities
-
-### Book SFT Pipeline Example
-
-The [book-sft-pipeline](examples/book-sft-pipeline/) example demonstrates training small models (8B) to write in any author's style:
-
-- **Intelligent Segmentation**: Two-tier chunking with overlap for maximum training examples
-- **Prompt Diversity**: 15+ templates to prevent memorization and force style learning
-- **Tinker Integration**: Complete LoRA training workflow with $2 total cost
-- **Validation Methodology**: Modern scenario testing proves style transfer vs content memorization
-
-Includes a complete Gertrude Stein case study with:
-- 592 training examples from one 86,000-word book
-- 97% loss reduction over 15 minutes of training
-- 100% human score on Pangram AI detector
-- Verified original content generation
-
-Integrates with context engineering skills: project-development, context-compression, multi-agent-patterns, evaluation.
-
-## Star History
-
-<img width="3664" height="2648" alt="star-history-20251226" src="https://github.com/user-attachments/assets/b80849df-6b2d-4c2f-84a3-7c8f71d2002c" />
-
-## Structure
-
-Each skill follows the Agent Skills specification:
+## 项目结构
 
 ```
-skill-name/
-├── SKILL.md              # Required: instructions + metadata
-├── scripts/              # Optional: executable code demonstrating concepts
-└── references/           # Optional: additional documentation and resources
+skills-study/
+├── README.md                    # 本文件
+├── SKILL.md                     # 技能集总览
+├── CONTRIBUTING.md              # 贡献指南
+├── skills/                      # 技能模块
+│   ├── context-fundamentals/
+│   ├── context-degradation/
+│   ├── context-compression/
+│   ├── multi-agent-patterns/
+│   ├── memory-systems/
+│   ├── tool-design/
+│   ├── context-optimization/
+│   ├── evaluation/
+│   ├── advanced-evaluation/
+│   └── project-development/
+├── examples/                    # 完整示例项目
+│   ├── llm-as-judge-skills/
+│   ├── book-sft-pipeline/
+│   └── x-to-book-system/
+├── Database/                    # 语义知识库（可选）
+├── getting-started/             # 快速入门指南
+└── template/                    # 技能模板
 ```
 
-See the [template](template/) folder for the canonical skill structure.
+## 贡献
 
-## Contributing
+本学习项目欢迎改进建议。当提交改进时：
 
-This repository follows the Agent Skills open development model. Contributions are welcome from the broader ecosystem. When contributing:
+1. 遵循现有的技能结构和格式
+2. 提供清晰的示例和说明
+3. 保持每个 SKILL.md 在 500 行以下
+4. 记录权衡和注意事项
 
-1. Follow the skill template structure
-2. Provide clear, actionable instructions
-3. Include working examples where appropriate
-4. Document trade-offs and potential issues
-5. Keep SKILL.md under 500 lines for optimal performance
+## 许可证
 
-Feel free to contact [Muratcan Koylan](https://x.com/koylanai) for collaboration opportunities or any inquiries.
+MIT 许可证 - 详见 LICENSE 文件。
 
-[![Sponsor via GitHub](https://img.shields.io/badge/Sponsor-muratcankoylan-pink?logo=github-sponsors&style=for-the-badge)](https://github.com/sponsors/muratcankoylan)
+## 致谢
 
-## License
-
-MIT License - see LICENSE file for details.
-
-## 原作者信息
+感谢原作者 [Muratcan Koylan](https://x.com/koylanai) 创建了这个优秀的框架。
 
 - **原仓库**：[muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
 - **原作者**：Muratcan Koylan
 - **许可证**：MIT
 
-## References
-
-The principles in these skills are derived from research and production experience at leading AI labs and framework developers. Each skill includes references to the underlying research and case studies that inform its recommendations.
-
+本仓库基于原作者的工作进行学习用复刻，所有内容遵循 MIT 许可证。

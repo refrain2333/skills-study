@@ -1,78 +1,115 @@
-# Contributing to Agent Skills for Context Engineering
+# 为智能体上下文工程技能集贡献
 
-Thank you for your interest in contributing to this collection of Agent Skills for Context Engineering. This document provides guidelines and instructions for contributing.
+感谢你对贡献智能体上下文工程技能集的兴趣。本文档提供了贡献的指南和说明。
 
-## How to Contribute
+## 如何贡献
 
-### Reporting Issues
+### 报告问题
 
-If you find errors, unclear explanations, or missing topics, please open an issue with:
-- A clear description of the problem
-- The skill and section where the issue was found
-- Suggested improvements if you have them
+如果你发现错误、不清楚的说明或缺失的话题，请提交 Issue，包含：
+- 问题的清晰描述
+- 发现问题的技能和部分
+- 改进建议（如果有的话）
 
-### Submitting Changes
+### 提交更改
 
-For substantive changes, please:
+对于实质性更改，请：
 
-1. Fork the repository
-2. Create a feature branch for your changes
-3. Make changes following the skill template structure
-4. Ensure SKILL.md files remain under 500 lines
-5. Add references or scripts as appropriate
-6. Submit a pull request with a clear description of changes
+1. Fork 仓库
+2. 为你的更改创建功能分支
+3. 按照技能模板结构进行更改
+4. 确保 SKILL.md 文件保持在 500 行以下
+5. 根据需要添加参考资料或脚本
+6. 提交 Pull Request，包含清晰的更改描述
 
-### Adding New Skills
+### 添加新技能
 
-When adding new skills:
+添加新技能时：
 
-1. Use the template in `template/SKILL.md`
-2. Follow naming conventions (lowercase with hyphens)
-3. Include both SKILL.md and appropriate references/scripts
-4. Update the root README.md to include the new skill
-5. Ensure content is platform-agnostic (works across Cursor, Claude Code, etc.)
+1. 使用 `template/SKILL.md` 中的模板
+2. 遵循命名约定（小写字母，用连字符分隔）
+3. 同时包含 SKILL.md 和适当的参考资料/脚本
+4. 更新根目录 README.md 以包含新技能
+5. 确保内容与平台无关（适用于 Cursor、Claude Code 等）
 
-## Skill Structure Requirements
+## 技能结构要求
 
-Each skill must include:
+每项技能必须包括：
 
-- YAML frontmatter with `name` and `description` fields
-- Clear sections with logical organization
-- Practical examples where appropriate
-- Integration notes linking to related skills
+- YAML 前置内容，包含 `name` 和 `description` 字段
+- 具有逻辑组织的清晰部分
+- 在适当的地方提供实际示例
+- 连接相关技能的集成说明
 
-Optional additions:
+可选添加：
 
-- `references/` directory with additional documentation
-- `scripts/` directory with executable examples
-- Multiple markdown files for complex skills
+- `references/` 目录，包含附加文档
+- `scripts/` 目录，包含可执行示例
+- 用于复杂技能的多个 Markdown 文件
 
-## Content Guidelines
+## 内容指南
 
-### Writing Style
+### 写作风格
 
-- Be direct and precise
-- Use technical terminology appropriately
-- Include specific guidance, not vague recommendations
-- Provide concrete examples
-- Point out complexity and trade-offs
+- 直接明确
+- 恰当地使用技术术语
+- 包含具体指导，不是含糊建议
+- 提供具体例子
+- 指出复杂性和权衡
 
-### Avoiding Platform Specificity
+### 避免平台特定性
 
-Skills should work across agent platforms. Avoid:
-- Platform-specific tool names without abstraction
-- Vendor-locked examples
-- Features specific to one agent product
+技能应该适用于各种智能体平台。避免：
+- 没有抽象的平台特定工具名称
+- 供应商锁定的示例
+- 特定于某一智能体产品的功能
 
-### Keeping Skills Focused
+### 保持技能专注
 
-Each skill should have a single focus. If a topic grows too large, consider splitting into multiple skills with clear dependencies.
+每项技能应该有一个单一焦点。如果某个话题变得太大，考虑将其分成多个具有清晰依赖关系的技能。
 
-## Code of Conduct
+## 行为准则
 
-This project follows a professional, technical collaboration model. Be respectful of different perspectives and focus on improving the collective knowledge base.
+本项目遵循专业的技术协作模式。尊重不同的观点，专注于改进集体知识库。
 
-## Questions
+## 问题
 
-For questions about contributing, please open an issue for discussion.
+如有关于贡献的问题，请提交 Issue 进行讨论。
 
+---
+
+## 对学习版贡献的建议
+
+### 可以改进的方向
+
+✅ **内容改进**
+- 修正错误或不清楚的地方
+- 添加更多实际例子
+- 改进中文翻译
+- 添加新的图表或对比表
+
+✅ **扩展示例**
+- 为现有技能添加更多实例
+- 创建新的演示脚本
+- 记录实际应用场景
+
+✅ **结构改进**
+- 改进导航和链接
+- 添加快速参考指南
+- 优化学习路径
+
+### 不建议改的部分
+
+❌ **不要改**
+- LICENSE 文件（保持 MIT）
+- 核心技能概念（基于原作者工作）
+- 项目基本结构
+
+### 提交流程
+
+1. Fork 本项目
+2. 在你的分支中进行改进
+3. 确保改进清晰有用
+4. 提交 PR 并说明改进的价值
+
+感谢你的贡献！🙏

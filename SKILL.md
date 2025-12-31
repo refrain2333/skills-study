@@ -1,96 +1,83 @@
 ---
 name: context-engineering-collection
-description: A comprehensive collection of Agent Skills for context engineering, multi-agent architectures, and production agent systems. Use when building, optimizing, or debugging agent systems that require effective context management.
+description: 一个全面的智能体技能集合，涵盖上下文工程、多智能体架构和生产级智能体系统。在构建、优化或调试需要有效上下文管理的智能体系统时使用。
 ---
 
-# Agent Skills for Context Engineering
+# 智能体上下文工程技能集
 
-This collection provides structured guidance for building production-grade AI agent systems through effective context engineering.
+本集合为通过有效的上下文工程构建生产级 AI 智能体系统提供结构化指导。
 
-## When to Activate
+## 何时激活
 
-Activate these skills when:
-- Building new agent systems from scratch
-- Optimizing existing agent performance
-- Debugging context-related failures
-- Designing multi-agent architectures
-- Creating or evaluating tools for agents
-- Implementing memory and persistence layers
+在以下情况下激活这些技能：
+- 从零开始构建新的智能体系统
+- 优化现有智能体性能
+- 调试与上下文相关的故障
+- 设计多智能体架构
+- 为智能体创建或评估工具
+- 实现内存和持久化层
 
-## Skill Map
+## 技能地图
 
-### Foundational Context Engineering
+### 基础上下文工程
 
-**Understanding Context Fundamentals**
-Context is not just prompt text—it is the complete state available to the language model at inference time, including system instructions, tool definitions, retrieved documents, message history, and tool outputs. Effective context engineering means understanding what information truly matters for the task at hand and curating that information for maximum signal-to-noise ratio.
+**理解上下文基础**
+上下文不仅仅是提示词文本——它是语言模型推理时可用的完整状态，包括系统指令、工具定义、检索文档、消息历史和工具输出。有效的上下文工程意味着理解什么信息真正重要，并精心策划这些信息以获得最大的信噪比。
 
-**Recognizing Context Degradation**
-Language models exhibit predictable degradation patterns as context grows: the "lost-in-middle" phenomenon where information in the center of context receives less attention; U-shaped attention curves that prioritize beginning and end; context poisoning when errors compound; and context distraction when irrelevant information overwhelms relevant content.
+**识别上下文退化**
+随着上下文增长，语言模型会表现出可预见的退化模式："迷失在中间"现象（上下文中心的信息获得较少关注）；U 形注意力曲线（优先关注开始和结尾）；上下文中毒（错误复合）；以及上下文分心（无关信息淹没相关内容）。
 
-### Architectural Patterns
+### 架构模式
 
-**Multi-Agent Coordination**
-Production multi-agent systems converge on three dominant patterns: supervisor/orchestrator architectures with centralized control, peer-to-peer swarm architectures for flexible handoffs, and hierarchical structures for complex task decomposition. The critical insight is that sub-agents exist primarily to isolate context rather than to simulate organizational roles.
+**多智能体协调**
+生产级多智能体系统汇聚于三种主导模式：具有集中控制的监督者/编排者架构、用于灵活切换的点对点群体架构，以及用于复杂任务分解的分层结构。关键洞察是子智能体主要存在于隔离上下文的目的，而不是模拟组织角色。
 
-**Memory System Design**
-Memory architectures range from simple scratchpads to sophisticated temporal knowledge graphs. Vector RAG provides semantic retrieval but loses relationship information. Knowledge graphs preserve structure but require more engineering investment. The file-system-as-memory pattern enables just-in-time context loading without stuffing context windows.
+**内存系统设计**
+内存架构从简单的草稿本到复杂的时间知识图。向量 RAG 提供语义检索但丧失关系信息。知识图保留结构但需要更多工程投入。文件系统即内存（File-system-as-memory）模式在不填充上下文窗口的情况下启用即时上下文加载。
 
-**Tool Design Principles**
-Tools are contracts between deterministic systems and non-deterministic agents. Effective tool design follows the consolidation principle (prefer single comprehensive tools over multiple narrow ones), returns contextual information in errors, supports response format options for token efficiency, and uses clear namespacing.
+**工具设计原则**
+工具是确定性系统和非确定性智能体之间的契约。有效的工具设计遵循合并原则（优先选择单一综合工具而非多个狭隘工具）、在错误中返回上下文信息、支持响应格式选项以提高 token 效率，并使用清晰的命名空间。
 
-### Operational Excellence
+### 运营卓越
 
-**Context Compression**
-When agent sessions exhaust memory, compression becomes mandatory. The correct optimization target is tokens-per-task, not tokens-per-request. Structured summarization with explicit sections for files, decisions, and next steps preserves more useful information than aggressive compression. Artifact trail integrity remains the weakest dimension across all compression methods.
+**上下文压缩**
+当智能体会话耗尽内存时，压缩变得强制性。正确的优化目标是每个任务的 token 数，而非每个请求的 token 数。带有文件、决定和后续步骤明确部分的结构化摘要比激进压缩保留更多有用信息。文件修改追踪完整性在所有压缩方法中仍然是最薄弱的环节。
 
-**Context Optimization**
-Techniques include compaction (summarizing context near limits), observation masking (replacing verbose tool outputs with references), prefix caching (reusing KV blocks across requests), and strategic context partitioning (splitting work across sub-agents with isolated contexts).
+**上下文优化**
+技术包括紧缩（总结接近限制的上下文）、观察屏蔽（用引用替换冗长工具输出）、前缀缓存（跨请求重用 KV 块）和战略上下文分区（跨子智能体分割工作，使用隔离的上下文）。
 
-**Evaluation Frameworks**
-Production agent evaluation requires multi-dimensional rubrics covering factual accuracy, completeness, tool efficiency, and process quality. Effective patterns include LLM-as-judge for scalability, human evaluation for edge cases, and end-state evaluation for agents that mutate persistent state.
+**评估框架**
+生产级智能体评估需要多维度标准，涵盖事实准确性、完整性、工具效率和过程质量。有效模式包括 LLM 即评判器（用于可扩展性）、人工评估（用于边界情况）和终态评估（用于改变持久状态的智能体）。
 
-### Development Methodology
+### 开发方法论
 
-**Project Development**
-Effective LLM project development begins with task-model fit analysis: validating through manual prototyping that a task is well-suited for LLM processing before building automation. Production pipelines follow staged, idempotent architectures (acquire, prepare, process, parse, render) with file system state management for debugging and caching. Structured output design with explicit format specifications enables reliable parsing. Start with minimal architecture and add complexity only when proven necessary.
+**项目开发**
+有效的 LLM 项目开发始于任务-模型拟合分析：通过手动原型设计验证任务是否适合 LLM 处理，然后再自动化。生产管道遵循分阶段的、幂等的架构（获取、准备、处理、解析、渲染），使用文件系统状态管理来调试和缓存。带有明确格式规范的结构化输出设计实现可靠解析。从最小架构开始，只在证明必要时增加复杂性。
 
-## Core Concepts
+## 核心概念
 
-The collection is organized around three core themes. First, context fundamentals establish what context is, how attention mechanisms work, and why context quality matters more than quantity. Second, architectural patterns cover the structures and coordination mechanisms that enable effective agent systems. Third, operational excellence addresses the ongoing work of optimizing and evaluating production systems.
+该集合围绕三个核心主题组织。首先，上下文基础建立了什么是上下文、注意力机制如何工作，以及为什么上下文质量比数量更重要。其次，架构模式涵盖了使有效智能体系统成为可能的结构和协调机制。第三，运营卓越针对的是优化和评估生产系统的持续工作。
 
-## Practical Guidance
+## 实践指导
 
-Each skill can be used independently or in combination. Start with fundamentals to establish context management mental models. Branch into architectural patterns based on your system requirements. Reference operational skills when optimizing production systems.
+每项技能都可以独立使用或组合使用。从基础开始建立上下文管理心智模型。根据系统要求分支到架构模式。在优化生产系统时参考运营技能。
 
-The skills are platform-agnostic and work with Claude Code, Cursor, or any agent framework that supports custom instructions or skill-like constructs.
+这些技能与平台无关，适用于 Claude Code、Cursor 或任何支持自定义指令或类似技能构造的智能体框架。
 
-## Integration
+## 集成
 
-This collection integrates with itself—skills reference each other and build on shared concepts. The fundamentals skill provides context for all other skills. Architectural skills (multi-agent, memory, tools) can be combined for complex systems. Operational skills (optimization, evaluation) apply to any system built using the foundational and architectural skills.
+这个集合与自身集成——技能相互参考并建立在共享概念上。基础技能为所有其他技能提供上下文。架构技能（多智能体、内存、工具）可以组合以构建复杂系统。运营技能（优化、评估）适用于使用基础和架构技能构建的任何系统。
 
-## References
-
-Internal skills in this collection:
-- [context-fundamentals](skills/context-fundamentals/SKILL.md)
-- [context-degradation](skills/context-degradation/SKILL.md)
-- [context-compression](skills/context-compression/SKILL.md)
-- [multi-agent-patterns](skills/multi-agent-patterns/SKILL.md)
-- [memory-systems](skills/memory-systems/SKILL.md)
-- [tool-design](skills/tool-design/SKILL.md)
-- [context-optimization](skills/context-optimization/SKILL.md)
-- [evaluation](skills/evaluation/SKILL.md)
-- [project-development](skills/project-development/SKILL.md)
-
-External resources on context engineering:
-- Research on attention mechanisms and context window limitations
-- Production experience from leading AI labs on agent system design
-- Framework documentation for LangGraph, AutoGen, and CrewAI
+关于上下文工程的外部资源：
+- 关于注意力机制和上下文窗口限制的研究
+- 来自领先 AI 实验室的智能体系统设计生产经验
+- LangGraph、AutoGen 和 CrewAI 的框架文档
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2025-12-25
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 1.2.0
+**创建时间**：2025-12-20
+**最后更新**：2025-12-25
+**作者**：智能体上下文工程技能集贡献者
+**版本**：1.2.0

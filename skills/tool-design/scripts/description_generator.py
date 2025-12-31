@@ -1,45 +1,45 @@
 """
-Tool Description Engineering
+工具描述工程 (Tool Description Engineering)
 
-This module provides utilities for generating and evaluating tool descriptions.
+此模块提供用于生成和评估工具描述的实用程序。
 """
 
 from typing import Dict, List, Any
 import re
 
 
-# Description Templates
+# 描述模板 (Description Templates)
 
 TOOL_DESCRIPTION_TEMPLATE = """
 ## {tool_name}
 
 {detailed_description}
 
-### When to Use
+### 何时使用 (When to Use)
 {usage_context}
 
-### Parameters
+### 参数 (Parameters)
 {parameters_description}
 
-### Returns
+### 返回 (Returns)
 {returns_description}
 
-### Errors
+### 错误 (Errors)
 {errors_description}
 """
 
 PARAM_TEMPLATE = """
-- **{param_name}** ({param_type}{" | required" if required else " | optional"})
+- **{param_name}** ({param_type}{" | 必填" if required else " | 可选"})
   
   {param_description}
-  {"Default: " + default if default else ""}
+  {"默认值: " + default if default else ""}
 """
 
 
-# Example Generation
+# 示例生成 (Example Generation)
 
 def generate_tool_description(tool_spec):
-    """Generate complete tool description from specification."""
+    """从规范生成完整的工具描述。"""
     description = TOOL_DESCRIPTION_TEMPLATE.format(
         tool_name=tool_spec.name,
         detailed_description=tool_spec.description,
@@ -52,75 +52,76 @@ def generate_tool_description(tool_spec):
 
 
 def generate_usage_context(tool_spec):
-    """Generate usage context section."""
+    """生成使用上下文部分。"""
     contexts = []
     
     for trigger in tool_spec.triggers:
-        contexts.append(f"- When {trigger}")
+        contexts.append(f"- 当 {trigger} 时")
     
     if tool_spec.examples:
-        contexts.append("\n**Examples**:\n")
+        contexts.append("\n**示例 (Examples)**:\n")
         for example in tool_spec.examples:
-            contexts.append(f"- Input: {example.input}")
-            contexts.append(f"  Output: {example.tool_call}")
+            contexts.append(f"- 输入: {example.input}")
+            contexts.append(f"  输出: {example.tool_call}")
     
     return "\n".join(contexts)
 
 
-# Description Evaluation
+# 描述评估 (Description Evaluation)
 
 class ToolDescriptionEvaluator:
+    """工具描述评估器，用于根据预定义标准检查描述质量。"""
     def __init__(self):
         self.criteria = [
-            "clarity",
-            "completeness",
-            "accuracy",
-            "actionability",
-            "consistency"
+            "clarity",       # 清晰度
+            "completeness",  # 完整性
+            "accuracy",      # 准确性
+            "actionability", # 可操作性
+            "consistency"    # 一致性
         ]
     
     def evaluate(self, description: str, tool_spec) -> Dict:
-        """Evaluate description against criteria."""
+        """根据标准评估描述。"""
         results = {}
         
-        # Check clarity
+        # 检查清晰度
         results["clarity"] = self._check_clarity(description)
         
-        # Check completeness
+        # 检查完整性
         results["completeness"] = self._check_completeness(description, tool_spec)
         
-        # Check accuracy
+        # 检查准确性
         results["accuracy"] = self._check_accuracy(description, tool_spec)
         
-        # Check actionability
+        # 检查可操作性
         results["actionability"] = self._check_actionability(description)
         
-        # Check consistency
+        # 检查一致性
         results["consistency"] = self._check_consistency(description, tool_spec)
         
         return results
     
     def _check_clarity(self, description: str) -> float:
-        """Check description clarity (0-1 score)."""
-        # Check for vague language
-        vague_terms = ["help", "assist", "thing", "stuff", "handle"]
+        """检查描述清晰度 (0-1 分)。"""
+        # 检查模糊词汇
+        vague_terms = ["help", "assist", "thing", "stuff", "handle", "帮助", "协助", "处理"]
         vague_count = sum(1 for term in vague_terms if term in description.lower())
         
-        # Check for ambiguous references
-        ambiguous = ["it", "this", "that"]  # without clear antecedent
+        # 检查歧义引用
+        ambiguous = ["it", "this", "that", "它", "这个", "那个"]  # 且没有明确的前置指代
         ambiguous_count = sum(1 for term in ambiguous if f" {term} " in description)
         
-        # Calculate clarity score
+        # 计算清晰度得分
         clarity = 1.0 - (vague_count * 0.1) - (ambiguous_count * 0.05)
         return max(0, clarity)
     
     def _check_completeness(self, description: str, tool_spec) -> float:
-        """Check that all required elements are present."""
+        """检查所有必需元素是否存在。"""
         required_sections = [
             ("description", r"## " + tool_spec.name),
-            ("parameters", r"### Parameters"),
-            ("returns", r"### Returns"),
-            ("errors", r"### Errors")
+            ("parameters", r"### (Parameters|参数)"),
+            ("returns", r"### (Returns|返回)"),
+            ("errors", r"### (Errors|错误)")
         ]
         
         present = sum(1 for _, pattern in required_sections 
@@ -129,9 +130,10 @@ class ToolDescriptionEvaluator:
         return present / len(required_sections)
 
 
-# Error Message Templates
+# 错误消息模板 (Error Message Templates)
 
 class ErrorMessageGenerator:
+    """错误消息生成器，用于创建一致且可操作的错误响应。"""
     TEMPLATES = {
         "NOT_FOUND": """
         {{
@@ -145,31 +147,32 @@ class ErrorMessageGenerator:
         "INVALID_INPUT": """
         {{
             "error": "{error_code}",
-            "message": "Invalid {field}: {received_value}",
+            "message": "无效的 {field}: {received_value}",
             "expected_format": "{expected_format}",
-            "resolution": "Provide value matching {expected_format}"
+            "resolution": "提供符合 {expected_format} 的值"
         }}
         """,
         
         "RATE_LIMITED": """
         {{
             "error": "{error_code}",
-            "message": "Rate limit exceeded",
+            "message": "已超过速率限制",
             "retry_after": {seconds},
-            "resolution": "Wait {seconds} seconds before retrying"
+            "resolution": "等待 {seconds} 秒后重试"
         }}
         """
     }
     
     def generate(self, error_type: str, context: Dict) -> str:
-        """Generate error message from template."""
+        """从模板生成错误消息。"""
         template = self.TEMPLATES.get(error_type, self.TEMPLATES["INVALID_INPUT"])
         return template.format(**context)
 
 
-# Tool Schema Generator
+# 工具 Schema 生成器 (Tool Schema Generator)
 
 class ToolSchemaBuilder:
+    """用于构建一致的工具定义 Schema 的构建器。"""
     def __init__(self, name: str):
         self.name = name
         self.description = ""
@@ -179,14 +182,14 @@ class ToolSchemaBuilder:
         self.errors = []
     
     def set_description(self, short: str, detailed: str):
-        """Set description sections."""
+        """设置描述部分。"""
         self.description = short
         self.detailed_description = detailed
         return self
     
     def add_parameter(self, name: str, param_type: str, description: str,
                       required: bool = False, default=None, enum=None):
-        """Add parameter definition."""
+        """添加参数定义。"""
         self.parameters.append({
             "name": name,
             "type": param_type,
@@ -198,7 +201,7 @@ class ToolSchemaBuilder:
         return self
     
     def set_returns(self, return_type: str, description: str, properties: Dict):
-        """Set return value definition."""
+        """设置返回值定义。"""
         self.returns = {
             "type": return_type,
             "description": description,
@@ -207,7 +210,7 @@ class ToolSchemaBuilder:
         return self
     
     def add_error(self, code: str, description: str, resolution: str):
-        """Add error definition."""
+        """添加错误定义。"""
         self.errors.append({
             "code": code,
             "description": description,
@@ -216,7 +219,7 @@ class ToolSchemaBuilder:
         return self
     
     def build(self) -> Dict:
-        """Build complete schema."""
+        """构建完整的 Schema。"""
         return {
             "name": self.name,
             "description": self.description,
