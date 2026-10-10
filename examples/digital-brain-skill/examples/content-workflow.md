@@ -1,161 +1,103 @@
-# Example: Content Creation Workflow
+# 示例：内容创作流程
 
-A complete walkthrough of using Digital Brain for content creation.
+本示例完整展示如何使用数字大脑创作内容。
 
----
+## 场景
 
-## Scenario
+你想写一条关于“公开记录建设过程的经验”的 Twitter 串文。
 
-You want to write a Twitter thread about "lessons from building in public."
+## 第 1 步：启用技能
 
----
+**用户请求**：“帮我写一条关于公开建设过程经验的串文。”
 
-## Step 1: Agent Activates Skill
+**智能体判断**：
 
-**User Input**: "Help me write a thread about lessons from building in public"
+- 触发点：“写串文”属于内容创作。
+- 主题：“公开建设”可能符合品牌内容支柱。
+- 操作：加载数字大脑技能。
 
-**Agent Recognition**:
-- Trigger: "write a thread" → content creation
-- Topic: "building in public" → likely matches brand pillars
-- Action: Load Digital Brain skill
+## 第 2 步：读取身份信息（必需）
 
----
-
-## Step 2: Load Identity (Required)
-
-Agent reads `identity/voice.md`:
+先读取 `identity/voice.md`，例如：
 
 ```yaml
-# Extracted patterns:
-formal_casual: 7/10 (fairly casual)
+formal_casual: 7/10
 signature_phrases:
-  - "Here's the thing"
-  - "Let me break it down"
+  - "说重点"
+  - "我来拆解一下"
 power_words:
-  - "ship", "iterate", "leverage"
+  - "发布"
+  - "迭代"
 avoid:
-  - "synergy", "circle back"
-  - excessive emojis
+  - "协同效应"
+  - "之后再对齐"
+  - 过多表情符号
 ```
 
-Agent reads `identity/brand.md`:
+再读取 `identity/brand.md`，确认主题符合内容支柱：
 
 ```yaml
-# Confirms topic alignment:
 content_pillars:
-  - building_in_public  ✓ MATCH
+  - building_in_public
   - ai_agents
   - founder_lessons
-target_audience: "Early-stage technical founders"
+target_audience: "早期技术创业者"
 ```
 
----
+## 第 3 步：参考过去表现
 
-## Step 3: Reference Past Success
-
-Agent scans `content/posts.jsonl`:
+智能体扫描 `content/posts.jsonl`，发现类似的高表现串文采用故事结构。
 
 ```json
-// Found similar high-performing thread:
 {
   "type": "thread",
   "pillar": "building_in_public",
   "metrics": {"likes": 234, "reposts": 45},
-  "notes": "Story format worked well"
+  "notes": "故事形式效果较好"
 }
 ```
 
-**Insight**: Story-driven threads perform best for this pillar.
+## 第 4 步：检查创意库
 
----
-
-## Step 4: Check Ideas Bank
-
-Agent scans `content/ideas.jsonl`:
+智能体在 `content/ideas.jsonl` 中找到一条尚未完善的创意：
 
 ```json
-// Found relevant undeveloped idea:
 {
-  "idea": "Thread on the emotional rollercoaster of public building",
+  "idea": "写一条关于公开建设过程中的情绪起伏的串文",
   "status": "raw",
   "priority": "high"
 }
 ```
 
-**Decision**: Can incorporate this angle into the thread.
+可以把这个角度融入串文。
 
----
+## 第 5 步：生成草稿
 
-## Step 5: Generate Draft
+智能体以 `content/templates/thread.md` 为框架，生成 9 条串文，包括开场、背景、五个经验、总结和行动号召。生成后对照表达风格检查标志性短语、语气、专业术语和表情使用。
 
-Agent uses `content/templates/thread.md` as scaffold:
+## 第 6 步：根据反馈迭代
 
-```markdown
-## 1/ Hook
-Unpopular opinion: Building in public isn't about the wins.
+用户说：“能把第 3 点改成关于害怕被评价吗？”
 
-Here's the thing - it's about the messy middle.
+智能体保留整体语气与结构，重写第 3 点，并确保与其他内容连贯。
 
-Let me break it down 🧵
-
-## 2/ Context
-I've been building in public for 18 months.
-
-Here's what I wish someone told me on day 1:
-
-## 3-7/ Main Points
-[5 specific lessons with stories]
-
-## 8/ Takeaway
-The compound effect of transparency beats any marketing strategy.
-
-## 9/ CTA
-Follow for more founder lessons as I ship @handle
-```
-
-**Voice Alignment Check**:
-- ✓ Uses "Here's the thing" (signature phrase)
-- ✓ Uses "Let me break it down" (signature phrase)
-- ✓ Casual but substantive tone (7/10)
-- ✓ No corporate jargon
-- ⚠️ Limited emoji (one 🧵 - acceptable)
-
----
-
-## Step 6: User Feedback & Iteration
-
-User: "Can you make point 3 about the fear of judgment?"
-
-Agent:
-1. Keeps same voice/structure
-2. Rewrites point 3 with fear angle
-3. Maintains thread flow
-
----
-
-## Step 7: Log the Idea (If Not Publishing)
-
-If user saves for later, agent appends to `content/ideas.jsonl`:
+## 第 7 步：保存创意（若暂不发布）
 
 ```json
 {
   "id": "idea_20241229_160000",
   "created": "2024-12-29T16:00:00Z",
-  "idea": "Thread: 5 lessons from building in public (fear, wins, community...)",
+  "idea": "串文：公开建设的五个经验（恐惧、成果、社区等）",
   "source": "developed_draft",
   "pillar": "building_in_public",
   "status": "ready",
   "priority": "high",
-  "notes": "Draft complete, reviewed voice alignment",
+  "notes": "草稿已完成，并检查表达一致性",
   "tags": ["thread", "building_in_public", "founder_lessons"]
 }
 ```
 
----
-
-## Step 8: Post-Publish Logging
-
-After user publishes, agent appends to `content/posts.jsonl`:
+## 第 8 步：发布后记录
 
 ```json
 {
@@ -163,42 +105,33 @@ After user publishes, agent appends to `content/posts.jsonl`:
   "published": "2024-12-29T18:00:00Z",
   "platform": "twitter",
   "type": "thread",
-  "content": "Unpopular opinion: Building in public isn't about the wins...",
+  "content": "示例串文正文……",
   "url": "https://twitter.com/user/status/123456789",
   "pillar": "building_in_public",
-  "metrics": {
-    "impressions": 0,
-    "likes": 0,
-    "comments": 0,
-    "reposts": 0
-  },
+  "metrics": {"impressions": 0, "likes": 0, "comments": 0, "reposts": 0},
   "metrics_updated": "2024-12-29T18:00:00Z",
-  "notes": "Story-driven format, fear angle resonated in drafting",
+  "notes": "采用故事结构，起草时的害怕被评价角度引发共鸣",
   "tags": ["thread", "building_in_public"]
 }
 ```
 
----
+## 读取的文件
 
-## Files Accessed
+| 文件 | 用途 | 令牌估算 |
+| --- | --- | ---: |
+| `SKILL.md` | 路由 | 50 |
+| `identity/voice.md` | 表达模式 | 200 |
+| `identity/brand.md` | 主题检查 | 150 |
+| `content/posts.jsonl` | 历史表现 | 100 |
+| `content/ideas.jsonl` | 既有创意 | 50 |
+| `content/templates/thread.md` | 内容结构 | 100 |
 
-| File | Purpose | Tokens (~) |
-|------|---------|------------|
-| `SKILL.md` | Routing | 50 |
-| `identity/voice.md` | Voice patterns | 200 |
-| `identity/brand.md` | Topic validation | 150 |
-| `content/posts.jsonl` | Past performance | 100 |
-| `content/ideas.jsonl` | Existing ideas | 50 |
-| `content/templates/thread.md` | Structure | 100 |
+总计约 650 个令牌；若加载整个系统约需 5,000 个。
 
-**Total**: ~650 tokens vs loading entire brain (~5000 tokens)
+## 关键经验
 
----
-
-## Key Takeaways
-
-1. **Voice First**: Always loaded before drafting
-2. **Progressive Loading**: Only relevant modules accessed
-3. **Pattern Matching**: Past success informs new content
-4. **Full Pipeline**: Idea → Draft → Publish → Log
-5. **Append-Only**: Ideas and posts logged, never deleted
+1. 起草前先读取表达风格。
+2. 渐进加载，只访问相关模块。
+3. 参考历史表现改进新内容。
+4. 完成从创意、草稿、发布到记录的完整流程。
+5. 创意和帖子只追加，不删除。

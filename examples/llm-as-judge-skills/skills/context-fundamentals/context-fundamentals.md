@@ -1,114 +1,66 @@
-# Context Fundamentals Skill
+# 上下文基础
 
-## Overview
+## 概述
 
-Context engineering is the systematic approach to managing what information an LLM receives and how it processes that information. Effective context management directly impacts output quality, consistency, and task success rates.
+上下文工程是系统性管理大语言模型接收的信息及其处理方式。有效管理上下文会直接影响输出质量、一致性和任务成功率。
 
-## Core Principles
+## 核心原则
 
-### 1. Context Window Management
+### 1. 管理上下文窗口
 
-The context window is finite. Every token counts. Prioritize information by relevance and recency.
+上下文窗口有限，每个令牌都很重要。应按相关性和时效性排序信息。
 
-**Strategies:**
-- Summarize historical conversation turns
-- Use retrieval to inject only relevant context
-- Implement context compression for long documents
+可采用的做法：总结较早的对话轮次；通过检索只注入相关上下文；长文档采用压缩或分块处理。
 
-### 2. Information Hierarchy
+### 2. 建立信息层级
 
-Structure context to guide model attention:
+使用清晰结构引导模型注意力：
 
-```
-1. System Instructions (highest priority)
-   └── Role definition
-   └── Task constraints
-   └── Output format requirements
-
-2. Relevant Context (dynamic)
-   └── Retrieved documents
-   └── User-specific data
-   └── Recent conversation history
-
-3. User Input (current request)
-   └── Query or instruction
-   └── Any inline context
+```text
+1. 系统指令（最高优先级）
+   └── 角色定义
+   └── 任务约束
+   └── 输出格式
+2. 相关上下文（动态内容）
+   └── 检索文档
+   └── 用户数据
+   └── 近期对话历史
+3. 当前用户输入
+   └── 请求或指令
+   └── 随请求提供的上下文
 ```
 
-### 3. Context Relevance
+### 3. 筛选相关上下文
 
-Not all context is equally useful. Apply relevance filtering:
+上下文内容的价值并不相同，应根据时效、语义相关性和当前任务过滤信息。较新的信息通常优先于旧信息；可用嵌入检索相关内容；只保留当前任务需要的信息。
 
-- **Temporal Relevance**: Recent information often outweighs older data
-- **Semantic Relevance**: Use embeddings to surface related content
-- **Task Relevance**: Only include information needed for current task
+## 上下文类型
 
-## Context Types
+- **静态上下文**：系统提示、角色定义、工具描述、格式规格。
+- **动态上下文**：检索文档、对话历史、用户偏好、会话状态。
+- **临时上下文**：当前工具输出、中间推理步骤、草稿区内容。
 
-### Static Context
-- System prompts
-- Role definitions
-- Tool descriptions
-- Format specifications
+## 最佳实践
 
-### Dynamic Context
-- Retrieved documents (RAG)
-- Conversation history
-- User preferences
-- Session state
+1. **明确胜过暗示**：直接写出要求，不要依赖模型猜测。
+2. **结构一致**：使用稳定的分隔符和章节。
+3. **删除冗余**：避免在不同上下文区域重复信息。
+4. **注明来源**：标注信息来自何处，以便追踪。
+5. **标记时效性**：说明信息最近更新时间。
 
-### Ephemeral Context
-- Current tool outputs
-- Intermediate reasoning steps
-- Scratchpad content
+## 常用模式
 
-## Best Practices
+### 检索增强模式
 
-1. **Explicit Over Implicit**: State requirements clearly rather than relying on inference
-2. **Structured Formatting**: Use consistent delimiters and sections
-3. **Redundancy Removal**: Avoid repeating information across context sections
-4. **Source Attribution**: Mark where context comes from for traceability
-5. **Freshness Signals**: Indicate when information was last updated
+在系统指令后放入带来源和日期的检索文档，并明确要求只依据上下文回答，不确定时说明不确定。
 
-## Context Patterns
+### 多轮对话模式
 
-### RAG Integration Pattern
-```
-[System Instructions]
-You are a helpful assistant. Use the provided context to answer questions.
-Only use information from the context. If unsure, say so.
+将早期轮次压缩成摘要，保留少量近期对话，再追加当前请求，以控制上下文长度。
 
-[Retrieved Context]
-<document source="doc1.pdf" date="2024-01-15">
-  Content here...
-</document>
+## 指标
 
-[User Query]
-{user_input}
-```
-
-### Multi-Turn Context Pattern
-```
-[System Instructions]
-...
-
-[Conversation History]
-Summary of earlier turns: {summary}
-
-Recent exchanges:
-User: {recent_user_1}
-Assistant: {recent_assistant_1}
-User: {recent_user_2}
-Assistant: {recent_assistant_2}
-
-[Current Turn]
-User: {current_input}
-```
-
-## Metrics
-
-- **Context Utilization Rate**: How much of provided context is used in response
-- **Context Relevance Score**: Semantic similarity between context and response
-- **Context Compression Ratio**: Original size vs. compressed size
-- **Information Retention**: Key facts preserved after summarization
-
+- 上下文利用率：回复实际使用了多少提供的上下文。
+- 上下文相关性：上下文与回复之间的语义匹配程度。
+- 压缩比例：原始内容长度与压缩后长度之比。
+- 信息保留率：摘要后保留的关键事实比例。

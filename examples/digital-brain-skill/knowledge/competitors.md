@@ -1,117 +1,93 @@
-# Competitive Landscape
+# 竞争格局
 
-Understanding your market and differentiating your positioning.
+了解市场，并明确自己的差异化定位。
 
----
+## 直接竞争者
 
-## Direct Competitors
-<!-- People/companies doing similar things to you -->
-
-### Competitor 1: [PLACEHOLDER: Name]
+### 竞争者一：[名称]
 
 ```yaml
-website: "[PLACEHOLDER]"
-twitter: "[PLACEHOLDER]"
-audience_size: "[PLACEHOLDER: Approximate]"
-positioning: "[PLACEHOLDER: How they describe themselves]"
+website: "[网址]"
+twitter: "[账号]"
+audience_size: "[大致受众规模]"
+positioning: "[对方如何描述自己]"
 ```
 
-**What they do well:**
-- [PLACEHOLDER]
-- [PLACEHOLDER]
+**做得好的方面**：
+- [填写]
+- [填写]
 
-**Gaps/Weaknesses:**
-- [PLACEHOLDER]
-- [PLACEHOLDER]
+**缺口或弱点**：
+- [填写]
+- [填写]
 
-**How we differentiate:**
-- [PLACEHOLDER]
+**我们的差异化方式**：
+- [填写]
 
----
-
-### Competitor 2: [PLACEHOLDER: Name]
+### 竞争者二：[名称]
 
 ```yaml
-website: "[PLACEHOLDER]"
-twitter: "[PLACEHOLDER]"
-audience_size: "[PLACEHOLDER]"
-positioning: "[PLACEHOLDER]"
+website: "[网址]"
+twitter: "[账号]"
+audience_size: "[大致受众规模]"
+positioning: "[对方的定位]"
 ```
 
-**What they do well:**
-- [PLACEHOLDER]
+**做得好的方面**：
+- [填写]
 
-**Gaps/Weaknesses:**
-- [PLACEHOLDER]
+**缺口或弱点**：
+- [填写]
 
-**How we differentiate:**
-- [PLACEHOLDER]
+**我们的差异化方式**：
+- [填写]
 
----
+## 间接竞争者
 
-## Indirect Competitors
-<!-- Adjacent players who could compete for attention -->
+| 名称 | 对方做什么 | 重叠之处 | 差异化方式 |
+| --- | --- | --- | --- |
+| [填写] | [填写] | [填写] | [填写] |
 
-| Name | What They Do | Overlap | Differentiation |
-|------|--------------|---------|-----------------|
-| [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] |
-| [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] |
+## 灵感来源（非竞争者）
 
----
+| 名称 | 关注原因 | 学到什么 |
+| --- | --- | --- |
+| [填写] | [填写] | [填写] |
 
-## Inspirations (Not Competitors)
-<!-- People you admire and learn from -->
+## 市场趋势
 
-| Name | Why I Follow | What I Learn |
-|------|--------------|--------------|
-| [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] |
-| [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] |
+### 增长中的趋势
+- [趋势及其重要性]
 
----
+### 衰退中的趋势
+- [趋势及其影响]
 
-## Market Trends
+### 新兴趋势
+- [值得关注的新趋势]
 
-### Growing
-- [PLACEHOLDER: Trend and why it matters]
-- [PLACEHOLDER]
+## 定位矩阵
 
-### Declining
-- [PLACEHOLDER: Trend and implications]
-- [PLACEHOLDER]
-
-### Emerging
-- [PLACEHOLDER: New trends to watch]
-- [PLACEHOLDER]
-
----
-
-## Positioning Matrix
-
-```
-                    High Technical Depth
-                           |
-            [Competitor A] |  [You?]
-                           |
-Low Accessibility -------- + -------- High Accessibility
-                           |
-            [Competitor B] | [Competitor C]
-                           |
-                    Low Technical Depth
+```text
+                    技术深度高
+                        |
+          [竞争者 A]    |    [你？]
+                        |
+可及性低 ----------------+---------------- 可及性高
+                        |
+          [竞争者 B]    |    [竞争者 C]
+                        |
+                    技术深度低
 ```
 
----
+## 竞争优势
 
-## Competitive Advantages
+### 我们具备而他人不具备的特点
+1. [独特经历]
+2. [独特视角]
+3. [独特资源或人际网络]
 
-### What I Have That Others Don't
-1. [PLACEHOLDER: Unique experience]
-2. [PLACEHOLDER: Unique perspective]
-3. [PLACEHOLDER: Unique access/network]
+### 可以填补的市场缺口
+1. [填写]
+2. [填写]
 
-### Gaps in the Market I Can Fill
-1. [PLACEHOLDER]
-2. [PLACEHOLDER]
-
----
-
-*Last updated: [DATE]*
+最后更新：[日期]

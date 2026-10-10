@@ -1,37 +1,37 @@
-# ADR-0002: Treat the corpus inventory as a checked derived view
+# 架构决策记录 0002：把语料清单作为受检查的派生视图
 
-- Status: accepted for proposal
-- Date: 2026-08-10
-- Spec: SPEC-001
+- 状态：提案已接受
+- 日期：2026-08-10
+- 关联规范：SPEC-001
 
-## Context
+## 背景
 
-Repository facts are distributed across skill files, registries, append-only ledgers, fixtures, benchmark tasks, manifests, and a curated corpus relationship index. Live prose had drifted from those files. A committed inventory must be deterministic, but embedding its own future Git commit would create a self-reference.
+仓库事实分散在技能文件、注册表、只追加记录、样例、基准任务、清单和人工维护的技能关系索引中。实时说明与这些文件曾发生偏离。提交生成清单必须保持确定性，但把未来 Git 提交号写入清单会产生自引用。
 
-## Decision
+## 决策
 
-`researcher/corpus/inventory.json` is a generated cache, not a source of truth. It lists canonical input paths and exact byte digests and binds them with a `source_tree_digest`. It excludes wall-clock time, dirty-worktree state, its own output, and the Git commit that will contain it. CI reports Git revision separately.
+`researcher/corpus/inventory.json` 是生成缓存，不是事实来源。它记录规范输入路径、精确字节摘要和 `source_tree_digest`，但不包含当前时间、工作区是否干净、自身输出或将来包含它的 Git 提交。持续集成单独报告 Git 版本。
 
-`researcher/corpus/index.json` remains the curated source for non-derivable relationships such as activation scenarios and cross-skill claim use. The inventory verifies it against actual skills, claim ownership, mechanism ownership, fixtures, and manifests. It does not infer structured semantics by scraping arbitrary prose.
+`researcher/corpus/index.json` 仍负责维护无法从文件推导的关系，例如启用场景和跨技能主张引用。生成清单会将这些关系与实际技能、主张归属、机制归属、样例和清单核对，但不会尝试从任意散文推断结构化语义。
 
-Live documents link to the generated summary. Dated benchmark reports, release notes, and project narratives retain their historical values. Missing and weak ledger provenance is repaired only by new append-only reconciliation records with original source commits; old events are not rewritten.
+实时文档链接到生成摘要。带日期的基准报告、发布说明和项目叙述保留当时数值，不得改写成当前状态。缺失或薄弱的机制来源只通过新的只追加对账记录修复，记录原始来源提交；不得改写旧事件。
 
-## Alternatives considered
+## 考虑过的替代方案
 
-- Make the generated inventory canonical. Rejected because a cache must not overrule its inputs.
-- Embed `HEAD`. Rejected because a commit cannot contain its own final hash without perpetual drift.
-- Generate the corpus index from Markdown. Rejected because free-text activation meaning and related-claim use are curated semantics.
-- Rewrite historical reports with current totals. Rejected because that would falsify dated evidence.
-- Ignore incomplete mechanism ledgers. Rejected because future agents would treat missing history as missing decisions.
+- 把生成清单当作规范来源：拒绝，因为缓存不能覆盖输入。
+- 将 `HEAD` 写入生成结果：拒绝，因为提交无法包含自己的最终哈希。
+- 从 Markdown 自动生成技能索引：拒绝，因为启用含义和相关主张属于人工维护的语义。
+- 用当前统计重写历史报告：拒绝，因为会歪曲带日期的证据。
+- 忽略不完整的机制记录：拒绝，因为后续维护者可能把缺失历史误当成没有决策。
 
-## Consequences
+## 后果
 
-- A canonical input change requires `build_inventory.py --write` in the same pull request.
-- Generated drift and reference failures have stable, domain-specific reason codes.
-- The effectiveness runner is reported as `scaffold`, independently of its available task count.
-- Validator ownership is explicit. Overlapping checks remain defense in depth, but the inventory owns cross-artifact completeness.
-- A later schema-registry spec may replace the bootstrap sorted-key JSON profile. That migration must update the inventory schema version and regenerate the view.
+- 规范输入变更时，必须在同一拉取请求中运行 `build_inventory.py --write`。
+- 生成文件偏差和引用错误使用稳定、明确的原因代码。
+- 有效性运行器单独标记为“脚手架”，不因任务数量而改变状态。
+- 检查职责有明确归属；重叠检查可作为纵深防护，但跨产物完整性由该清单负责。
+- 后续数据结构注册规范可以替换初始的排序键 JSON 规则；迁移时必须更新清单数据结构版本并重新生成视图。
 
-## Verification
+## 验证
 
-Unit tests cover byte stability, generated-output exclusion, source-digest sensitivity, duplicate identifiers, dangling relationships, ledger completeness, golden reconciliation, task structure, manifest parity, version parity, duplicate JSON keys, symlink escape, and interrupted atomic replacement.
+单元检查涵盖字节稳定性、排除生成输出、来源摘要敏感性、重复标识、悬空关系、记录完整性、黄金样例对账、任务结构、清单一致性、版本一致性、重复 JSON 键、符号链接越界和原子替换中断。

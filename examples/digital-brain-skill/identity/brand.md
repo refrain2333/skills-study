@@ -1,165 +1,144 @@
-# Personal Brand Strategy
+# 个人品牌策略
 
-Your positioning, audience, and strategic narrative.
+记录你的定位、受众和策略叙事。
 
----
+## 品牌定位
 
-## Brand Positioning
-
-### One-Liner
-<!-- How you describe yourself in one sentence -->
-```
-[PLACEHOLDER: e.g., "I help technical founders build in public and grow their audience."]
+### 一句话介绍
+```text
+[用一句话说明自己，例如：帮助技术创始人公开记录建设过程并扩大受众。]
 ```
 
-### Elevator Pitch (30 seconds)
-```
-[PLACEHOLDER: 2-3 sentence expanded version]
-```
-
-### Origin Story
-<!-- Your narrative arc - where you came from, pivotal moments, where you're going -->
-```
-[PLACEHOLDER: Write your founder/creator story]
+### 30 秒介绍
+```text
+[用 2—3 句话展开介绍]
 ```
 
----
+### 起源故事
+```text
+[写下个人或创业经历：从哪里出发、关键转折、未来方向]
+```
 
-## Target Audience
+## 目标受众
 
-### Primary Audience
+### 主要受众
+
 ```yaml
-who: "[PLACEHOLDER: e.g., Early-stage technical founders]"
+who: "[例如：早期技术创业者]"
 pain_points:
-  - "[PLACEHOLDER: e.g., Don't know how to market themselves]"
-  - "[PLACEHOLDER]"
-  - "[PLACEHOLDER]"
+  - "[例如：不知道如何推广自己]"
+  - "[填写]"
+  - "[填写]"
 aspirations:
-  - "[PLACEHOLDER: e.g., Build a personal brand that attracts investors/talent]"
-  - "[PLACEHOLDER]"
+  - "[例如：建立能吸引投资者和人才的个人品牌]"
+  - "[填写]"
 where_they_hang_out:
-  - "[PLACEHOLDER: e.g., Twitter, Hacker News, specific Discords]"
-  - "[PLACEHOLDER]"
+  - "[例如：Twitter、Hacker News 或特定 Discord 社区]"
+  - "[填写]"
 ```
 
-### Secondary Audiences
+### 次要受众
+
 ```yaml
-- segment: "[PLACEHOLDER: e.g., Aspiring founders]"
-  relevance: "[PLACEHOLDER: How you serve them]"
-- segment: "[PLACEHOLDER]"
-  relevance: "[PLACEHOLDER]"
+- segment: "[例如：有志创业者]"
+  relevance: "[说明如何服务他们]"
+- segment: "[填写]"
+  relevance: "[填写]"
 ```
 
----
+## 内容支柱
 
-## Content Pillars
+### 主要主题（约 80% 内容）
 
-### Primary Topics (80% of content)
-<!-- Topics you're known for and have authority in -->
+| 支柱 | 说明 | 示例角度 |
+| --- | --- | --- |
+| [例如：公开记录建设过程] | [说明] | [主题示例] |
+| [例如：AI/智能体] | [说明] | [主题示例] |
+| [填写] | [说明] | [主题示例] |
 
-| Pillar | Description | Example Angles |
-|--------|-------------|----------------|
-| `[PLACEHOLDER: e.g., Building in Public]` | `[Description]` | `[Example topics]` |
-| `[PLACEHOLDER: e.g., AI/Agents]` | `[Description]` | `[Example topics]` |
-| `[PLACEHOLDER]` | `[Description]` | `[Example topics]` |
+### 次要主题（约 20% 内容）
 
-### Secondary Topics (20% of content)
-<!-- Adjacent topics that round out your brand -->
-```
-- [PLACEHOLDER: e.g., Productivity/Systems]
-- [PLACEHOLDER: e.g., Founder mental health]
-- [PLACEHOLDER]
-```
+- [例如：效率和系统]
+- [例如：创业者心理健康]
+- [填写]
 
-### Off-Limits Topics
-<!-- Topics you deliberately avoid -->
-```
-- [PLACEHOLDER: e.g., Politics]
-- [PLACEHOLDER: e.g., Competitors by name]
-- [PLACEHOLDER]
-```
+### 不涉及的话题
 
----
+- [例如：政治]
+- [例如：不点名批评竞争对手]
+- [填写]
 
-## Unique Value Proposition
+## 独特价值
 
-### What Makes You Different
-```
-[PLACEHOLDER: Your unique combination of skills/experience/perspective]
+### 与众不同之处
+```text
+[填写独特的技能、经历和视角组合]
 ```
 
-### Credibility Markers
+### 可信度依据
+
 ```yaml
 achievements:
-  - "[PLACEHOLDER: e.g., Built X to $Y ARR]"
-  - "[PLACEHOLDER: e.g., Z followers across platforms]"
-  - "[PLACEHOLDER]"
+  - "[例如：将某产品做到某收入规模]"
+  - "[例如：各平台关注者数量]"
 experience:
-  - "[PLACEHOLDER: e.g., 10 years in industry]"
-  - "[PLACEHOLDER]"
+  - "[例如：行业从业十年]"
 social_proof:
-  - "[PLACEHOLDER: e.g., Featured in...]"
-  - "[PLACEHOLDER: e.g., Advised companies like...]"
+  - "[例如：曾被哪些媒体报道]"
 ```
 
----
+## 品牌表达一致性
 
-## Brand Voice Alignment
-
-### Emotional Territory
-<!-- How you want people to feel after engaging with your content -->
-```
-[PLACEHOLDER: e.g., "Inspired to take action, equipped with practical knowledge, part of a community"]
+### 情绪定位
+```text
+[希望读者看完后有什么感受，例如受到鼓舞、获得实用知识、感到融入社区]
 ```
 
-### Brand Personality
+### 品牌个性
+
 ```yaml
 if_brand_were_a_person:
-  age: "[PLACEHOLDER]"
-  style: "[PLACEHOLDER: e.g., Smart casual, approachable]"
-  conversation_style: "[PLACEHOLDER: e.g., Like talking to a smart friend]"
-  energy: "[PLACEHOLDER: e.g., High energy but not manic]"
+  age: "[填写]"
+  style: "[例如：聪明、随和、容易接近]"
+  conversation_style: "[例如：像和聪明的朋友交谈]"
+  energy: "[例如：精力充沛但不过度亢奋]"
 ```
 
----
+## 竞争定位
 
-## Competitive Positioning
+### 可借鉴的表达方式
 
-### Similar Voices (Inspiration)
-```
-- [PLACEHOLDER: e.g., @name - what you like about their approach]
-- [PLACEHOLDER]
-```
+| 名称 | 关注原因 | 学习内容 |
+| --- | --- | --- |
+| [填写] | [填写] | [填写] |
 
-### Differentiation
-```
-[PLACEHOLDER: How you're different from similar creators/founders]
+### 差异化
+```text
+[说明自己与相似创作者或创业者的区别]
 ```
 
----
+## 增长策略
 
-## Growth Strategy
-
-### Current Focus
-```
-[PLACEHOLDER: e.g., Growing Twitter to 50k, launching newsletter]
+### 当前重点
+```text
+[例如：将 Twitter 增长到 5 万关注者，并推出简报]
 ```
 
-### Platform Priority
+### 平台优先级
+
 ```yaml
-primary: "[PLACEHOLDER: e.g., Twitter/X]"
-secondary: "[PLACEHOLDER: e.g., LinkedIn]"
-experimenting: "[PLACEHOLDER: e.g., YouTube]"
+primary: "[主要平台]"
+secondary: "[次要平台]"
+experimenting: "[正在尝试的平台]"
 ```
 
-### Key Metrics
+### 关键指标
+
 ```yaml
-north_star: "[PLACEHOLDER: e.g., Newsletter subscribers]"
+north_star: "[核心指标，例如简报订阅者]"
 leading_indicators:
-  - "[PLACEHOLDER: e.g., Engagement rate]"
-  - "[PLACEHOLDER: e.g., Profile visits]"
+  - "[例如：互动率]"
+  - "[例如：个人主页访问量]"
 ```
 
----
-
-*Last updated: [DATE]*
+最后更新：[日期]

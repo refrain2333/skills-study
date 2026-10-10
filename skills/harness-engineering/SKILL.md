@@ -1,86 +1,86 @@
 ---
 name: harness-engineering
-description: "This skill should be used when designing autonomous agent harnesses: research loops, evaluation scaffolds, locked and editable surfaces, durable logs, novelty gates, pruning, rollback, PR preparation, and human approval boundaries."
+description: "用于设计自主智能体运行框架，包括研究循环、日志、评估边界、新颖性门槛、回退和人工审核。"
 ---
 
-# Harness Engineering
+# 智能体运行框架工程
 
-Harness engineering designs the control system around an agent: what it may edit, how it receives feedback, where it writes state, how failures recover, and who can approve irreversible actions. The harness is the difference between a helpful agent session and an autonomous loop that can run for days without corrupting its objective.
+智能体运行框架工程负责设计包围智能体的控制系统：智能体可以编辑什么、如何接收反馈、在哪里写入状态、发生故障时如何恢复，以及谁可以批准不可逆操作。运行框架决定了一次有帮助的智能体会话，能否成为可持续运行数天且不偏离目标的自主循环。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
+在以下情况下启用本技能：
 
-- Building autonomous research or experimentation loops
-- Designing an agent environment with locked metrics and editable code or content
-- Creating PR-producing or background agents
-- Evaluating whether an agent can safely run without frequent human prompts
-- Adding novelty, ablation, pruning, rollback, or durable logging to an agent workflow
-- Preventing agents from gaming benchmarks, weakening rubrics, or losing state across compaction
+- 构建自主研究或实验循环
+- 设计具有锁定指标和可编辑代码或内容的智能体环境
+- 创建能够生成 PR 或在后台运行的智能体
+- 评估智能体是否能够在很少询问人工的情况下安全运行
+- 为智能体工作流加入新颖性检查、消融、精简、回滚或持久化日志
+- 防止智能体投机基准、削弱评分标准，或在上下文压缩后丢失状态
 
-Do not activate this skill for adjacent work owned by other skills:
-- General quality gates, regression suites, or outcome metrics without autonomous control surfaces: `evaluation`.
-- Tool schemas, response formats, and recovery errors for harness tools: `tool-design`.
-- Project-level task-model fit, pipeline shape, and cost planning: `project-development`.
-- Remote sandbox, warm-pool, and hosted session infrastructure: `hosted-agents`.
+以下相邻工作由其他技能负责，不要为它们启用本技能：
+- 不涉及自主控制面的通用质量门禁、回归套件或结果指标：`evaluation`。
+- 运行框架工具的工具模式、响应格式和恢复错误：`tool-design`。
+- 项目层面的任务与模型匹配、流水线结构和成本规划：`project-development`。
+- 远程沙箱、预热池和托管会话基础设施：`hosted-agents`。
 
-## Core Concepts
+## 核心概念
 
-### Harness Boundary
+### 运行框架边界
 
-Separate the agent from the environment it operates inside. The agent proposes actions; the harness defines allowed surfaces, feedback, persistence, and promotion rules.
+将智能体与其所处环境分开。智能体提出操作；运行框架负责定义允许修改的界面、反馈、持久化方式和晋级规则。
 
-Use four surface classes:
+使用以下四类界面：
 
-| Surface | Examples | Rule |
+| 界面 | 示例 | 规则 |
 | --- | --- | --- |
-| Locked | Eval metric, rubric, validation script, merge policy | Agent may read and propose changes, but cannot score itself with modified rules |
-| Editable | Skill draft, experiment file, prompt, config under test | Agent may mutate during the loop |
-| Append-only | Results log, research thread, rejected ideas | Agent may append, not rewrite |
-| Human-controlled | Merge, production deploy, credentials, destructive operations | Requires explicit human approval |
+| 锁定 | 评估指标、评分标准、验证脚本、合并策略 | 智能体可以阅读并提出修改，但不能修改规则后再用新规则给自己评分 |
+| 可编辑 | 技能草稿、实验文件、提示词、待测配置 | 循环运行时，智能体可以修改 |
+| 仅追加 | 结果日志、研究讨论串、被否决的想法 | 智能体可以追加内容，不能改写已有内容 |
+| 人工控制 | 合并、生产部署、凭据、破坏性操作 | 需要人工明确批准 |
 
-### Tight Feedback Loops
+### 紧密反馈循环
 
-Autonomy works when feedback is fast, unambiguous, and hard to game. Karpathy's `autoresearch` is the minimal pattern: one editable file, one locked evaluation file, fixed wall-clock budget, one scalar metric, git rollback, and a durable results log. The lesson is not that every harness needs one metric; it is that ambiguous feedback creates ambiguous autonomy.
+反馈速度快、含义明确且难以被钻空子时，自主运行才有效。Karpathy 的 `autoresearch` 是一种最简模式：一个可编辑文件、一个锁定的评估文件、固定的墙钟时间预算、单一标量指标、Git 回滚和持久化结果日志。重点不是所有运行框架都只需要一个指标，而是含义模糊的反馈会造成含义模糊的自主行为。
 
-For open-ended research-to-skill work, replace the scalar metric with locked rubrics, deterministic structure checks, source traceability, and human review thresholds.
+对开放式的研究转技能工作，应使用锁定的评分标准、确定性的结构检查、来源可追溯性和人工审核阈值，代替单一标量指标。
 
-### Durable State
+### 持久化状态
 
-Long-running agents must externalize state. Store plans, source queues, results, failures, and handoffs in files so future agents can resume without relying on chat history. Prime Intellect's autonomous nanoGPT work showed the value of durable scratchpads and `THREAD.md`-style logs for recovery, monitoring, and audit.
+长时间运行的智能体必须将状态保存到外部。将计划、来源队列、结果、失败和交接记录写入文件，使后续智能体无需依赖聊天历史就能恢复工作。Prime Intellect 的自主 nanoGPT 工作显示，持久化暂存区和 `THREAD.md` 风格的日志有助于恢复、监控和审计。
 
-Use append-only logs for:
+使用仅追加日志记录：
 
-- What was tried
-- What improved or failed
-- Why a candidate was kept, discarded, or routed to review
-- Which upstream sources were checked
-- What the next agent should do
+- 尝试过什么
+- 什么有改进，什么失败了
+- 为什么保留、放弃某个候选，或将其转交审核
+- 检查过哪些上游来源
+- 下一位智能体应该做什么
 
-### Search Discipline
+### 搜索纪律
 
-Agents tend to exploit the nearest surface, stack complexity, and under-run pruning. Add explicit search rules:
+智能体倾向于利用最近的可修改界面、不断堆叠复杂性，却很少主动精简。应添加明确的搜索规则：
 
-1. Refresh upstream sources on a schedule.
-2. Require novelty checks before spending large budgets.
-3. Preserve rejected attempts to avoid rediscovery.
-4. Run leave-one-out pruning when a stack has multiple additions.
-5. Reward simplification when quality is equal.
-6. Use separate verification before promotion.
+1. 按计划刷新上游来源。
+2. 在投入大额预算前，必须进行新颖性检查。
+3. 保留被否决的尝试，避免重新发现相同问题。
+4. 若方案堆栈中有多项新增内容，应执行逐项留一消融。
+5. 质量相同时，奖励更简单的方案。
+6. 晋级前单独执行验证。
 
-### Mechanism Registry
+### 机制注册表
 
-For research-to-skill systems, track accepted mechanisms separately from prose. A mechanism record should include a stable `mechanism_id`, `owning_skill`, `status`, activation scenario, behavior change, evidence, and failure modes. Novelty gates should compare against this registry before using broader corpus overlap, because keyword overlap catches stale phrasing while mechanism comparison catches real duplication.
+对于研究转技能系统，应将已接受的机制与文字说明分开追踪。机制记录应包含稳定的 `mechanism_id`、`owning_skill`、`status`、启用场景、行为变化、证据和失效模式。新颖性门禁应先与此注册表比较，再比较更广泛的语料重叠，因为关键词重叠只能发现过时措辞，机制对比才能识别真正的重复。
 
-### Governance
+### 治理
 
-Autonomous agents may prepare PRs, but governance must be explicit. They can draft changes, run checks, and write PR summaries. They should not merge, deploy, or push without human approval unless the user has explicitly granted that permission for the specific action.
+自主智能体可以准备 PR，但治理规则必须明确。智能体可以起草改动、运行检查并撰写 PR 摘要。除非用户已针对具体操作明确授予权限，否则智能体不得合并、部署或推送。
 
-## Detailed Topics
+## 详细主题
 
-### Autoresearch-Style Loop
+### Autoresearch 风格的循环
 
-Use this pattern when optimizing an artifact against a stable evaluator:
+当针对稳定评估器优化产物时，采用以下模式：
 
 ```text
 read locked context -> choose hypothesis -> edit allowed surface -> commit/checkpoint
@@ -88,17 +88,17 @@ read locked context -> choose hypothesis -> edit allowed surface -> commit/check
 -> repeat
 ```
 
-Required properties:
+必要特征：
 
-- The evaluator is outside the editable surface.
-- The feedback cadence is fixed enough to compare attempts.
-- Failed attempts leave an audit trail.
-- Rollback is cheap.
-- The agent has a policy for crashes and timeouts.
+- 评估器位于可编辑界面之外。
+- 反馈频率固定到足以比较各次尝试。
+- 失败尝试会留下审计记录。
+- 回滚成本低。
+- 智能体有处理崩溃和超时的策略。
 
-### Research-To-Skill Loop
+### 研究转技能循环
 
-Use this pattern when sources become skill changes:
+当来源材料要转化成技能改动时，采用以下模式：
 
 ```text
 discover -> retrieve -> gate -> score -> extract mechanism
@@ -106,45 +106,45 @@ discover -> retrieve -> gate -> score -> extract mechanism
 -> prepare PR -> human review
 ```
 
-The locked evaluator is a combination of source rubrics, skill-change rubrics, structure checks, and reviewer approval. The editable artifact is the proposed skill delta.
+锁定评估器由来源评分标准、技能改动评分标准、结构检查和审核者批准组成。可编辑产物是拟议的技能差异。
 
-### Metric Gaming Resistance
+### 抵御指标投机
 
-Assume an optimizing agent will learn the harness. Guard against:
+假设负责优化的智能体会逐渐学会利用运行框架。需防范以下行为：
 
-- Editing evaluation code or rubrics and then using the new version for self-approval
-- Adding verbose content that pleases a judge but harms skill activation
-- Citing unretrieved sources
-- Optimizing aggregate scores while failing a critical dimension
-- Avoiding failed results in the log
+- 修改评估代码或评分标准，再用修改后的版本为自己审批
+- 添加讨好判官却损害技能启用效果的冗长内容
+- 引用从未检索到的来源
+- 优化汇总分数，却在关键维度上失败
+- 不记录失败结果
 
-Mitigation: lock rubrics per run, report per-dimension scores, require source retrieval evidence, preserve rejected attempts, and route governance changes to human review.
+缓解方法：每轮锁定评分标准，报告各维度分数，要求提供来源检索证据，保留被否决的尝试，并将治理规则的改动交由人工审核。
 
-### Monitoring Agents
+### 监控智能体
 
-Use monitoring agents for long runs, but restrict them to read-only reporting unless explicitly tasked otherwise. Monitoring output should report:
+长时间运行时可以使用监控智能体，但除非明确要求采取其他操作，否则应限制为只读汇报。监控输出应报告：
 
-- Best current candidate
-- Active jobs or drafts
-- Last upstream refresh
-- Failed or stale loops
-- Disagreements between logs and claimed state
-- Next action and blocker
+- 当前最佳候选
+- 正在运行的任务或草稿
+- 最近一次上游刷新时间
+- 失败或过时的循环
+- 日志与声称状态之间的分歧
+- 下一步操作和阻塞项
 
-## Practical Guidance
+## 实践指南
 
-### Harness Design Checklist
+### 运行框架设计检查清单
 
-1. Define the objective in one sentence.
-2. Identify locked, editable, append-only, and human-controlled surfaces.
-3. Choose the feedback mechanism: scalar metric, rubric, deterministic tests, human review, or combination.
-4. Define keep, discard, crash, timeout, and review states.
-5. Create a durable thread log before the loop starts.
-6. Add source refresh, mechanism-registry novelty, and pruning rules for long-running loops.
-7. Define what the agent may do without asking and what requires approval.
-8. Validate the harness on one known good and one known bad artifact.
+1. 用一句话定义目标。
+2. 列出锁定、可编辑、仅追加和人工控制的界面。
+3. 选择反馈机制：标量指标、评分标准、确定性测试、人工审核，或组合使用。
+4. 定义保留、放弃、崩溃、超时和待审核等状态。
+5. 在循环开始前创建持久化线程日志。
+6. 对长时间运行的循环添加来源刷新、机制注册表新颖性检查和精简规则。
+7. 明确智能体可以自行执行哪些操作，哪些操作必须审批。
+8. 使用一个已知良好和一个已知不良的产物验证运行框架。
 
-### File Layout
+### 文件布局
 
 ```text
 research-run/
@@ -159,76 +159,76 @@ research-run/
   drafts/
 ```
 
-Use TSV or JSONL for append-only machine-readable logs. Use Markdown for handoffs and reviewer-facing summaries.
+仅追加的机器可读日志应使用 TSV 或 JSONL。交接说明和面向审核者的摘要使用 Markdown。
 
-## Examples
+## 示例
 
-**Example 1: Locked metric**
+**示例 1：锁定指标**
 
-An agent optimizes `train.py`, but `prepare.py` owns data loading and evaluation. The agent can edit the model but cannot change the metric. Failed experiments are logged and rolled back.
+智能体优化 `train.py`，而 `prepare.py` 负责数据加载和评估。智能体可以修改模型，但不能修改指标。失败的实验会被记录并回滚。
 
-**Example 2: Locked rubric**
+**示例 2：锁定评分标准**
 
-An agent evaluates a new Anthropic or OpenAI engineering post, but the source curation rubric is locked for the run. If the source passes, the agent drafts a skill proposal. It cannot lower the rubric threshold to admit the source.
+智能体评估一篇新的 Anthropic 或 OpenAI 工程文章，但本轮的来源筛选评分标准是锁定的。来源通过筛选后，智能体起草一份技能提案。它不能降低评分标准的门槛来让来源通过。
 
-**Example 3: Auto-PR without auto-merge**
+**示例 3：自动准备 PR，但不自动合并**
 
-An agent prepares a branch and PR body after passing source, skill, and structure checks. The PR states unresolved risks and waits for human merge approval.
+来源、技能和结构检查全部通过后，智能体准备分支和 PR 正文。PR 会说明尚未解决的风险，并等待人工批准合并。
 
-## Guidelines
+## 指南
 
-1. Lock evaluators before starting the loop.
-2. Keep editable surfaces narrow enough for reliable diffs.
-3. Write durable logs before context compaction can erase state.
-4. Report per-dimension scores instead of only aggregate scores.
-5. Require source retrieval before citation.
-6. Add novelty gates for broad search and pruning gates for complex stacks.
-7. Prefer simplification when quality is equal.
-8. Separate PR preparation from merge authority.
-9. Revalidate harness changes with old and new evaluators.
-10. Treat stopped autonomous loops as harness failures, not agent personality quirks.
+1. 启动循环前先锁定评估器。
+2. 将可编辑界面保持得足够小，以便可靠审查差异。
+3. 在上下文压缩可能抹去状态之前，写好持久化日志。
+4. 报告各维度分数，而不只是总分。
+5. 引用来源前先检索来源。
+6. 为广泛搜索增加新颖性门禁，为复杂方案堆栈增加精简门禁。
+7. 质量相同时优先选择更简单的方案。
+8. 将 PR 准备工作与合并权限分开。
+9. 使用新旧评估器重新验证运行框架改动。
+10. 将自主循环停止视为运行框架故障，而不是智能体性格问题。
 
-## Gotchas
+## 注意事项
 
-1. **Mutable evaluator**: If the agent can edit the metric, it may optimize the benchmark instead of the task. Keep rubrics and eval code locked during the run.
-2. **Chat-only memory**: Long runs fail after compaction when plans live only in conversation history. Write thread logs and result files from the start.
-3. **No discard record**: Without rejected-attempt logs, agents repeat failed ideas. Preserve failures with enough detail to avoid rediscovery.
-4. **Complexity accretion**: Agents stack changes and rarely remove them. Require pruning rounds and reward equal-quality simplification.
-5. **Premature novelty claims**: Agents label recombinations as novel. Compare against existing repo skills, source queue, and rejected logs before claiming novelty.
-6. **Monitor misreporting**: Monitoring agents can summarize stale or inconsistent state. Require them to cite the files or logs behind claims.
-7. **Human approval ambiguity**: "Prepare a PR" is not "merge a PR." Make approval boundaries explicit in the harness.
-8. **Volatile source drift**: Fast-moving lab claims age quickly. Put dated evidence in references and schedule revalidation.
+1. **评估器可修改**：如果智能体能修改指标，就可能优化基准而不是任务本身。循环运行期间，应锁定评分标准和评估代码。
+2. **只把记忆留在聊天中**：上下文压缩后，若计划只存在于对话历史里，长时间任务就会失败。从一开始就写入线程日志和结果文件。
+3. **不记录放弃项**：没有被否决尝试的日志，智能体就会重复失败的想法。保留足够详细的失败记录，以避免重复探索。
+4. **复杂性不断累积**：智能体会不断叠加改动，却很少删除。要求定期精简，并在质量相当时奖励更简单的方案。
+5. **过早声称新颖**：智能体可能把重新组合的想法称为新颖。声称新颖之前，应与现有仓库技能、来源队列和被否决日志比较。
+6. **监控报告不准确**：监控智能体可能总结过时或矛盾的状态。要求其引用支持报告结论的文件或日志。
+7. **人工审批边界含糊**：“准备 PR”不等于“合并 PR”。在运行框架中明确审批边界。
+8. **来源内容变化**：快速变化的实验室结论容易过时。应在参考资料中标注证据日期，并安排重新验证。
 
-## Integration
+## 集成
 
-This skill connects to:
+本技能与以下技能协作：
 
-- evaluation - Rubrics and quality gates provide the locked feedback surface
-- advanced-evaluation - Pairwise comparison and bias mitigation improve proposal review
-- filesystem-context - Durable logs, scratchpads, and thread files preserve state
-- multi-agent-patterns - Researcher, verifier, monitor, and writer agents need isolated contexts
-- tool-design - Harness tools must expose clear contracts and recovery errors
-- project-development - File-based pipelines and task-model fit analysis keep loops simple
-- hosted-agents - Background execution needs sandbox, snapshot, and approval boundaries
+- evaluation - 评分标准和质量门禁提供锁定的反馈界面
+- advanced-evaluation - 成对比较和偏差缓解可改善提案审核
+- filesystem-context - 持久化日志、暂存区和线程文件可保留状态
+- multi-agent-patterns - 研究者、验证者、监控者和写作者智能体需要隔离的上下文
+- tool-design - 运行框架工具应提供清晰契约和可恢复错误
+- project-development - 基于文件的流水线和任务与模型匹配分析有助于保持循环简单
+- hosted-agents - 后台执行需要沙箱、快照和审批边界
 
-## References
+## 参考资料
 
-Internal references:
-- `researcher/README.md` - Read when implementing the repo-native research-to-skill operating system
-- `researcher/rubrics/harness-change.md` - Read when evaluating changes to an agent harness
-- `researcher/runbooks/autonomous-research-loop.md` - Read when running a source-to-skill loop
+内部参考：
+- `researcher/README.md` - 在以下情况下阅读：实现仓库原生的研究转技能运行系统。
+- `researcher/rubrics/harness-change.md` - 在以下情况下阅读：评估智能体运行框架的改动。
+- `researcher/runbooks/autonomous-research-loop.md` - 在以下情况下阅读：运行自主研究循环。
 
-External resources:
-- Karpathy `autoresearch` - Constrained autonomous experiment loop with locked evaluation
-- Prime Intellect autonomous nanoGPT speedrun - Durable scratchpads, handoffs, monitoring, and autonomy failure modes
-- AlphaEvolve and FunSearch - LLM-generated candidates paired with systematic evaluators
-- HELM and LM Evaluation Harness - Transparent, reproducible evaluation infrastructure
+外部资源：
+- Karpathy 的 `autoresearch` - 具有锁定评估机制的受限自主实验循环
+- Prime Intellect 自主 nanoGPT 速度挑战 - 持久化暂存区、交接、监控和自主运行的失效模式
+- AlphaEvolve 和 FunSearch - 将 LLM 生成的候选与系统化评估器配对
+- HELM 和 LM Evaluation Harness - 透明、可复现的评估基础设施
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2026-05-14
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 1.1.0
+**创建时间**：2026-05-14
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：1.1.0

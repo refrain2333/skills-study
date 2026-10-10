@@ -1,35 +1,35 @@
-# ADR-0001: Machine-testable, deny-by-default authority
+# 架构决策记录 0001：可机器检查、默认拒绝的权限制度
 
-- Status: accepted for proposal
-- Date: 2026-08-10
-- Spec: SPEC-000
+- 状态：提案已接受
+- 日期：2026-08-10
+- 关联规范：SPEC-000
 
-## Context
+## 背景
 
-Authority currently exists across `AGENTS.md`, rubrics, runbooks, workflows, and user instructions. That is auditable by a person but cannot produce a deterministic authorization decision for future commands, workers, and repository events.
+权限目前分散在 `AGENTS.md`、评分规则、操作手册、工作流和用户指令中。人可以审计这些文字，但未来命令、工作进程和仓库事件无法据此作出确定性的授权判断。
 
-## Decision
+## 决策
 
-Use a versioned YAML constitution with a small exact-match policy engine. Actors, actions, resource classes, and conditions are enumerated. Missing vocabulary and missing conditions deny. Explicit deny rules override allow rules. Only `human_maintainer` can receive an allow decision for merge or production activation.
+采用带版本的 YAML 权限章程，并配套小型精确匹配规则引擎。参与者、操作、资源类别和条件均显式列举；缺少词汇或条件时一律拒绝；显式拒绝优先于允许。只有 `human_maintainer` 可以获准合并或启用生产环境。
 
-The generated Markdown view is derived from the same policy. `effective_commit: "$SELF"` identifies the commit containing the constitution without introducing an impossible self-referential Git hash. Runtime consumers pin the file SHA-256.
+生成的 Markdown 视图由同一份规则派生。`effective_commit: "$SELF"` 表示包含章程的提交，避免无法实现的自引用 Git 哈希。运行时按文件 SHA-256 固定版本。
 
-## Alternatives considered
+## 考虑过的替代方案
 
-- Keep prose as the only authority. Rejected because command-time enforcement and exhaustive tests would be impossible.
-- Embed policy in Python conditionals. Rejected because authority changes would be difficult to review as a coherent matrix.
-- Adopt a general policy service now. Deferred because the current repository needs deterministic local checks, not a hosted dependency.
-- Infer intent from branch names, prompts, or role labels. Rejected because those are claims, not authenticated authority.
+- 只用自然语言规定权限：拒绝，因为无法在命令执行时强制检查，也无法穷尽测试。
+- 把规则写成 Python 条件分支：拒绝，因为权限变化难以作为完整矩阵审查。
+- 立即接入通用权限服务：暂缓，因为仓库目前只需要确定性的本地检查。
+- 从分支名、提示词或角色标签推断授权：拒绝，因为这些只是自述，并非经过认证的权限凭据。
 
-## Consequences
+## 后果
 
-- Every future privileged interface must call the policy evaluator or document why it is read-only.
-- Policy changes modify a protected surface and require human review and merge.
-- The initial engine intentionally supports only exact conditions. New operators require a constitution schema change and tests.
-- Identity authentication and external enforcement remain adapter responsibilities; this layer decides authority after a trusted actor class is supplied.
-- A later GitHub lifecycle spec must evaluate protected changes under the prior effective policy. A policy PR cannot establish its own external branch protection or satisfy its own human review requirement.
-- Policy-decision persistence will use the immutable event journal in SPEC-004. Until that lands, `--decision` provides the normalized record but the pure evaluator performs no hidden write.
+- 每个未来的特权接口都必须调用规则评估器，或说明为何它只读。
+- 权限变更属于受保护内容，必须经过人工审查和合并。
+- 初版只支持精确条件；新增运算符必须同时修改章程数据结构并补充测试。
+- 身份认证和外部强制执行由适配层负责；本层在收到可信参与者类别后判断权限。
+- 后续 GitHub 生命周期规范应按变更前生效的权限检查受保护改动。权限提案不能自行建立分支保护，也不能满足自身的人工审查要求。
+- 权限决策将由 SPEC-004 的不可变事件日志保存。在此之前，`--decision` 只输出规范化记录，纯评估器不会暗中写入文件。
 
-## Verification
+## 验证
 
-CI validates the policy, decision fixtures, deny-overrides behavior, digest pinning, path classification, and the full actor/action/resource cross-product. A generated authority table is checked byte-for-byte.
+持续集成检查权限规则、决策样例、拒绝优先级、摘要固定、路径分类，以及所有参与者、操作和资源的组合。生成的权限表逐字节核对。

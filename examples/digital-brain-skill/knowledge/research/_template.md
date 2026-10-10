@@ -1,79 +1,62 @@
-# Research: [TOPIC]
+# 研究主题：[主题]
 
-## Metadata
+## 元数据
+
 ```yaml
-created: "[DATE]"
-updated: "[DATE]"
+created: "[日期]"
+updated: "[日期]"
 status: "exploring|synthesizing|complete"
-related_pillars: ["[pillar1]", "[pillar2]"]
+related_pillars: ["[支柱一]", "[支柱二]"]
 content_potential: "high|medium|low"
 ```
 
----
+## 研究问题
 
-## Research Question
-<!-- What are you trying to understand? -->
-```
-[PLACEHOLDER: The core question driving this research]
+```text
+[填写本次研究要回答的核心问题]
 ```
 
-## Key Findings
+## 关键发现
 
-### Finding 1: [Title]
-```
-[PLACEHOLDER: What you learned]
+### 发现一：[标题]
 
-Source: [URL or reference]
-Confidence: high|medium|low
-```
-
-### Finding 2: [Title]
-```
-[PLACEHOLDER]
-
-Source: [URL or reference]
-Confidence: high|medium|low
+```text
+[记录发现内容]
+来源：[网址或引用]
+置信度：high|medium|low
 ```
 
----
+### 发现二：[标题]
 
-## Synthesis
-<!-- Your interpretation and conclusions -->
+```text
+[记录发现内容]
+来源：[网址或引用]
+置信度：high|medium|low
 ```
-[PLACEHOLDER: What does this all mean? What's your take?]
+
+## 综合结论
+
+```text
+[这些发现意味着什么？你的判断是什么？]
 ```
 
----
+## 可转化的内容创意
 
-## Content Ideas
-<!-- How can this research become content? -->
+- [ ] 串文创意：[填写]
+- [ ] 帖子创意：[填写]
+- [ ] 深入文章：[填写]
 
-- [ ] **Thread idea**: [PLACEHOLDER]
-- [ ] **Post idea**: [PLACEHOLDER]
-- [ ] **Deep dive**: [PLACEHOLDER]
+## 相关资料
 
----
+- [资料标题](网址)
+- [资料标题](网址)
 
-## Related Resources
-<!-- Links to bookmarks.jsonl entries or external sources -->
+## 未解决问题
 
-- [PLACEHOLDER: Resource title](url)
-- [PLACEHOLDER: Resource title](url)
+- [尚不清楚的问题]
 
----
+## 行动项
 
-## Open Questions
-<!-- What you still don't know -->
+- [ ] [下一步]
 
-- [PLACEHOLDER]
-- [PLACEHOLDER]
-
----
-
-## Action Items
-- [ ] [PLACEHOLDER: Next step]
-- [ ] [PLACEHOLDER]
-
----
-
-*Research notes are living documents. Update as you learn more.*
+研究笔记会持续更新；获得新信息后及时修订。

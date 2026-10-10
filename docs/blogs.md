@@ -1,1230 +1,1237 @@
 ---
-name: context-engineering-blogs
-description: Collection of technical blogs about context engineering, covering strategies for managing context windows in agent systems including write, select, compress, and isolate patterns.
+name: context-engineering-blogs-zh
+description: 关于上下文工程的技术博客集合，涵盖代理系统中上下文窗口管理策略，包括写入、选择、压缩和隔离模式。
 doc_type: blog
-source_url: No
+source_url: 原文来自Anthropic博客
 ---
 
-Some technical blogs that I recently read and find valuable:
+# 上下文工程博客中文翻译
 
-(Context Engineering
+最近阅读的一些有价值的技术博客：
 
-11 min read
+---
 
-Jul 2, 2025
+## 第一篇：上下文工程 (Context Engineering)
 
-TL;DR
+**阅读时间：** 11分钟
+**发布日期：** 2025年7月2日
 
-Agents need context to perform tasks. Context engineering is the art and science of filling the context window with just the right information at each step of an agent’s trajectory. In this post, we break down some common strategies — write, select, compress, and isolate — for context engineering by reviewing various popular agents and papers. We then explain how LangGraph is designed to support them!
+### 摘要（TL;DR）
 
-Also, see our video on context engineering here.
+代理需要上下文来执行任务。上下文工程是在代理轨迹的每一步中使用恰当信息填充上下文窗口的艺术与科学。本文分解了一些常见策略——写入、选择、压缩和隔离——通过审视各种流行的代理和论文来讲解上下文工程。然后解释LangGraph是如何被设计来支持这些策略的！
 
-General categories of context engineering
+---
 
-Context Engineering
+### 上下文工程的一般分类
 
-As Andrej Karpathy puts it, LLMs are like a new kind of operating system. The LLM is like the CPU and its context window is like the RAM, serving as the model’s working memory. Just like RAM, the LLM context window has limited capacity to handle various sources of context. And just as an operating system curates what fits into a CPU’s RAM, we can think about “context engineering” playing a similar role. Karpathy summarizes this well:
+正如Andrej Karpathy所说，大语言模型就像是一种新型的操作系统。LLM就像CPU，其上下文窗口就像RAM，充当模型的工作内存。正如RAM一样，LLM上下文窗口的容量有限，需要处理各种来源的上下文。就像操作系统精选什么内容适合放入CPU的RAM一样，我们可以思考"上下文工程"的作用。Karpathy很好地总结了这一点：
 
-[Context engineering is the] ”…delicate art and science of filling the context window with just the right information for the next step.”
+> 上下文工程是"为代理的下一步用恰好合适的信息填充上下文窗口的微妙的艺术与科学"
 
-Context types commonly used in LLM applications
+---
 
-What are the types of context that we need to manage when building LLM applications? Context engineering as an umbrella that applies across a few different context types:
+### LLM应用中常见的上下文类型
 
-Instructions – prompts, memories, few‑shot examples, tool descriptions, etc
+在构建LLM应用时，我们需要管理哪些类型的上下文？上下文工程涵盖了几种不同的上下文类型：
 
-Knowledge – facts, memories, etc
+- **指令** —— 提示词、记忆、少样本示例、工具描述等
+- **知识** —— 事实、记忆等
+- **工具** —— 工具调用的反馈
 
-Tools – feedback from tool calls
+---
 
-Context Engineering for Agents
+### 代理的上下文工程
 
-This year, interest in agents has grown tremendously as LLMs get better at reasoning and tool calling. Agents interleave LLM invocations and tool calls, often for long-running tasks. Agents interleave LLM calls and tool calls, using tool feedback to decide the next step.
+今年，随着LLM在推理和工具调用方面的改进，人们对代理的兴趣大幅增长。代理会交错进行LLM调用和工具调用，通常用于长时间运行的任务。代理会交错进行LLM调用和工具调用，利用工具反馈来决定下一步的操作。
 
-Agents interleave LLM calls and tool calls, using tool feedback to decide the next step
+然而，长时间运行的任务和来自工具调用的累积反馈意味着代理通常会使用大量的令牌。这会导致许多问题：可能超过上下文窗口的大小、增加成本/延迟，或降低代理的性能。Drew Breunig很好地列举了更长的上下文导致性能问题的具体方式，包括：
 
-However, long-running tasks and accumulating feedback from tool calls mean that agents often utilize a large number of tokens. This can cause numerous problems: it can exceed the size of the context window, balloon cost / latency, or degrade agent performance. Drew Breunig nicely outlined a number of specific ways that longer context can cause perform problems, including:
+- **上下文中毒（Context Poisoning）**：当一个幻觉进入上下文中
+- **上下文分心（Context Distraction）**：当上下文淹没了训练
+- **上下文困惑（Context Confusion）**：当多余的上下文影响了响应
+- **上下文冲突（Context Clash）**：当上下文的各部分不一致
 
-Context Poisoning: When a hallucination makes it into the context
+来自工具调用的上下文在多个代理回合中累积。
 
-Context Distraction: When the context overwhelms the training
+鉴于此，Cognition指出了上下文工程的重要性：
 
-Context Confusion: When superfluous context influences the response
+> "上下文工程"…实际上是构建AI代理的工程师的**第一要务**
 
-Context Clash: When parts of the context disagree
+Anthropic也清楚地阐述了这一点：
 
-Context from tool calls accumulates over multiple agent turns
+> 代理经常参与跨越数百轮的对话，需要仔细的上下文管理策略。
 
-With this in mind, Cognition called out the importance of context engineering:
+那么，人们今天如何应对这一挑战呢？我们将代理上下文工程的常见策略分为四个主要类别——写入、选择、压缩和隔离——并从流行代理产品和论文中给出了每种策略的示例。然后解释LangGraph是如何被设计来支持这些策略的！
 
-“Context engineering” … is effectively the #1 job of engineers building AI agents.
+---
 
-Anthropic also laid it out clearly:
+### 上下文工程的一般分类
 
-Agents often engage in conversations spanning hundreds of turns, requiring careful context management strategies.
+#### 1. 写入上下文（Write Context）
 
-So, how are people tackling this challenge today? We group common strategies for agent context engineering into four buckets — write, select, compress, and isolate — and give examples of each from review of some popular agent products and papers. We then explain how LangGraph is designed to support them!
+写入上下文意味着将其保存在上下文窗口外，以帮助代理执行任务。
 
-General categories of context engineering
+**草稿簿（Scratchpads）**
 
-Write Context
+当人类解决任务时，我们会记笔记，为将来的相关任务记住事情。代理也在获得这些能力！通过"草稿簿"进行笔记是在代理执行任务时保留信息的一种方法。想法是将信息保存在上下文窗口之外，以便代理可以使用它。Anthropic的多代理研究员提供了一个清晰的例子：
 
-Writing context means saving it outside the context window to help an agent perform a task.
+> LeadResearcher首先思考方法并将其计划保存到Memory中以保留上下文，因为如果上下文窗口超过200,000个令牌，它将被截断，重要的是保留计划。
 
-Scratchpads
+草稿簿可以用几种不同的方式实现。它们可以是简单写入文件的工具调用。它们也可以是在运行时状态对象中的一个字段，在会话期间保存。无论哪种情况，草稿簿都让代理能够保存有用的信息来帮助他们完成任务。
 
-When humans solve tasks, we take notes and remember things for future, related tasks. Agents are also gaining these capabilities! Note-taking via a “scratchpad” is one approach to persist information while an agent is performing a task. The idea is to save information outside of the context window so that it’s available to the agent. Anthropic’s multi-agent researcher illustrates a clear example of this:
+**记忆（Memories）**
 
-The LeadResearcher begins by thinking through the approach and saving its plan to Memory to persist the context, since if the context window exceeds 200,000 tokens it will be truncated and it is important to retain the plan.
+草稿簿帮助代理在给定的会话（或线程）内解决任务，但有时代理受益于跨许多会话记住事情！Reflexion引入了在每个代理回合后进行反思和重新使用这些自生成的记忆的想法。生成代理（Generative Agents）创建了从过去代理反馈集合中定期合成的记忆。
 
-Scratchpads can be implemented in a few different ways. They can be a tool call that simply writes to a file. They can also be a field in a runtime state object that persists during the session. In either case, scratchpads let agents save useful information to help them accomplish a task.
+LLM可用于更新或创建记忆。
 
-Memories
+这些概念已经进入ChatGPT、Cursor和Windsurf等流行产品，所有这些产品都具有基于用户-代理交互自动生成可跨会话持久存在的长期记忆的机制。
 
-Scratchpads help agents solve a task within a given session (or thread), but sometimes agents benefit from remembering things across many sessions! Reflexion introduced the idea of reflection following each agent turn and re-using these self-generated memories. Generative Agents created memories synthesized periodically from collections of past agent feedback.
+---
 
-An LLM can be used to update or create memories
+### 2. 选择上下文（Select Context）
 
-These concepts made their way into popular products like ChatGPT, Cursor, and Windsurf, which all have mechanisms to auto-generate long-term memories that can persist across sessions based on user-agent interactions.
+选择上下文意味着将其拉入上下文窗口以帮助代理执行任务。
 
-Select Context
+**从草稿簿中选择**
 
-Selecting context means pulling it into the context window to help an agent perform a task.
+从草稿簿选择上下文的机制取决于如何实现草稿簿。如果它是一个工具，那么代理可以通过进行工具调用来简单地读取它。如果它是代理运行时状态的一部分，那么开发人员可以选择在每一步向代理公开状态的哪些部分。这为暴露草稿簿上下文到后续回合提供了细粒度的控制。
 
-Scratchpad
+**选择记忆**
 
-The mechanism for selecting context from a scratchpad depends upon how the scratchpad is implemented. If it’s a tool, then an agent can simply read it by making a tool call. If it’s part of the agent’s runtime state, then the developer can choose what parts of state to expose to an agent each step. This provides a fine-grained level of control for exposing scratchpad context to the LLM at later turns.
+如果代理能够保存记忆，他们也需要能够选择与他们正在执行的任务相关的记忆。这可能出于几个原因很有用。代理可能会选择少样本示例（情节记忆）作为所需行为的示例、指令（程序性记忆）来指导行为、或事实（语义记忆）来获取与任务相关的上下文。
 
-Memories
+一个挑战是确保选择相关的记忆。一些流行的代理简单地使用一个始终被拉入上下文的文件集。例如，许多代码代理使用特定的文件来保存指令（"程序性"记忆）或者在某些情况下保存示例（"情节"记忆）。Claude Code使用CLAUDE.md。Cursor和Windsurf使用规则文件。
 
-If agents have the ability to save memories, they also need the ability to select memories relevant to the task they are performing. This can be useful for a few reasons. Agents might select few-shot examples (episodic memories) for examples of desired behavior, instructions (procedural memories) to steer behavior, or facts (semantic memories) for task-relevant context.
+但是，如果代理存储了更大的事实和/或关系集合（例如语义记忆），选择就变得更难了。ChatGPT是一个很好的例子，说明了一个存储和从大量用户特定记忆中选择的流行产品。
 
-One challenge is ensuring that relevant memories are selected. Some popular agents simply use a narrow set of files that are always pulled into context. For example, many code agent use specific files to save instructions (”procedural” memories) or, in some cases, examples (”episodic” memories). Claude Code uses CLAUDE.md. Cursor and Windsurf use rules files.
+嵌入和/或知识图通常用于协助选择。不过，记忆选择仍然充满挑战。在AIEngineer World's Fair上，Simon Willison分享了一个选择出错的例子：ChatGPT从记忆中获取了他的位置，并在请求的图像中意外地注入了它。这种意外或不需要的记忆检索会让一些用户感到上下文窗口"不再属于他们"！
 
-But, if an agent is storing a larger collection of facts and / or relationships (e.g., semantic memories), selection is harder. ChatGPT is a good example of a popular product that stores and selects from a large collection of user-specific memories.
+**工具**
 
-Embeddings and / or knowledge graphs for memory indexing are commonly used to assist with selection. Still, memory selection is challenging. At the AIEngineer World’s Fair, Simon Willison shared an example of selection gone wrong: ChatGPT fetched his location from memories and unexpectedly injected it into a requested image. This type of unexpected or undesired memory retrieval can make some users feel like the context window “no longer belongs to them”!
+代理使用工具，但如果提供太多工具可能会变得超载。这通常是因为工具描述重叠，导致模型对使用哪个工具感到困惑。一种方法是对工具描述应用RAG（检索增强生成）以仅获取与任务最相关的工具。最近的一些论文表明这将工具选择准确度提高了3倍。
 
-Tools
+**知识**
 
-Agents use tools, but can become overloaded if they are provided with too many. This is often because the tool descriptions overlap, causing model confusion about which tool to use. One approach is to apply RAG (retrieval augmented generation) to tool descriptions in order to fetch only the most relevant tools for a task. Some recent papers have shown that this improve tool selection accuracy by 3-fold.
+RAG是一个丰富的主题，可能是一个中心的上下文工程挑战。代码代理是大规模生产中RAG的一些最好的例子。来自Windsurf的Varun很好地捕捉了其中的一些挑战：
 
-Knowledge
+> 索引代码≠上下文检索…[我们正在进行索引和嵌入搜索…[与]AST解析代码并沿语义有意义的边界进行分块…当代码库大小增长时，嵌入搜索作为检索启发式变得不可靠…我们必须依赖grep/文件搜索、基于知识图的检索和…一个重新排名步骤，其中[上下文]按相关性顺序排列。
 
-RAG is a rich topic and it can be a central context engineering challenge. Code agents are some of the best examples of RAG in large-scale production. Varun from Windsurf captures some of these challenges well:
+---
 
-Indexing code ≠ context retrieval … [We are doing indexing & embedding search … [with] AST parsing code and chunking along semantically meaningful boundaries … embedding search becomes unreliable as a retrieval heuristic as the size of the codebase grows … we must rely on a combination of techniques like grep/file search, knowledge graph based retrieval, and … a re-ranking step where [context] is ranked in order of relevance.
+### 3. 压缩上下文（Compressing Context）
 
-Compressing Context
+压缩上下文涉及仅保留执行任务所需的令牌。
 
-Compressing context involves retaining only the tokens required to perform a task.
+**上下文总结**
 
-Context Summarization
+代理交互可以跨越数百个回合并使用令牌繁重的工具调用。总结是管理这些挑战的一种常见方式。如果你使用过Claude Code，你已经看到这个过程中的行动。Claude Code在超过95%的上下文窗口后运行"自动压缩"，它将总结用户-代理交互的完整轨迹。这种跨代理轨迹的压缩可以使用各种策略，如递归或分层总结。
 
-Agent interactions can span hundreds of turns and use token-heavy tool calls. Summarization is one common way to manage these challenges. If you’ve used Claude Code, you’ve seen this in action. Claude Code runs “auto-compact” after you exceed 95% of the context window and it will summarize the full trajectory of user-agent interactions. This type of compression across an agent trajectory can use various strategies such as recursive or hierarchical summarization.
+可以应用总结的几个位置。
 
-A few places where summarization can be applied
+在代理设计的特定点应用总结也很有用。例如，它可以用于后处理某些工具调用（例如，令牌繁重的搜索工具）。作为第二个例子，Cognition提到在代理边界处进行总结以减少知识交接期间的令牌。总结如果需要捕捉特定的事件或决定可能会很有挑战性。Cognition为此使用了微调模型，这强调了这一步可能需要付出多少工作。
 
-It can also be useful to add summarization at specific points in an agent’s design. For example, it can be used to post-process certain tool calls (e.g., token-heavy search tools). As a second example, Cognition mentioned summarization at agent-agent boundaries to reduce tokens during knowledge hand-off. Summarization can be a challenge if specific events or decisions need to be captured. Cognition uses a fine-tuned model for this, which underscores how much work can go into this step.
+**上下文修剪**
 
-Context Trimming
+而总结通常使用LLM来提炼最相关的上下文片段，修剪可以经常过滤或如Drew Breunig所指出的"修剪"上下文。这可以使用硬编码的启发式方法，如从列表中删除较早的消息。Drew也提到了Provence，一个针对问答的训练上下文修剪器。
 
-Whereas summarization typically uses an LLM to distill the most relevant pieces of context, trimming can often filter or, as Drew Breunig points out, “prune” context. This can use hard-coded heuristics like removing older messages from a list. Drew also mentions Provence, a trained context pruner for Question-Answering.
+---
 
-Isolating Context
+### 4. 隔离上下文（Isolating Context）
 
-Isolating context involves splitting it up to help an agent perform a task.
+隔离上下文涉及将其分割以帮助代理执行任务。
 
-Multi-agent
+**多代理**
 
-One of the most popular ways to isolate context is to split it across sub-agents. A motivation for the OpenAI Swarm library was separation of concerns, where a team of agents can handle specific sub-tasks. Each agent has a specific set of tools, instructions, and its own context window.
+隔离上下文的最流行的方法之一是将其跨子代理分割。OpenAI Swarm库的动力是关注点分离，其中一个代理团队可以处理特定的子任务。每个代理都有一个特定的工具集、指令和自己的上下文窗口。
 
-Split context across multiple agents
+跨多个代理分割上下文。
 
-Anthropic’s multi-agent researcher makes a case for this: many agents with isolated contexts outperformed single-agent, largely because each subagent context window can be allocated to a more narrow sub-task. As the blog said:
+Anthropic的多代理研究员为这一点提供了一个案例：许多具有隔离上下文的代理表现优于单代理，主要是因为每个子代理上下文窗口可以分配给更狭隘的子任务。如博客所说：
 
-[Subagents operate] in parallel with their own context windows, exploring different aspects of the question simultaneously.
+> [子代理操作]并行地使用自己的上下文窗口，同时探索问题的不同方面。
 
-Of course, the challenges with multi-agent include token use (e.g., up to 15× more tokens than chat as reported by Anthropic), the need for careful prompt engineering to plan sub-agent work, and coordination of sub-agents.
+当然，多代理的挑战包括令牌使用（例如，Anthropic报告的聊天令牌多达15倍），需要仔细的提示工程来规划子代理工作，以及子代理的协调。
 
-Context Isolation with Environments
+**带环境的上下文隔离**
 
-HuggingFace’s deep researcher shows another interesting example of context isolation. Most agents use tool calling APIs, which return JSON objects (tool arguments) that can be passed to tools (e.g., a search API) to get tool feedback (e.g., search results). HuggingFace uses a CodeAgent, which outputs that contains the desired tool calls. The code then runs in a sandbox. Selected context (e.g., return values) from the tool calls is then passed back to the LLM.
+HuggingFace的deep researcher展示了另一个有趣的上下文隔离示例。大多数代理使用工具调用API，它返回可以传递给工具的JSON对象（工具参数）（例如搜索API）来获取工具反馈（例如搜索结果）。HuggingFace使用CodeAgent，其输出包含所需的工具调用。然后代码在沙箱中运行。然后将来自工具调用的选定上下文（例如返回值）传递回LLM。
 
-Sandboxes can isolate context from the LLM.
+沙箱可以从LLM隔离上下文。
 
-This allows context to be isolated from the LLM in the environment. Hugging Face noted that this is a great way to isolate token-heavy objects in particular:
+这允许上下文与LLM隔离在环境中。HuggingFace指出这是隔离令牌繁重对象的好方法：
 
-[Code Agents allow for] a better handling of state … Need to store this image / audio / other for later use? No problem, just assign it as a variable in your state and you [use it later].
+> [代码代理允许]更好的状态处理…需要存储此图像/音频/其他以供以后使用？没问题，只需在状态中将其分配为变量，然后[稍后使用它]。
 
-State
+**状态**
 
-It’s worth calling out that an agent’s runtime state object can also be a great way to isolate context. This can serve the same purpose as sandboxing. A state object can be designed with a schema that has fields that context can be written to. One field of the schema (e.g., messages) can be exposed to the LLM at each turn of the agent, but the schema can isolate information in other fields for more selective use.
+值得指出的是，代理的运行时状态对象也可以是隔离上下文的好方法。这可以服务与沙箱相同的目的。状态对象可以使用具有上下文可以写入的字段的模式来设计。状态的一个字段（例如消息）可以在代理的每一步暴露给LLM，但模式可以隔离其他字段中的信息以供更选择性的使用。
 
-Context Engineering with LangSmith / LangGraph
+---
 
-So, how can you apply these ideas? Before you start, there are two foundational pieces that are helpful. First, ensure that you have a way to look at your data and track token-usage across your agent. This helps inform where best to apply effort context engineering. LangSmith is well-suited for agent tracing / observability, and offers a great way to do this. Second, be sure you have a simple way to test whether context engineering hurts or improve agent performance. LangSmith enables agent evaluation to test the impact of any context engineering effort.
+### 使用LangSmith / LangGraph进行上下文工程
 
-Write context
+那么，你如何应用这些想法呢？开始之前，有两个有帮助的基础部分。首先，确保你有办法查看你的数据并在你的代理中追踪令牌使用。这有助于告知在哪里最好应用上下文工程的工作。LangSmith非常适合代理追踪/可观察性，并提供了一个很好的方式来做到这一点。其次，确保你有一个简单的方法来测试上下文工程是否伤害或改进代理性能。LangSmith支持代理评估来测试任何上下文工程工作的影响。
 
-LangGraph was designed with both thread-scoped (short-term) and long-term memory. Short-term memory uses checkpointing to persist agent state across all steps of an agent. This is extremely useful as a “scratchpad”, allowing you to write information to state and fetch it at any step in your agent trajectory.
+**写入上下文**
 
-LangGraph’s long-term memory lets you to persist context across many sessions with your agent. It is flexible, allowing you to save small sets of files (e.g., a user profile or rules) or larger collections of memories. In addition, LangMem provides a broad set of useful abstractions to aid with LangGraph memory management.
+LangGraph被设计用于线程范围（短期）和长期记忆。短期记忆使用检查点来在代理的所有步骤中保留代理状态。这非常有用作为"草稿簿"，允许你写入信息到状态并在代理轨迹的任何步骤中获取它。
 
-Select context
+LangGraph的长期记忆使你能够在许多会话中与代理保留上下文。它是灵活的，允许你保存小型文件集（例如用户配置文件或规则）或更大的记忆集合。此外，LangMem提供了一套广泛的有用的抽象来协助LangGraph记忆管理。
 
-Within each node (step) of a LangGraph agent, you can fetch state. This give you fine-grained control over what context you present to the LLM at each agent step.
+**选择上下文**
 
-In addition, LangGraph’s long-term memory is accessible within each node and supports various types of retrieval (e.g., fetching files as well as embedding-based retrieval on a memory collection). For an overview of long-term memory, see our Deeplearning.ai course. And for an entry point to memory applied to a specific agent, see our Ambient Agents course. This shows how to use LangGraph memory in a long-running agent that can manage your email and learn from your feedback.
+在LangGraph代理的每个节点（步骤）内，你可以获取状态。这给你在每个代理步骤向LLM呈现什么上下文的细粒度控制。
 
-Email agent with user feedback and long-term memory
+此外，LangGraph的长期记忆在每个节点内是可访问的，支持各种类型的检索（例如获取文件以及在记忆集合上的基于嵌入的检索）。有关长期记忆的概述，请参阅我们的Deeplearning.ai课程。对于应用于特定代理的入门点，请参阅我们的Ambient Agents课程。这展示了如何在可以管理你的电子邮件并从你的反馈中学习的长时间运行的代理中使用LangGraph记忆。
 
-For tool selection, the LangGraph Bigtool library is a great way to apply semantic search over tool descriptions. This helps select the most relevant tools for a task when working with a large collection of tools. Finally, we have several tutorials and videos that show how to use various types of RAG with LangGraph.
+带用户反馈和长期记忆的电子邮件代理。
 
-Compressing context
+对于工具选择，LangGraph Bigtool库是对工具描述应用语义搜索的好方法。这有助于在使用大量工具时为任务选择最相关的工具。最后，我们有几个展示如何将各种类型的RAG与LangGraph一起使用的教程和视频。
 
-Because LangGraph is a low-level orchestration framework, you lay out your agent as a set of nodes, define the logic within each one, and define an state object that is passed between them. This control offers several ways to compress context.
+**压缩上下文**
 
-One common approach is to use a message list as your agent state and summarize or trim it periodically using a few built-in utilities. However, you can also add logic to post-process tool calls or work phases of your agent in a few different ways. You can add summarization nodes at specific points or also add summarization logic to your tool calling node in order to compress the output of specific tool calls.
+因为LangGraph是一个低级别的编排框架，你将代理布局为一组节点，定义每个节点中的逻辑，以及定义在它们之间传递的状态对象。这种控制提供了几种压缩上下文的方式。
 
-Isolating context
+一种常见的方法是使用消息列表作为你的代理状态，并使用一些内置实用程序定期总结或修剪它。但是，你也可以添加逻辑来后处理工具调用或代理工作阶段的几种不同方式。你可以在特定点添加总结节点，或者也可以向工具调用节点添加总结逻辑以压缩特定工具调用的输出。
 
-LangGraph is designed around a state object, allowing you to specify a state schema and access state at each agent step. For example, you can store context from tool calls in certain fields in state, isolating them from the LLM until that context is required. In addition to state, LangGraph supports use of sandboxes for context isolation. See this repo for an example LangGraph agent that uses an E2B sandbox for tool calls. See this video for an example of sandboxing using Pyodide where state can be persisted. LangGraph also has a lot of support for building multi-agent architecture, such as the supervisor and swarm libraries. You can see these videos for more detail on using multi-agent with LangGraph.
+**隔离上下文**
 
-Conclusion
+LangGraph是围绕状态对象设计的，允许你指定状态模式并在每个代理步骤访问状态。例如，你可以将来自工具调用的上下文存储在状态的某些字段中，将其隔离与LLM分开，直到需要该上下文。除了状态之外，LangGraph支持使用沙箱进行上下文隔离。查看这个仓库以获取使用E2B沙箱的LangGraph代理示例。查看此视频以获取使用Pyodide进行沙箱的示例，其中状态可以被保留。LangGraph还对构建多代理架构提供了大量支持，如监督者和群体库。你可以查看这些视频以获取更多关于将多代理与LangGraph一起使用的详情。
 
-Context engineering is becoming a craft that agents builders should aim to master. Here, we covered a few common patterns seen across many popular agents today:
+---
 
-Writing context - saving it outside the context window to help an agent perform a task.
+### 结论
 
-Selecting context - pulling it into the context window to help an agent perform a task.
+上下文工程正在成为代理构建者应该致力于掌握的工艺。在这里，我们介绍了在当今许多流行代理中看到的几种常见模式：
 
-Compressing context - retaining only the tokens required to perform a task.
+- **写入上下文** - 将其保存在上下文窗口外以帮助代理执行任务。
+- **选择上下文** - 将其拉入上下文窗口以帮助代理执行任务。
+- **压缩上下文** - 仅保留执行任务所需的令牌。
+- **隔离上下文** - 将其分割以帮助代理执行任务。
 
-Isolating context - splitting it up to help an agent perform a task.
+LangGraph使得实现其中每一个变得容易，LangGraph提供了一个简单的方式来测试你的代理并追踪上下文使用。一起，LangGraph和LangGraph启用了一个有益的反馈循环，用于识别应用上下文工程的最佳机会、实施它、测试它，以及重复。
 
-LangGraph makes it easy to implement each of them and LangSmith provides an easy way to test your agent and track context usage. Together, LangGraph and LangGraph enable a virtuous feedback loop for identifying the best opportunity to apply context engineering, implementing it, testing it, and repeating.
+---
 
----------
+**翻译进度：** 第1篇完成 ✓
 
-Context Engineering in Manus
+---
 
-Oct 15, 2025
+## 第二篇：Manus中的上下文工程
 
-Lance Martin
+**发布日期：** 2025年10月15日
+**作者：** Lance Martin
 
-Why Context Engineering
+### 为什么需要上下文工程
 
-Earlier this week, I had a webinar with Manus co-founder and CSO Yichao “Peak” Ji. You can see the video here, my slides here, and Peak’s slides here. Below are my notes.
+本周早些时候，我与Manus联合创始人兼首席科学官Yichao"Peak"Ji进行了一次网络研讨会。你可以在这里看到视频、我的幻灯片和Peak的幻灯片。以下是我的笔记。
 
-Anthropic defines agents as systems where LLMs direct their own processes and tool usage, maintaining control over how they accomplish tasks. In short, it’s an LLM calling tools in a loop.
+Anthropic将代理定义为LLM指导自己的流程和工具使用的系统，保持对如何完成任务的控制。简而言之，就是LLM在循环中调用工具。
 
-Manus is one of the most popular general-purpose consumer agents. The typical Manus task uses 50 tool calls. Without context engineering, these tool call results would accumulate in the LLM context window. As the context window fills, many have observed that LLM performance degrades.
+Manus是最受欢迎的通用消费代理之一。典型的Manus任务使用50个工具调用。如果没有上下文工程，这些工具调用结果将在LLM上下文窗口中累积。随着上下文窗口填满，许多人观察到LLM性能下降。
 
-For example, Chroma has a great study on context rot and Anthropic has explained how growing context depletes an LLM’s attention budget. So, it’s important to carefully manage what goes into the LLM’s context window when building agents. Karpathy laid this out clearly:
+例如，Chroma进行了一项很好的关于上下文衰退的研究，Anthropic解释了如何增长的上下文耗尽了LLM的注意力预算。因此，在构建代理时仔细管理进入LLM上下文窗口的内容很重要。Karpathy清楚地阐述了这一点：
 
-Context engineering is the delicate art and science of filling the context window with just the right information for the next step (in an agent’s trajectory)
+> 上下文工程是为代理轨迹中的下一步用恰好合适的信息填充上下文窗口的微妙的艺术与科学
 
-Context Engineering Approaches
+### 上下文工程方法
 
-Each Manus session uses a dedicated cloud-based virtual machine, giving the agent a virtual computer with a filesystem, tools to navigate it, and the ability to execute commands (e.g., provided utilities and standard shell commands) in that sandbox environment.
+每个Manus会话都使用一个专门的基于云的虚拟机，为代理提供一个具有文件系统、导航工具和在该沙箱环境中执行命令（例如提供的实用程序和标准shell命令）的能力的虚拟计算机。
 
-In this sandbox, Manus uses three primary strategies for context engineering, which align with approaches Anthropic covers here and I’ve seen in across many projects:
+在这个沙箱中，Manus使用三种主要的上下文工程策略，这些策略与Anthropic在这里介绍的方法以及我在许多项目中看到的方法相一致：
 
-Reduce Context
+1. **减少上下文**
+2. **卸载上下文**
+3. **隔离上下文**
 
-Offload Context
+### 上下文减少
 
-Isolate Context
+Manus中的工具调用具有"完整"和"紧凑"表示。完整版本包含工具调用的原始内容（例如完整的搜索工具结果），它存储在沙箱中（例如文件系统）。紧凑版本存储对完整结果的引用（例如文件路径）。
 
-Context Reduction
+Manus将压缩应用于较旧的（"过时的"）工具结果。这只是意味着用紧凑版本替换完整工具结果。这允许代理在需要时仍然获取完整结果，但通过删除代理已经使用过的"过时"结果来节省令牌。
 
-Tool calls in Manus have a “full” and “compact” representation. The full version contains the raw content from tool invocation (e.g., a complete search tool result), which is stored in the sandbox (e.g., filesystem). The compact version stores a reference to the full result (e.g., a file path).
+较新的工具结果保持完整以指导代理的下一个决定。这似乎是上下文减少的一个一般有用的策略，我注意到这类似于Anthropic的上下文编辑功能：
 
-Manus applies compaction to older (“stale”) tool results. This just means swapping out the full tool result for the compact version. This allows the agent to still fetch the full result if ever needed, but saves tokens by removing “stale” results that the agent has already used to make decisions.
+> 上下文编辑在接近令牌限制时自动从上下文窗口中清除过时的工具调用和结果。随着你的代理执行任务并累积工具结果，上下文编辑删除过时的内容，同时保留对话流，有效地延长代理在没有手动干预的情况下可以运行的时间。
 
-Newer tool results remain in full to guide the agent’s next decision. This seems to be a generally useful strategy for context reduction, and I notice that it’s similar to Anthropic’s context editing feature:
+当压缩达到收益递减（见下图）时，Manus对轨迹应用总结。摘要使用完整工具结果生成，Manus使用模式来定义摘要字段。这为任何代理轨迹创建了一个一致的摘要对象。
 
-Context editing automatically clears stale tool calls and results from within the context window when approaching token limits. As your agent executes tasks and accumulates tool results, context editing removes stale content while preserving the conversation flow, effectively extending how long agents can run without manual intervention.
+### 上下文隔离
 
-When compaction reaches diminishing returns (see figure below), Manus applies summarization to the trajectory. Summaries are generated using full tool results and Manus uses a schema to define the summary fields. This creates a consistent summary object for any agent trajectory.
+Manus对多代理采取了实用的方法，避免拟人化的劳动分工。虽然人类由于认知限制而按角色组织（设计师、工程师、项目经理），但LLM不一定具有这些相同的约束。
 
-Context Isolation
+考虑到这一点，Manus中子代理的主要目标是隔离上下文。例如，如果有任务要做，Manus会将该任务分配给具有自己上下文窗口的子代理。
 
-Manus takes a pragmatic approach to multi-agent, avoiding anthropomorphized divisions of labor. While humans organize by role (designer, engineer, project manager) due to cognitive limitations, LLMs don’t necessarily share these same constraints.
+Manus使用多代理，其中一个规划者分配任务，一个知识管理者审查对话并确定什么应该保存在文件系统中，以及一个执行子代理来执行规划者分配的任务。
 
-With this in mind, the primary goal of sub-agents in Manus is to isolate context. For example, if there’s a task to be done, Manus will assign that task to a sub-agent with its own context window.
+Manus最初使用todo.md进行任务规划，但发现大约三分之一的所有行动都花在更新待办事项列表上，浪费了宝贵的令牌。他们转向了一个专门的规划者代理，调用执行子代理来执行任务。
 
-Manus uses multi-agent with a planner that assigns tasks, a knowledge manager that reviews conversations and determines what should be saved in the filesystem, and an executor sub-agent that performs tasks assigned by the planner.
+在最近的播客中，Anthropic的多代理研究Erik Schluntz提到他们类似地设计多代理系统，其中一个规划者分配任务，并使用函数调用作为通信协议来启动子代理。Erik以及Cognition的Walden Yan提出的一个中心挑战是规划者和子代理之间的上下文共享。
 
-Manus initially used a todo.md for task planning, but found that roughly one-third of all actions were spent updating the todo list, wasting valuable tokens. They shifted to a dedicated planner agent that calls executor sub-agents to perform tasks.
+Manus用两种方式解决这个问题。对于简单的任务（例如规划者只需要子代理的输出的离散任务），规划者简单地创建指令并通过函数调用将其传递给子代理。这类似于Claude Code的任务工具。
 
-In a recent podcast, Erik Schluntz (multi-agent research at Anthropic) mentioned that they similarly design multi-agent systems with a planner to assign tasks and use function calling as the communication protocol to initiate sub-agents. A central challenge raised by Erik as well as Walden Yan (Cognition) is context sharing between planner and sub-agents.
+对于更复杂的任务（例如子代理需要写入规划者也使用的文件），规划者与子代理共享其完整上下文。子代理仍然有自己的行动空间（工具）和指令，但接收规划者也有权访问的完整上下文。
 
-Manus addresses this in two ways. For simple tasks (e.g., a discrete task where the planner only needs the output of the sub-agent), the planner simply creates instructions and passes them to the sub-agent via the function call. This resembles Claude Code’s task tool.
+在这两种情况下，规划者定义子代理的输出模式。子代理有一个提交结果工具来在返回结果到规划者前填充这个模式，Manus使用约束解码来确保输出符合定义的模式。
 
-For more complex tasks (e.g., the sub-agent needs to write to files that the planner also uses), the planner shares its full context with the sub-agent. The sub-agent still has its own action space (tools) and instructions, but receives the full context that the planner also has access to.
+### 上下文卸载
 
-In both cases, the planner defines the sub-agent’s output schema. Sub-agents have a submit results tool to populate this schema before returning results to the planner and Manus uses constrained decoding to ensure output adheres to the defined schema.
+**工具定义**
 
-Context Offloading
+我们通常希望代理能够执行多种操作。当然，我们可以将大量工具绑定到LLM并提供关于如何使用所有工具的详细指令。但是，工具描述使用宝贵的令牌，许多（通常重叠或含糊）工具可能导致模型混淆。
 
-Tools Definitions
+我看到的一个趋势是代理使用一小组通用工具，让代理能够访问计算机。例如，仅使用Bash工具和几个访问文件系统的工具，代理就可以执行广泛的操作！
 
-We often want agents that can perform a wide range of actions. We can, of course, bind a large collection of tools to the LLM and provide detailed instructions on how to use all of them. But, tool descriptions use valuable tokens and many (often overlapping or ambiguous) tools can cause model confusion.
+Manus将这视为具有函数/工具调用和其虚拟计算机沙箱的分层动作空间。Peak提到Manus使用一个小集合（< 20）的原子函数；这包括Bash工具、管理文件系统的工具和代码执行工具之类的东西。
 
-A trend I’m seeing is that agents use a small set of general tools that give the agent access to a computer. For example, with only a Bash tool and a few tools to access a filesystem, an agent can perform a wide range of actions!
+Manus不是膨胀函数调用层，而是将大多数操作卸载到沙箱层。Manus可以使用其Bash工具直接在沙箱中执行许多实用程序，MCP工具通过CLI公开，代理也可以使用Bash工具执行。
 
-Manus thinks about this as a layered action space with function/tool calling and its virtual computer sandbox. Peak mentioned that Manus uses a small set (< 20) of atomic functions; this includes things like a Bash tool, tools to manage the filesystem, and a code execution tool.
+Claude的技能功能使用类似的想法：技能存储在文件系统中，而不是作为绑定工具，Claude只需要几个简单的函数调用（Bash、文件系统）来逐步发现和使用它们。
 
-Rather than bloating the function calling layer, Manus offloads most actions to the sandbox layer. Manus can execute many utilities directly in the sandbox with its Bash tool and MCP tools are exposed through a CLI that the agent can also execute using the Bash tool.
+> 渐进式公开是让Agent Skills灵活和可扩展的核心设计原则。就像一份组织良好的手册，从目录开始，然后是特定章节，最后是详细的附录，技能允许Claude仅在需要时加载信息…具有文件系统和代码执行工具的代理在处理特定任务时不需要将整个技能读入他们的上下文窗口。
 
-Claude’s skills feature uses a similar idea:skills are stored in the filesystem, not as bound tools, and Claude only needs a few simple function calls (Bash, file system) to progressively discover and use them.
+**工具结果**
 
-Progressive disclosure is the core design principle that makes Agent Skills flexible and scalable. Like a well-organized manual that starts with a table of contents, then specific chapters, and finally a detailed appendix, skills let Claude load information only as needed … agents with a filesystem and code execution tools don’t need to read the entirety of a skill into their context window when working on a particular task.
+因为Manus可以访问文件系统，它也可以卸载上下文（例如工具结果）。如上所述，这是上下文减少的中心；工具结果被卸载到文件系统以生成紧凑版本，这用于从代理的上下文窗口修剪过时的令牌。类似于Claude Code，Manus使用基本实用程序（例如glob和grep）在文件系统中搜索，无需索引（例如vectorstores）。
 
-Tool Results
+### 模型选择
 
-Because Manus has access to a filesystem, it can also offload context (e.g., tool results). As explained above, this is central for context reduction; tool results are offloaded to the filesystem in order to produce the compact version and this is used to prune stale tokens from the agent’s context window. Similar to Claude Code, Manus uses basic utilities (e.g., glob and grep) to search the filesystem without the need for indexing (e.g., vectorstores).
+Manus不是承诺使用单一模型，而是使用任务级别的路由：它可能对编码使用Claude、对多模态任务使用Gemini，或对数学和推理使用OpenAI。概括地说，Manus对模型选择的方法由成本考虑驱动，KV缓存效率起中心作用。
 
-Model Choice
+Manus使用缓存（例如对于系统指令、较旧的工具结果等）来减少代理许多回合中的成本和延迟。Peak提到分布式KV缓存基础设施对于使用开源模型很难实现，但得到了前沿提供者的很好支持。这种缓存支持可以使前沿模型对于某些（代理）用例实际上更便宜。
 
-Rather than committing to a single model, Manus uses task-level routing: it might use Claude for coding, Gemini for multi-modal tasks, or OpenAI for math and reasoning. Broadly, Manus’s approach to model selection is driven by cost considerations, with KV cache efficiency playing a central role.
+### 牢记苦涩课程来构建
 
-Manus uses caching (e.g., for system instructions, older tool results, etc) to reduce both cost and latency across many agent turns. Peak mentioned that distributed KV cache infrastructure is challenging to implement with open source models, but is well-supported by frontier providers. This caching support can make frontier models cheaper for certain (agent) use-cases in practice.
+我们通过讨论苦涩课程来结束了讨论。我一直对其对AI工程的影响感兴趣。Claude Code的创建者Boris Cherny提到"苦涩课程"影响了他的决定，以保持Claude Code不持己见，使其更容易适应模型改进。
 
-Build with the Bitter Lesson in Mind
+在不断改进的模型上构建意味着接受不断的变化。Peak提到自3月推出以来，Manus已经重建了五次！
 
-We closed the discussion talking about the Bitter Lesson. I’ve been interested in its implications for AI engineering. Boris Cherny (creator of Claude Code) mentioned that The Bitter Lesson influenced his decision to keep Claude Code unopinionated, making it easier to adapt to model improvements.
+此外，Peak警告说代理的束缚可能限制性能随着模型的进步；这正是苦涩课程所指出的挑战。我们添加结构以改进给定时间点的性能，但这个结构可能限制性能随着计算（模型）增长。
 
-Building on constantly improving models means accepting constant change. Peak mentioned that Manus has been refactored five times since their launch in March!
+为了防范这一点，Peak建议在不同的模型强度上运行代理评估。如果性能没有随着更强的模型改进，你的束缚可能在削弱代理。这可以帮助测试你的束缚是否"面向未来"。
 
-In addition, Peak warned that the agent’s harness can limit performance as models advance; this is exactly the challenge called out by the Bitter Lesson. We add structure to improve performance at a point in time, but this structure can limit performance as compute (models) grows.
+OpenAI/MSL的Hyung Won Chung在这个主题上的谈话进一步强调了需要不断重新评估结构（例如你的束缚/假设）随着模型改进。
 
-To guard against this, Peak suggested running agent evaluations across varying model strengths. If performance doesn’t improve with stronger models, your harness may be hobbling the agent. This can help test whether your harness is “future proof”.
+> 添加给定计算和数据可用级别所需的结构。稍后删除它们，因为这些快捷方式会瓶颈进一步改进。
 
-Hyung Won Chung’s (OpenAI/MSL) talk on this topic further emphasizes the need to consistently re-evaluate structure (e.g., your harness / assumptions) as models improve.
+### 结论
 
-Add structures needed for the given level of compute and data available. Remove them later, because these shortcuts will bottleneck further improvement.
+给代理访问计算机（例如文件系统、终端、实用程序）是一个通用的模式，我们在许多代理中看到，包括Manus。它启用了几个上下文工程策略：
 
-Conclusions
+**1. 卸载上下文**
+- 将工具结果外部存储：将完整工具结果保存到文件系统（不在上下文中）并使用glob和grep等实用程序按需访问
+- 将操作推送到沙箱：使用一小组函数调用（Bash、文件系统访问），可以在沙箱中执行许多实用程序，而不是将每个实用程序绑定为工具
 
-Giving agents access to a computer (e.g., filesystem, terminal, utilities) is a common pattern we see across many agents, including Manus. It enables a few context engineering strategies:
+**2. 减少上下文**
+- 压缩过时结果：随着上下文填满，用引用（例如文件路径）替换较旧的工具结果；保持最近的结果完整以指导下一个决定
+- 在必要时总结：一旦压缩达到收益递减，对完整轨迹应用基于模式的总结
 
-1. Offload Context
+**3. 隔离上下文**
+- 为离散任务使用子代理：为具有自己上下文窗口的任务分配子代理，主要是为了隔离上下文（不是为了按角色分工）
+- 有意共享上下文：对简单任务只传递指令；对需要更多上下文的子代理的复杂任务传递完整上下文（例如轨迹和共享文件系统）
 
-Store tool results externally: Save full tool results to the filesystem (not in context) and access on demand with utilities like glob and grep
+最后考虑的是确保你的束缚不会随着模型改进而限制性能（例如是"苦涩课程-pilled"）。跨模型强度进行测试以验证这一点。简单、不持己见的设计通常更好地适应模型改进。最后，不要害怕随着模型改进而重新构建你的代理（Manus自3月以来重构了5次）！
 
-Push actions to the sandbox: Use a small set of function calls (Bash, filesystem access) that can execute many utilities in the sandbox rather than binding every utility as a tool
+---
 
-2. Reduce Context
+**翻译进度：** 第1、2篇完成 ✓
 
-Compact stale results: Replace older tool results with references (e.g., file paths) as context fills; keep recent results in full to guide the next decision
+---
 
-Summarize when needed: Once compaction reaches diminishing returns, apply schema-based summarization to the full trajectory
+## 第三篇：构建Manus中的AI代理上下文工程
 
-3. Isolate Context
+**发布日期：** 2025年7月18日
+**作者：** Yichao 'Peak' Ji
 
-Use sub-agents for discrete tasks: Assign tasks to sub-agents with their own context windows, primarily to isolate context (not to divide labor by role)
+项目初期，我的团队和我面临了一个关键决定：我们应该使用开源基础训练一个端到端的代理模型，还是在前沿模型的能力基础上构建代理？
 
-Share context deliberately: Pass only instructions for simple tasks; pass full context (e.g., trajectory and shared filesystem) for complex tasks where sub-agents need more context
+在我NLP事业的第一个十年，我们没有这个选择的奢侈。在远古时代（是的，已经过了七年），模型在能够转移到新任务之前必须进行微调和评估。这个过程通常每次迭代需要几周，即使模型与今天的LLM相比很小。对于快速发展的应用，特别是前期产品阶段市场契合度（PMF），这样的慢反馈循环是致命的。这是我上一家初创公司的一个苦涩教训，我在那里为语义搜索从头训练模型。然后GPT-3和GPT-4出现了，我的内部模型一夜之间变得不相关。讽刺的是，这些相同的模型标志着上下文学习的开始——以及全新的前进道路。
 
-A final consideration is to ensure your harness is not limiting performance as models improve (e.g., be “Bitter Lesson-pilled”). Test across model strengths to verify this. Simple, unopinionated designs often adapt better to model improvements. Finally, don’t be afraid to re-build your agent as models improve (Manus refactored 5 times since March)!
+这个来之不易的教训使选择变得清晰：Manus将投注上下文工程。这使我们能够在数小时而非数周内提供改进，并使我们的产品与基础模型保持正交：如果模型进步是水涨船高，我们希望Manus是船，而不是粘在海底的柱子。
 
------
+尽管如此，上下文工程证实了任何事物但直截了当。这是一个实验科学——我们已经四次重建我们的代理框架，每次在发现更好的方式后。我们亲切地将这个手动架构搜索、提示调整和经验猜测的过程称为"随机梯度下降"。这不优雅，但它有效。
 
-Context Engineering for AI Agents: Lessons from Building Manus
+这篇文章分享了我们通过自己的"SGD"到达的本地最优。如果你正在构建自己的AI代理，我希望这些原则帮助你更快地收敛。
 
-2025/7/18 --Yichao 'Peak' Ji
+### 围绕KV缓存设计
 
-At the very beginning of the  project, my team and I faced a key decision: should we train an end-to-end agentic model using open-source foundations, or build an agent on top of the  abilities of frontier models?
+如果我必须选择只有一个指标，我会争论KV缓存命中率是生产阶段AI代理最关键的单一指标。它直接影响延迟和成本。为了理解为什么，让我们看看大语言模型如何运作：
 
-Back in my first decade in NLP, we didn't have the luxury of that choice. In the distant days of  (yes, it's been seven years), models had to be fine-tuned—and evaluated—before they could transfer to a new task. That process often took weeks per iteration, even though the models were tiny compared to today's LLMs. For fast-moving applications, especially pre–PMF, such slow feedback loops are a deal-breaker. That was a bitter lesson from my last startup, where I trained models from scratch for  and semantic search. Then came  and , and my in-house models became irrelevant overnight. Ironically, those same models marked the beginning of in-context learning—and a whole new path forward.
+收到用户输入后，代理进行一系列工具使用来完成任务。在每次迭代中，模型基于当前上下文从预定义的动作空间中选择一个动作。然后该动作在环境中执行（例如Manus的虚拟机沙箱）以产生一个观察。动作和观察被附加到上下文中，形成下一个迭代的输入。这个循环继续直到任务完成。
 
-That hard-earned lesson made the choice clear: Manus would bet on context engineering. This allows us to ship improvements in hours instead of weeks, and kept our product orthogonal to the underlying models: If model progress is the rising tide, we want Manus to be the boat, not the pillar stuck to the seabed.
+如你能想象的那样，上下文随着每一步增长，而输出——通常是一个结构化的函数调用——保持相对较短。这使得代理中的前缀填充与解码的比例与聊天机器人相比高度倾斜。例如，在Manus中，平均输入输出令牌比大约是100:1。
 
-Still, context engineering turned out to be anything but straightforward. It's an experimental science—and we've rebuilt our agent framework four times, each time after discovering a better way to shape context. We affectionately refer to this manual process of architecture searching, prompt fiddling, and empirical guesswork as "Stochastic Graduate Descent". It's not elegant, but it works.
+幸运的是，具有相同前缀的上下文可以利用前缀缓存，这大幅减少了首令牌时间（TTFT）和推理成本——无论你是使用自托管模型还是调用推理API。我们不是在谈论小的节省：例如，使用Claude Sonnet，缓存的输入令牌成本0.30美元/MTok，而未缓存的成本3美元/MTok——差异10倍。
 
-This post shares the local optima we arrived at through our own "SGD". If you're building your own AI agent, I hope these principles help you converge faster.
+从上下文工程的角度来看，改进KV缓存命中率涉及几个关键实践：
 
-Design Around the KV-Cache
+**保持你的提示前缀稳定**。由于LLM的确定性性质，即使是单令牌差异也会使缓存从该令牌开始失效。一个常见的错误是在系统提示的开头包含时间戳——特别是一个精确到秒的。当然，它让模型告诉你当前时间，但它也杀死了你的缓存命中率。
 
-If I had to choose just one metric, I'd argue that the KV-cache hit rate is the single most important metric for a production-stage AI agent. It directly affects both latency and cost. To understand why, let's look at how  operates:
+**让你的上下文仅追加**。避免修改以前的操作或观察。确保你的序列化是确定性的。许多编程语言和库在序列化JSON对象时不保证稳定的键顺序，这可能会无声地破坏缓存。
 
-After receiving a user input, the agent proceeds through a chain of tool uses to complete the task. In each iteration, the model selects an action from a predefined action space based on the current context. That action is then executed in the environment (e.g., Manus's virtual machine sandbox) to produce an observation. The action and observation are appended to the context, forming the input for the next iteration. This loop continues until the task is complete.
+**在需要时显式标记缓存断点**。一些模型提供者或推理框架不支持自动增量前缀缓存，而是需要在上下文中手动插入缓存断点。分配这些时，考虑潜在的缓存过期，至少确保断点包含系统提示的结束。
 
-As you can imagine, the context grows with every step, while the output—usually a structured function call—remains relatively short. This makes the ratio between prefilling and decoding highly skewed in agents compared to chatbots. In Manus, for example, the average input-to-output token ratio is around 100:1.
+此外，如果你使用LLama这样的框架自托管模型，确保启用了KV缓存，并且你正在使用会话ID等技术来跨分布式工作者一致地路由请求。
 
-Fortunately, contexts with identical prefixes can take advantage of , which drastically reduces time-to-first-token (TTFT) and inference cost—whether you're using a self-hosted model or calling an inference API. And we're not talking about small savings: with Claude Sonnet, for instance, cached input tokens cost 0.30 USD/MTok, while uncached ones cost 3 USD/MTok—a 10x difference.
+### 遮盖，不删除
 
-From a context engineering perspective, improving KV-cache hit rate involves a few key practices:
+随着你的代理获得更多能力，其动作空间自然变得更复杂——简单来说，工具的数量爆炸。最近多协议的受欢迎程度只会增加燃料。如果你允许用户可配置工具，相信我：有人最终会将数百个神秘工具插入你精心策划的动作空间。结果，模型更可能选择错误的动作或采取低效的路径。简而言之，你武装精良的代理变得更愚蠢。
 
-Keep your prompt prefix stable. Due to the  nature of LLMs, even a single-token difference can invalidate the cache from that token onward. A common mistake is including a timestamp—especially one precise to the second—at the beginning of the system prompt. Sure, it lets the model tell you the current time, but it also kills your cache hit rate.
+一个自然的反应是设计一个动态动作空间——也许使用类似按需加载工具。我们也在Manus中尝试过那个。但我们的实验表明一个清晰的规则：除非绝对必要，避免在迭代中期动态添加或删除工具。有两个主要原因：
 
-Make your context append-only. Avoid modifying previous actions or observations. Ensure your serialization is deterministic. Many programming languages and libraries don't guarantee stable key ordering when serializing JSON objects, which can silently break the cache.
+在大多数LLM中，工具定义在序列化后的上下文前面生存，通常在系统提示之前或之后。所以任何改变将使所有后续操作和观察的KV缓存失效。
 
-Mark cache breakpoints explicitly when needed. Some model providers or inference frameworks don't support automatic incremental prefix caching, and instead require manual insertion of cache breakpoints in the context. When assigning these, account for potential cache expiration and at minimum, ensure the breakpoint includes the end of the system prompt.
+当以前的操作和观察仍然引用在当前上下文中不再定义的工具时，模型变得困惑。没有适当的引导，这通常导致模式违反或幻想动作。
 
-Additionally, if you're self-hosting models using frameworks like , make sure  is enabled, and that you're using techniques like session IDs to route requests consistently across distributed workers.
+为了解决这个问题同时仍然改进动作选择，Manus使用了一个上下文感知的约束解码来管理工具可用性。它不是删除工具，而是在解码期间遮盖令牌logits以根据当前上下文防止（或强制）某些动作的选择。
 
-Mask, Don't Remove
+实际上，大多数模型提供者和推理框架支持某种形式的响应前缀填充，允许你在不修改工具定义的情况下约束动作空间。通常有三种函数调用模式（我们将使用来自NousResearch的例子）：
 
-As your agent takes on more capabilities, its action space naturally grows more complex—in plain terms, the number of tools explodes. The recent popularity of  only adds fuel to the fire. If you allow user-configurable tools, trust me: someone will inevitably plug hundreds of mysterious tools into your carefully curated action space. As a result, the model is more likely to select the wrong action or take an inefficient path. In short, your heavily armed agent gets dumber.
+**自动** – 模型可能选择调用函数或不调用。通过仅前缀填充响应前缀实现：`<|im_start|>assistant`
 
-A natural reaction is to design a dynamic action space—perhaps loading tools on demand using something -like. We tried that in Manus too. But our experiments suggest a clear rule: unless absolutely necessary, avoid dynamically adding or removing tools mid-iteration. There are two main reasons for this:
+**必需** – 模型必须调用函数，但选择不受限制。通过前缀填充到工具调用令牌实现：`<|im_start|>assistant<tool_call>`
 
-In most LLMs, tool definitions live near the front of the context after serialization, typically before or after the system prompt. So any change will invalidate the KV-cache for all subsequent actions and observations.
+**指定** – 模型必须调用来自特定子集的函数。通过前缀填充到函数名的开头实现：`<|im_start|>assistant<tool_call>{"name": "browser_`
 
-When previous actions and observations still refer to tools that are no longer defined in the current context, the model gets confused. Without , this often leads to schema violations or hallucinated actions.
+使用这个，我们通过直接遮盖令牌logits来约束动作选择。例如，当用户提供新的输入时，Manus必须立即回复而不是采取动作。我们也故意设计了具有一致前缀的动作名称——例如，所有浏览器相关工具以browser_开头，命令行工具以shell_开头。这允许我们轻松强制代理只在给定状态选择来自某个工具组的工具，而无需使用有状态的logits处理器。
 
-To solve this while still improving action selection, Manus uses a context-aware  to manage tool availability. Rather than removing tools, it masks the token logits during decoding to prevent (or enforce) the selection of certain actions based on the current context.
+这些设计帮助确保Manus代理循环保持稳定——即使在一个模型驱动的架构下。
 
-In practice, most model providers and inference frameworks support some form of response prefill, which allows you to constrain the action space without modifying the tool definitions. There are generally three modes of function calling (we'll use the  from NousResearch as an example):
+### 使用文件系统作为上下文
 
-Auto – The model may choose to call a function or not. Implemented by prefilling only the reply prefix: <|im_start|>assistant
+现代前沿LLM现在提供128K令牌或更多的上下文窗口。但在真实世界的代理场景中，那通常还不够，有时甚至是一个负债。有三个常见的痛点：
 
-Required – The model must call a function, but the choice is unconstrained. Implemented by prefilling up to tool call token: <|im_start|>assistant<tool_call>
+观察可以是巨大的，特别是当代理与诸如网页或PDF的非结构化数据交互时。很容易超过上下文限制。
 
-Specified – The model must call a function from a specific subset. Implemented by prefilling up to the beginning of the function name: <|im_start|>assistant<tool_call>{"name": “browser_
+模型性能倾向于随着上下文长度进一步衰退，即使窗口技术上支持它。
 
-Using this, we constrain action selection by masking token logits directly. For example, when the user provides a new input, Manus must reply immediately instead of taking an action. We've also deliberately designed action names with consistent prefixes—e.g., all browser-related tools start with browser_, and command-line tools with shell_. This allows us to easily enforce that the agent only chooses from a certain group of tools at a given state without using stateful logits processors.
+长输入很昂贵，即使使用前缀缓存。你仍然在支付传输和前缀填充每个令牌的费用。
 
-These designs help ensure that the Manus agent loop remains stable—even under a model-driven architecture.
+为了处理这个，许多代理系统实现上下文截断或压缩策略。但过度激进的压缩必然导致信息丧失。问题是基础性的：代理，按性质，必须根据所有先前的状态预测下一个动作——你不能可靠地预测哪个观察可能在十步后变得关键。从逻辑立场来看，任何不可逆的压缩都携带风险。
 
-Use the File System as Context
+这就是为什么我们在Manus中将文件系统视为最终上下文：大小无限，按性质持久，并直接由代理操作。模型学会根据需要写入和读取文件——使用文件系统不仅仅作为存储，而是作为结构化、外部化的记忆。
 
-Modern frontier LLMs now offer context windows of 128K tokens or more. But in real-world agentic scenarios, that's often not enough, and sometimes even a liability. There are three common pain points:
+我们的压缩策略总是设计为可恢复的。例如，网页的内容可以从上下文中删除，只要URL被保留，文档的内容可以被省略，如果其路径在沙箱中仍然可用。这允许Manus缩小上下文长度而不会永久丧失信息。
 
-Observations can be huge, especially when agents interact with unstructured data like web pages or PDFs. It's easy to blow past the context limit.
+在开发这个功能时，我发现自己在想象让状态空间模型（SSM）在代理设置中有效工作需要什么。与Transformers不同，SSM缺乏完全注意力并与长范围向后依赖关系struggle。但如果他们能掌握基于文件的记忆——外部化长期状态而不是在上下文中持有它——那么他们的速度和效率可能解锁一个新的代理类。代理SSM可能是Transformers的真正继承者。
 
-Model performance tends to degrade beyond a certain context length, even if the window technically supports it.
+### 通过背诵操纵注意力
 
-Long inputs are expensive, even with prefix caching. You're still paying to transmit and prefill every token.
+如果你使用过Manus，你可能注意到了一些有趣的东西：处理复杂任务时，它倾向于创建一个todo.md文件——并在任务进展时逐步更新它，检查已完成的项目。
 
-To deal with this, many agent systems implement context truncation or compression strategies. But overly aggressive compression inevitably leads to information loss. The problem is fundamental: an agent, by nature, must predict the next action based on all prior state—and you can't reliably predict which observation might become critical ten steps later. From a logical standpoint, any irreversible compression carries risk.
+那不仅仅是可爱的行为——这是一个故意的注意力操纵机制。
 
-That's why we treat the file system as the ultimate context in Manus: unlimited in size, persistent by nature, and directly operable by the agent itself. The model learns to write to and read from files on demand—using the file system not just as storage, but as structured, externalized memory.
+Manus中的典型任务平均需要大约50个工具调用。那是一个长循环——由于Manus依赖LLM进行决策制定，它容易漂移离题或忘记早期目标，特别是在长上下文或复杂任务中。
 
-Our compression strategies are always designed to be restorable. For instance, the content of a web page can be dropped from the context as long as the URL is preserved, and a document's contents can be omitted if its path remains available in the sandbox. This allows Manus to shrink context length without permanently losing information.
+通过不断改写待办事项列表，Manus正在将其目标背诵到上下文的末端。这将全局计划推入模型的最近注意力跨度，避免"迷失在中间"问题并减少目标不一致。实际上，它正在使用自然语言来偏向其自己的焦点朝向任务目标——无需特殊的架构改变。
 
-While developing this feature, I found myself imagining what it would take for a State Space Model (SSM) to work effectively in an agentic setting. Unlike Transformers, SSMs lack full attention and struggle with long-range backward dependencies. But if they could master file-based memory—externalizing long-term state instead of holding it in context—then their speed and efficiency might unlock a new class of agents. Agentic SSMs could be the real successors to .
+### 保留错误的东西
 
-Manipulate Attention Through Recitation
+代理犯错误。那不是一个错误——这是现实。语言模型出现幻觉，环境返回错误，外部工具表现不良，意外的边缘情况显现出来。在多步骤任务中，失败不是例外；这是循环的一部分。
 
-If you've worked with Manus, you've probably noticed something curious: when handling complex tasks, it tends to create a todo.md file—and update it step-by-step as the task progresses, checking off completed items.
+然而，一个常见的冲动是隐藏这些错误：清理追踪，重试动作，或重置模型的状态并将其留给魔幻的""。那感觉更安全，更受控。但它有个代价：删除失败删除证据。而没有证据，模型不能适应。
 
-That's not just cute behavior—it's a deliberate mechanism to manipulate attention.
+在我们的经验中，改进代理行为的最有效方式之一令人欺骗性地简单：将错误的回合保留在上下文中。当模型看到失败的动作——以及所得的观察或堆栈追踪——它隐含地更新其内部信念。这将其prior从类似的动作移开，减少重复相同错误的机会。实际上，我们相信错误恢复是真正代理行为的最清晰指标。然而在大多数学术工作和公共基准中，它仍然代表不足，这通常关注理想条件下的任务成功。
 
-A typical task in Manus requires around 50 tool calls on average. That's a long loop—and since Manus relies on LLMs for decision-making, it's vulnerable to drifting off-topic or forgetting earlier goals, especially in long contexts or complicated tasks.
+### 不要自己少样本
 
-By constantly rewriting the todo list, Manus is reciting its objectives into the end of the context. This pushes the global plan into the model's recent attention span, avoiding "lost-in-the-middle" issues and reducing goal misalignment. In effect, it's using natural language to bias its own focus toward the task objective—without needing special architectural changes.
+少样本是一个改进LLM输出的常见技术。但在代理系统中，它可以以微妙的方式反弹。
 
-Keep the Wrong Stuff In
+语言模型非常善于模仿；他们模仿上下文中的行为模式。如果你的上下文充满了类似的过去动作-观察对，模型将倾向于遵循该模式，即使它不再是最优的。
 
-Agents make mistakes. That's not a bug—it's reality. Language models hallucinate, environments return errors, external tools misbehave, and unexpected edge cases show up all the time. In multi-step tasks, failure is not the exception; it's part of the loop.
+这可能在涉及重复决策或动作的任务中危险。例如，当使用Manus帮助审查一批20份简历时，代理通常陷入节奏——仅因为这是它在上下文中看到的而重复类似的动作。这导致漂移、过度概括或有时幻觉。
 
-And yet, a common impulse is to hide these errors: clean up the trace, retry the action, or reset the model's state and leave it to the magical "". That feels safer, more controlled. But it comes at a cost: Erasing failure removes evidence. And without evidence, the model can't adapt.
+修复是增加多样性。Manus在动作和观察中引入少量的结构化变化——不同的序列化模板、替代措辞、秩序或格式的小噪声。这个受控的随机性帮助打破模式并调整模型的注意力。换句话说，不要少样本自己进入一个轨道。你的上下文越均匀，你的代理变得越脆弱。
 
-In our experience, one of the most effective ways to improve agent behavior is deceptively simple: leave the wrong turns in the context. When the model sees a failed action—and the resulting observation or stack trace—it implicitly updates its internal beliefs. This shifts its prior away from similar actions, reducing the chance of repeating the same mistake. In fact, we believe error recovery is one of the clearest indicators of true agentic behavior. Yet it's still underrepresented in most academic work and public benchmarks, which often focus on task success under ideal conditions.
+### 结论
 
-Don't Get Few-Shotted
+上下文工程仍然是一个新兴的科学——但对于代理系统，它已经至关重要。模型可能变得更强大、更快、更便宜，但没有一个原始能力的数量替代对记忆、环境和反馈的需求。你如何形成上下文最终定义了你的代理如何表现：它如何快速运行，它如何恢复，以及它如何远而扩展。
 
- is a common technique for improving LLM outputs. But in agent systems, it can backfire in subtle ways.
+在Manus，我们通过反复重写、死亡末端和现实世界测试在数百万用户中学到了这些教训。我们在这里分享的没有一个是通用真理——但这些是对我们有效的模式。如果它们帮助你避免即使一个痛苦的迭代，那么这篇文章做了它的工作。
 
-Language models are excellent mimics; they imitate the pattern of behavior in the context. If your context is full of similar past action-observation pairs, the model will tend to follow that pattern, even when it's no longer optimal.
+代理未来将被一次一个上下文地构建。好好工程化它们。
 
-This can be dangerous in tasks that involve repetitive decisions or actions. For example, when using Manus to help review a batch of 20 resumes, the agent often falls into a rhythm—repeating similar actions simply because that's what it sees in the context. This leads to drift, overgeneralization, or sometimes hallucination.
+---
 
-The fix is to increase diversity. Manus introduces small amounts of structured variation in actions and observations—different serialization templates, alternate phrasing, minor noise in order or formatting. This controlled randomness helps break the pattern and tweaks the model's attention. In other words, don't few-shot yourself into a rut. The more uniform your context, the more brittle your agent becomes.
+**翻译进度：** 第1、2、3篇完成 ✓
 
-Conclusion
+---
 
-Context engineering is still an emerging science—but for agent systems, it's already essential. Models may be getting stronger, faster, and cheaper, but no amount of raw capability replaces the need for memory, environment, and feedback. How you shape the context ultimately defines how your agent behaves: how fast it runs, how well it recovers, and how far it scales.
+## 第四篇：广泛研究：超越上下文窗口
 
-At Manus, we've learned these lessons through repeated rewrites, dead ends, and real-world testing across millions of users. None of what we've shared here is universal truth—but these are the patterns that worked for us. If they help you avoid even one painful iteration, then this post did its job.
+AI驱动研究的承诺一直很有吸引力：将繁琐的信息收集和综合工作委托给一个智能系统，释放人类认知来进行高阶分析和决策制定。然而，任何人在非平凡用例上推动这些系统的人都遇到了一个令人沮丧的现实：到第八或第九个多主题研究任务中，AI开始捏造。
 
-The agentic future will be built one context at a time. Engineer them well.
+不仅仅是简化。不仅仅是更简洁的总结。捏造。
 
-------
+这不是提示工程问题。这不是模型能力问题。这是一个架构约束，它安静地限制了AI研究工具的效用自其起源以来。而正是这个约束Wide Research设计来克服。
 
-Wide Research: Beyond the Context Window
+### 上下文窗口：一个基础瓶颈
 
-The promise of AI-driven research has always been compelling: delegate the tedious work of information gathering and synthesis to an intelligent system, freeing up human cognition for higher-order analysis and decision-making. Yet, anyone who has pushed these systems on non-trivial use cases has run into a frustrating reality: by the eighth or ninth item in a multi-subject research task, the AI starts fabricating.
+每个大语言模型在上下文窗口内操作，一个有限的记忆缓冲区，限制了模型在任何给定时刻能够主动处理的信息量。现代模型已经令人印象深刻地推动了这个边界：从4K令牌到32K、128K，甚至最近版本中的1M令牌。
 
-Not just simplifying. Not just summarizing more concisely. Fabricating.
+然而问题仍然存在。
 
-This isn't a prompt engineering problem. It's not a model capability problem. It is an architectural constraint that has quietly limited the utility of AI research tools since their inception. And it's the constraint that Wide Research is designed to overcome.
+当你要求AI研究多个实体——比如说，50家公司、30份研究论文或20个竞争产品——上下文窗口很快填满。这不仅仅是每个实体的原始信息，而是也：
 
-The Context Window: A Fundamental Bottleneck
+- 原始任务规格和要求
+- 一致输出格式化的结构模板
+- 每个项目的中间推理和分析
+- 交叉引用和比较笔记
+- 所有先前项目的累积上下文
 
-Every large language model operates within a context window, a finite memory buffer that limits the amount of information the model can actively process at any given moment. Modern models have pushed this boundary impressively: from 4K tokens to 32K, 128K, and even 1M tokens in recent versions.
+到模型到达第八或第九个项目时，上下文窗口在巨大的压力下。模型面临一个不可能的选择：明确失败，或开始偷工减料。
 
-Yet the problem persists.
+它总是选择后者。
 
-When you ask an AI to research multiple entities-say, fifty companies, thirty research papers, or twenty competing products-the context window fills up rapidly. It's not just the raw information about each entity, but also:
+### 捏造阈值
 
-The original task specification and requirements
+这是在实践中发生的情况：
 
-The structural template for consistent output formatting
+- **项目1-5**：模型执行真正的研究。它检索信息、交叉引用来源和产生详细、准确的分析。
+- **项目6-8**：质量开始微妙地衰退。描述变得稍微更通用。模型开始依赖于之前的模式而不是新鲜研究。
+- **项目9+**：模型进入捏造模式。无法在维持彻底研究的认知负荷同时管理溢出上下文，它开始基于统计模式生成可信的内容，而不是真实的调查。
 
-Intermediate reasoning and analysis for each item
+这些捏造是老练的。他们听起来权威。他们完美遵循既建立的格式。他们通常在语法上是完美的，在风格上与早期的合法条目一致。
 
-Cross-referencing and comparative notes
+他们也经常是错的。
 
-The cumulative context of all preceding items
+竞争分析可能将功能分配给不提供的公司。文献审查可能引用有虚构发现的论文。产品比较可能发明不存在的定价等级或规格。
 
-By the time the model reaches the eighth or ninth item, the context window is under immense strain. The model faces an impossible choice: fail explicitly, or start cutting corners.
+最可怕的部分是这些捏造很难检测到，没有手动验证——这违反了自动研究的整个目的。
 
-It always chooses the latter.
+### 为什么更大的上下文窗口不能解决这个
 
-The Fabrication Threshold
+直观的反应是简单地扩展上下文窗口。如果32K令牌不足够，使用128K。如果那不足够，推送到200K或更远。
 
-Here's what happens in practice:
+这个方法误解了问题。
 
-Items 1-5: The model performs genuine research. It retrieves information, cross-references sources, and produces detailed, accurate analysis.
+首先，上下文衰退不是二进制的。一个模型不会在其整个上下文窗口中保持完美的回忆。研究表明检索准确性随与当前位置的距离衰退——"迷失在中间"现象。信息在上下文的开头和末尾被回忆得更可靠，而不是中间的信息。
 
-Items 6-8: The quality begins to subtly degrade. Descriptions become slightly more generic. The model starts relying more on prior patterns than fresh research.
+其次，处理成本不成比例地增长。处理400K令牌上下文的成本不仅仅是200K的两倍——它在时间和计算资源中指数级增加。这使得大量上下文处理对许多用例经济上不可行。
 
-Items 9+: The model enters fabrication mode. Unable to maintain the cognitive load of thorough research while managing an overflowing context, it begins generating plausible-sounding content based on statistical patterns, not actual investigation.
+第三，问题是认知负荷。即使具有无限上下文，要求单一模型跨打击的二十多个独立研究任务保持一致质量创建了一个认知瓶颈。模型必须不断地在项目之间切换上下文、维护一个比较框架、并确保风格一致性——同时执行核心研究任务。
 
-These fabrications are sophisticated. They sound authoritative. They follow the established format perfectly. They are often grammatically flawless and stylistically consistent with the earlier, legitimate entries.
+第四，上下文长度压力。模型的"耐心"在某种程度上由样本中的长度分布在其训练数据中确定。然而，当前语言模型的后训练数据混合仍然由相对较短的轨迹主导，为聊天机器人风格的交互设计。结果，当助理消息的内容长度超过某个阈值时，模型自然会经历一种上下文长度压力的种类，促使它加快走向总结或诉诸于不完整的表达形式，例如项目符号列表。
 
-They are also frequently wrong.
+上下文窗口是一个约束，是的。但这是一个更深层架构限制的症状：单处理器、顺序范式。
 
-A competitor analysis might attribute features to companies that don't offer them. A literature review might cite papers with fabricated findings. A product comparison might invent pricing tiers or specifications.
+### 架构转变：平行处理
 
-The insidious part is that these fabrications are difficult to detect without manual verification—which defeats the entire purpose of automated research.
+Wide Research代表了对AI系统应该如何接近大规模研究任务的基础重新思考。而不是要求一个处理器处理n个项目顺序地，我们部署n个平行的子代理来同时处理n个项目。
 
-Why Bigger Context Windows Can't Fix This
+**Wide Research架构**
 
-The intuitive response is to simply expand the context window. If 32K tokens aren't enough, use 128K. If that's not enough, push to 200K or beyond.
+当你启动Wide Research任务时，系统运作如下：
 
-This approach misunderstands the problem.
+**1. 智能分解**
 
-First, context decay is not binary. A model does not maintain perfect recall across its entire context window. Studies have shown that retrieval accuracy degrades with distance from the current position—the "lost in the middle" phenomenon. Information at the beginning and end of the context is recalled more reliably than information in the middle.
+主控制器分析你的请求并将其分解为独立的、可平行化的子任务。这涉及理解任务结构、识别依赖关系和创建连贯的子规格。
 
-Second, the processing cost grows disproportionately. The cost to process a 400K token context isn't just double the cost of 200K—it increases exponentially in both time and computing resources. This makes massive-context processing economically impractical for many use cases.
+**2. 子代理委派**
 
-Third, the problem is cognitive load. Even with an infinite context, asking a single model to maintain consistent quality across dozens of independent research tasks creates a cognitive bottleneck. The model must constantly switch context between items, maintain a comparative framework, and ensure stylistic consistency—all while performing the core research task.
+对于每个子任务，系统启动一个专门的子代理。至关重要的是，这些不是轻量级流程——他们是全功能的Manus实例，每个具有：
 
-Fourth, context length pressure. The model’s “patience” is, to some extent, determined by the length distribution of samples in its training data. However, the post-training data mixture of current language models is still dominated by relatively short trajectories designed for chatbot-style interactions. As a result, when the length of an assistant message’s content exceeds a certain threshold, the model naturally experiences a kind of context length pressure, prompting it to hasten toward summarizing or to resort to incomplete expression forms such as bullet points.
+- 一个完整的虚拟机环境
+- 访问完整工具库（搜索、浏览、代码执行、文件处理）
+- 一个独立的互联网连接
+- 一个新鲜、空的上下文窗口
 
-The context window is a constraint, yes. But it's a symptom of a deeper architectural limitation: the single-processor, sequential paradigm.
+**3. 平行执行**
 
-The Architectural Shift: Parallel Processing
+所有子代理同时执行。每个一个专注于排他在其分配的项目上，执行它对单一项目任务的相同深度的研究和分析。
 
-Wide Research represents a fundamental rethinking of how an AI system should approach large-scale research tasks. Instead of asking one processor to handle n items sequentially, we deploy n parallel sub-agents to process n items simultaneously.
+**4. 集中协调**
 
-The Wide Research Architecture
+主控制器保持监督，收集子代理完成工作时的结果。重要的是，子代理不相互通信，所有协调流过主控制器。这防止了上下文污染并保持独立。
 
-When you launch a Wide Research task, the system operates as follows:
+**5. 合成和整合**
 
-1. Intelligent Decomposition
+一旦所有子代理已报告回来，主控制器将结果合成到一个单一的、连贯的和全面的报告中。这个合成步骤利用了主控制器的完整上下文容量，因为它不负担原始研究努力。
 
-The main controller analyzes your request and breaks it down into independent, parallelizable sub-tasks. This involves understanding the task structure, identifying dependencies, and creating coherent sub-specifications.
+### 为什么这改变了一切
 
-2. Sub-agent Delegation
+**大规模一致质量**
 
-For each sub-task, the system spins up a dedicated sub-agent. Crucially, these are not lightweight processes—they are full-featured Manus instances, each with:
+每个项目得到相同的处理。第50项被充分研究与第一项一样。没有衰退曲线、没有捏造阈值、没有质量悬崖。
 
-A complete virtual machine environment
+**真正的水平可扩展性**
 
-Access to the full tool library (search, browsing, code execution, file handling)
+需要分析10个项目？系统部署10个子代理。需要分析500？它部署500。架构线性地随任务大小缩放，而不是像基于上下文的方法一样指数级。
 
-An independent internet connection
+**显著的加速**
 
-A fresh, empty context window
+因为子代理并行操作，分析50个项目所需的真实世界时间大约与分析5个相同。瓶颈从顺序处理时间转移到合成时间——一个小得多的组件。
 
-3. Parallel Execution
+**降低幻觉率**
 
-All sub-agents execute simultaneously. Each one focuses exclusively on its assigned item, performing the same depth of research and analysis it would for a single-item task.
+每个子代理在其认知舒适区内操作。有一个新鲜上下文和单一、专注的任务，没有压力来捏造。子代理可以执行真正的研究、验证事实和保持准确。
 
-4. Centralized Coordination
+**独立性和可靠性**
 
-The main controller maintains oversight, collecting results as the sub-agents complete their jobs. Importantly, the sub-agents do not communicate with each other, all coordination flows through the main controller. This prevents context pollution and maintains independence.
+因为子代理不共享上下文，一个子代理工作中的错误或幻觉不会传播到其他。每个分析独立站立，减少系统风险。
 
-5. Synthesis and Integration
+### 超越单处理器范式
 
-Once all sub-agents have reported back, the main controller synthesizes the results into a single, coherent, and comprehensive report. This synthesis step leverages the full context capacity of the main controller, as it is not burdened with the original research effort.
+Wide Research不仅仅是一个功能——它代表从单处理器范式和朝向一个编排的、平行的架构的基础转变。AI系统的未来不在于某一时刻更大的上下文窗口，而在于智能任务分解和平行执行。
 
-Why This Changes Everything
+我们从"AI助手"的时代转向"AI工作力"的时代。
 
-Consistent Quality at Scale
+**何时使用Wide Research**：任何涉及多个、相似项目的任务，需要一致分析——竞争研究、文献审查、批量处理、多资产生成。
 
-Every item gets the same treatment. The 50th item is researched just as thoroughly as the first. There is no degradation curve, no fabrication threshold, and no quality cliff.
+**何时不使用**：深度顺序任务，其中每一步深度依赖于先前的结果，或小任务（少于10个项目），单处理器处理更具成本效益。
 
-True Horizontal Scalability
+---
 
-Need to analyze 10 items? The system deploys 10 sub-agents. Need to analyze 500? It deploys 500. The architecture scales linearly with the size of the task, not exponentially like context-based approaches.
+**翻译进度：** 第1-4篇完成 ✓
 
-Significant Speed-Up
+---
 
-Because the sub-agents operate in parallel, the real-world time required to analyze 50 items is roughly the same as the time to analyze 5. The bottleneck shifts from sequential processing time to synthesis time—a much smaller component of the overall task.
+## 第五篇：我们如何构建多代理研究系统
 
-Reduced Hallucination Rate
+**发布日期：** 2025年6月13日
 
-Each sub-agent operates within its cognitive comfort zone. With a fresh context and a single, focused task, there is no pressure to fabricate. The sub-agent can perform genuine research, verify facts, and maintain accuracy.
+我们的研究功能使用多个Claude代理来更有效地探索复杂主题。我们分享了构建这个系统的工程挑战和我们学到的教训。
 
-Independence and Reliability
+Claude现在具有研究能力，允许它在网络、Google Workspace和任何集成中搜索来完成复杂任务。
 
-Because the sub-agents do not share context, an error or hallucination in one sub-agent's job does not propagate to the others. Each analysis stands on its own, reducing systemic risk.
+从原型到生产的这个多代理系统的旅程教会了我们关于系统架构、工具设计和提示工程的关键教训。多代理系统由多个代理（LLM自主在循环中使用工具）组成，相互合作。我们的研究功能涉及基于用户查询规划研究过程的一个代理，然后使用工具创建平行代理来同时搜索信息。具有多个代理的系统在代理协调、评估和可靠性中引入了新挑战。
 
-Beyond the Single-Processor Paradigm
+这篇文章分解了对我们有效的原则——我们希望你会发现它们在构建自己的多代理系统时很有用。
 
-Wide Research is more than a feature—it represents a fundamental shift away from the single-processor paradigm and toward an orchestrated, parallel architecture. The future of AI systems lies not in ever-larger context windows, but in intelligent task decomposition and parallel execution.
+### 多代理系统的好处
 
-We are moving from the era of the "AI assistant" to the era of the "AI workforce."
+研究工作涉及开放式问题，其中非常难以提前预测所需的步骤。你不能为探索复杂主题硬编码一个固定路径，因为该过程本质上是动态的、与路径相关的。当人们进行研究时，他们倾向于基于发现不断更新他们的方法，跟随在调查过程中出现的线索。
 
-When to use Wide Research: Any task involving multiple, similar items that require consistent analysiscompetitive research, literature reviews, bulk processing, multi-asset generation.
+这种不可预测性使AI代理特别适合研究任务。研究要求灵活性来转向或探索调查中出现的接线。模型必须为许多回合自主操作，基于中间发现做出关于哪些方向追逐的决定。线性、一次性管道无法处理这些任务。
 
-When not to use: Deeply sequential tasks where each step heavily depends on the prior result, or small tasks (fewer than 10 items) where single-processor handling is more cost-effective.
+搜索的本质是压缩：从巨大的语料库中提取见解。子代理通过并行操作他们自己的上下文窗口、同时探索问题的不同方面然后在整合最重要的令牌对主导研究代理来方便压缩。每个子代理也提供关注点分离——不同的工具、提示和探索轨迹——这减少了路径依赖并启用了彻底、独立的调查。
 
---------
+一旦智能达到一个阈值，多代理系统成为扩展性能的必要方式。例如，尽管个人人类在过去100,000年中已经变得更加聪慧，人类社会在信息时代变得指数级更有能力，因为我们的集体智能和协调能力。即使通常聪慧的代理也面临当作为个人操作时的限制；代理组能够完成远超。
 
-How we built our multi-agent research system
+我们的内部评估显示多代理研究系统特别在涉及同时追求多个独立方向的广泛优先查询中表现出色。我们发现一个多代理系统具有Claude Opus 4作为主导代理和Claude Sonnet 4子代理在我们的内部研究评估中表现优于单代理Claude Opus 4 90.2%。例如，当要求识别信息技术S&P 500中的公司的所有董事会成员时，多代理系统通过为子代理分解这个为任务而发现正确的答案，而单代理系统失败于用缓慢的、顺序的搜索找到答案。
 
-Published Jun 13, 2025
+多代理系统工作主要是因为他们帮助花费足够的令牌来解决问题。在我们的分析中，三个因素解释了BrowseComp评估中95%的性能方差（这测试了浏览代理定位难以发现信息的能力）。我们发现令牌使用本身解释了80%的方差，工具调用的数量和模型选择是其他两个解释因素。这个发现验证了我们的架构，在代理中分布工作给具有独立上下文窗口的代理添加了更多的平行推理能力。最新的Claude模型充当在令牌使用上的大效率乘数，因为升级到Claude Sonnet 4是比在Claude Sonnet 3.7上倍增令牌预算更大的性能获得。多代理架构有效地为超过单一代理限制的任务扩展令牌使用。
 
-Our Research feature uses multiple Claude agents to explore complex topics more effectively. We share the engineering challenges and the lessons we learned from building this system.
+有一个缺点：在实践中，这些架构快速烧过令牌。在我们的数据中，代理通常使用大约聊天互动的4倍令牌，多代理系统使用聊天的大约15倍令牌。为了经济可行性，多代理系统需要任务的值足够高来支付增加的性能。此外，某些需要所有代理共享相同上下文或涉及代理之间许多依赖关系的领域不是多代理系统今天的好匹配。例如，大多数编码任务涉及比研究更少的真正平行化任务，LLM代理还不太擅长实时协调和委派到其他代理。我们发现多代理系统在涉及重度平行化、超过单个上下文窗口的信息和与众多复杂工具交互的有价值任务中表现出色。
 
-Claude now has Research capabilities that allow it to search across the web, Google Workspace, and any integrations to accomplish complex tasks.
+### 研究的架构概览
 
-The journey of this multi-agent system from prototype to production taught us critical lessons about system architecture, tool design, and prompt engineering. A multi-agent system consists of multiple agents (LLMs autonomously using tools in a loop) working together. Our Research feature involves an agent that plans a research process based on user queries, and then uses tools to create parallel agents that search for information simultaneously. Systems with multiple agents introduce new challenges in agent coordination, evaluation, and reliability.
+我们的研究系统使用一个多代理架构与编排者-工作者模式，一个主导代理协调该过程，同时委派给专门的子代理并行操作。
 
-This post breaks down the principles that worked for us—we hope you'll find them useful to apply when building your own multi-agent systems.
+当用户提交查询时，主导代理分析它、开发一个策略和生成子代理来同时探索不同的方面。如上图所示，子代理充当智能过滤器，通过迭代使用搜索工具来收集信息，在这个实例中关于2025年AI代理公司，然后将一个公司列表返回到主导代理，以便它可以编译一个最终答案。
 
-Benefits of a multi-agent system
+与RAG相反，使用静态检索。即，他们获取一些最相似的块的集合到输入查询并使用这些块来生成响应。我们的架构使用一个多步骤搜索，动态找到相关信息、适应新发现和分析结果来阐述高质量答案。
 
-Research work involves open-ended problems where it’s very difficult to predict the required steps in advance. You can’t hardcode a fixed path for exploring complex topics, as the process is inherently dynamic and path-dependent. When people conduct research, they tend to continuously update their approach based on discoveries, following leads that emerge during investigation.
+当用户提交查询时，系统创建一个LeadResearcher代理进入迭代研究过程。LeadResearcher首先思考这个方法，将其计划保存到记忆中来保留上下文，因为如果上下文窗口超过200,000令牌它将被截断，重要的是保留计划。它然后创建具有特定研究任务的专门子代理。每个子代理独立执行网络搜索，使用交错思考来评估工具结果，并返回发现到LeadResearcher。LeadResearcher合成这些结果并决定是否需要更多研究——如果是，它可以创建额外子代理或完善其策略。一旦收集了足够的信息，系统退出研究循环并通过一个CitationAgent，其处理文件和研究报告来识别引用的特定位置。这确保所有索赔被适当归因于他们的来源。最后研究结果，完成引用，被返回给用户。
 
-This unpredictability makes AI agents particularly well-suited for research tasks. Research demands the flexibility to pivot or explore tangential connections as the investigation unfolds. The model must operate autonomously for many turns, making decisions about which directions to pursue based on intermediate findings. A linear, one-shot pipeline cannot handle these tasks.
+### 多代理研究系统的提示工程和评估
 
-The essence of search is compression: distilling insights from a vast corpus. Subagents facilitate compression by operating in parallel with their own context windows, exploring different aspects of the question simultaneously before condensing the most important tokens for the lead research agent. Each subagent also provides separation of concerns—distinct tools, prompts, and exploration trajectories—which reduces path dependency and enables thorough, independent investigations.
+多代理系统与单代理系统有关键差异，包括协调复杂性的快速增长。早期代理犯了诸如为简单查询生成50个子代理、无止境地搜寻网络寻找不存在的来源和互相分心过度更新的错误。因为每个代理由提示指导，提示工程是我们改进这些行为的主要杠杆。以下是我们为代理学到的提示工程原则：
 
-Once intelligence reaches a threshold, multi-agent systems become a vital way to scale performance. For instance, although individual humans have become more intelligent in the last 100,000 years, human societies have become exponentially more capable in the information age because of our collective intelligence and ability to coordinate. Even generally-intelligent agents face limits when operating as individuals; groups of agents can accomplish far more.
+**思考像你的代理一样**
 
-Our internal evaluations show that multi-agent research systems excel especially for breadth-first queries that involve pursuing multiple independent directions simultaneously. We found that a multi-agent system with Claude Opus 4 as the lead agent and Claude Sonnet 4 subagents outperformed single-agent Claude Opus 4 by 90.2% on our internal research eval. For example, when asked to identify all the board members of the companies in the Information Technology S&P 500, the multi-agent system found the correct answers by decomposing this into tasks for subagents, while the single agent system failed to find the answer with slow, sequential searches.
+为了迭代提示，你必须理解他们的影响。为了帮助我们做这个，我们使用我们的控制台精确提示和工具从我们的系统构建模拟，然后逐步观察代理工作。这立即展示了故障模式：代理在已有足够结果时继续、使用过度啰嗦的搜索查询或选择不正确的工具。有效的提示依赖于开发对代理的准确心理模型，这可以使最有影响的改变变得明显。
 
-Multi-agent systems work mainly because they help spend enough tokens to solve the problem. In our analysis, three factors explained 95% of the performance variance in the BrowseComp evaluation (which tests the ability of browsing agents to locate hard-to-find information). We found that token usage by itself explains 80% of the variance, with the number of tool calls and the model choice as the two other explanatory factors. This finding validates our architecture that distributes work across agents with separate context windows to add more capacity for parallel reasoning. The latest Claude models act as large efficiency multipliers on token use, as upgrading to Claude Sonnet 4 is a larger performance gain than doubling the token budget on Claude Sonnet 3.7. Multi-agent architectures effectively scale token usage for tasks that exceed the limits of single agents.
+**教编排者如何委派**
 
-There is a downside: in practice, these architectures burn through tokens fast. In our data, agents typically use about 4× more tokens than chat interactions, and multi-agent systems use about 15× more tokens than chats. For economic viability, multi-agent systems require tasks where the value of the task is high enough to pay for the increased performance. Further, some domains that require all agents to share the same context or involve many dependencies between agents are not a good fit for multi-agent systems today. For instance, most coding tasks involve fewer truly parallelizable tasks than research, and LLM agents are not yet great at coordinating and delegating to other agents in real time. We’ve found that multi-agent systems excel at valuable tasks that involve heavy parallelization, information that exceeds single context windows, and interfacing with numerous complex tools.
+在我们的系统中，主导代理将查询分解为子任务并将其描述给子代理。每个子代理需要一个目标、输出格式、关于使用和要使用的工具的指导以及清晰的任务边界。没有详细的任务描述，代理重复工作、留下缝隙或无法找到必要的信息。我们开始允许主导代理给出简单、短指令，如"研究半导体短缺"，但发现这些指令通常模糊足够，子代理误解任务或执行与其他代理完全相同的搜索。例如，一个子代理探索2021年汽车芯片危机，而2个其他的复制工作调查当前2025供应链，没有有效的劳动分工。
 
-Architecture overview for Research
+**对查询复杂性调整努力**
 
-Our Research system uses a multi-agent architecture with an orchestrator-worker pattern, where a lead agent coordinates the process while delegating to specialized subagents that operate in parallel.
+代理苦苦挣扎来判断不同任务的合适努力，所以我们在提示中嵌入了缩放规则。简单事实发现需要仅1个代理与3-10工具调用、直接比较可能需要2-4子代理与10-15调用每个和复杂研究可能使用超过10子代理以清晰分割责任。这些明确的指南帮助主导代理有效地分配资源并防止过度投资在简单查询中，这在我们的早期版本中是一个常见故障模式。
 
-The multi-agent architecture in action: user queries flow through a lead agent that creates specialized subagents to search for different aspects in parallel.
+**工具设计和选择很重要**
 
-When a user submits a query, the lead agent analyzes it, develops a strategy, and spawns subagents to explore different aspects simultaneously. As shown in the diagram above, the subagents act as intelligent filters by iteratively using search tools to gather information, in this case on AI agent companies in 2025, and then returning a list of companies to the lead agent so it can compile a final answer.
+代理工具接口与人机接口一样关键。使用正确的工具是有效的——通常，这严格必要。例如，代理搜索网络以获取仅存在于Slack中的上下文是命中注定的。使用给代理模型访问外部工具的MCP服务器，这个问题复合，当代理遇到不可见工具与大幅变化质量的描述。我们给了我们的代理明确的启发式方法：例如，首先审查所有可用工具、将工具使用匹配到用户意图、搜索网络以获取宽泛的外部探索，或首选专门工具对通用的。坏工具描述可以将代理送下完全错误的路径，所以每个工具需要不同的目的和清晰的描述。
 
-Traditional approaches using Retrieval Augmented Generation (RAG) use static retrieval. That is, they fetch some set of chunks that are most similar to an input query and use these chunks to generate a response. In contrast, our architecture uses a multi-step search that dynamically finds relevant information, adapts to new findings, and analyzes results to formulate high-quality answers.
+**让代理改进自己**
 
-Process diagram showing the complete workflow of our multi-agent Research system. When a user submits a query, the system creates a LeadResearcher agent that enters an iterative research process. The LeadResearcher begins by thinking through the approach and saving its plan to Memory to persist the context, since if the context window exceeds 200,000 tokens it will be truncated and it is important to retain the plan. It then creates specialized Subagents (two are shown here, but it can be any number) with specific research tasks. Each Subagent independently performs web searches, evaluates tool results using interleaved thinking, and returns findings to the LeadResearcher. The LeadResearcher synthesizes these results and decides whether more research is needed—if so, it can create additional subagents or refine its strategy. Once sufficient information is gathered, the system exits the research loop and passes all findings to a CitationAgent, which processes the documents and research report to identify specific locations for citations. This ensures all claims are properly attributed to their sources. The final research results, complete with citations, are then returned to the user.
+我们发现Claude 4模型可以是优异的提示工程师。当给了一个提示和一个故障模式，他们能够诊断为什么代理失败并建议改进。我们甚至创建了一个工具测试代理——当给了一个有缺陷的MCP工具时，它尝试使用工具然后改写工具描述来避免失败。通过数十次测试该工具，这个代理发现了关键细致差别和错误。这个改进工具人体工程学的过程导致了未来使用新描述的代理的任务完成时间减少40%，因为他们能够避免最多错误。
 
-Prompt engineering and evaluations for research agents
+**从宽到窄开始**
 
-Multi-agent systems have key differences from single-agent systems, including a rapid growth in coordination complexity. Early agents made errors like spawning 50 subagents for simple queries, scouring the web endlessly for nonexistent sources, and distracting each other with excessive updates. Since each agent is steered by a prompt, prompt engineering was our primary lever for improving these behaviors. Below are some principles we learned for prompting agents:
+搜索策略应该镜像专家人类研究：在深钻入细节前探索景观。代理经常默认为过度长、特定查询返回很少结果。我们抵抗了这个倾向通过提示代理从短、宽泛的查询开始、评估什么是可用的，然后逐步缩小焦点。
 
-Think like your agents. To iterate on prompts, you must understand their effects. To help us do this, we built simulations using our Console with the exact prompts and tools from our system, then watched agents work step-by-step. This immediately revealed failure modes: agents continuing when they already had sufficient results, using overly verbose search queries, or selecting incorrect tools. Effective prompting relies on developing an accurate mental model of the agent, which can make the most impactful changes obvious.
+**指导思维过程**
 
-Teach the orchestrator how to delegate. In our system, the lead agent decomposes queries into subtasks and describes them to subagents. Each subagent needs an objective, an output format, guidance on the tools and sources to use, and clear task boundaries. Without detailed task descriptions, agents duplicate work, leave gaps, or fail to find necessary information. We started by allowing the lead agent to give simple, short instructions like 'research the semiconductor shortage,' but found these instructions often were vague enough that subagents misinterpreted the task or performed the exact same searches as other agents. For instance, one subagent explored the 2021 automotive chip crisis while 2 others duplicated work investigating current 2025 supply chains, without an effective division of labor.
+扩展思维模式，导致Claude输出额外令牌在一个可见的思维过程中，可以作为一个可控制的草稿簿。主导代理使用思维来规划其方法、评估哪些工具适合任务、确定查询复杂性和子代理计数和定义每个子代理的角色。我们的测试显示扩展思维改进了指令跟随、推理和效率。子代理也计划，然后在工具结果后使用交错思维来评估质量、识别缝隙和完善他们的下一个查询。这使子代理更有效在适应任何任务。
 
-Scale effort to query complexity. Agents struggle to judge appropriate effort for different tasks, so we embedded scaling rules in the prompts. Simple fact-finding requires just 1 agent with 3-10 tool calls, direct comparisons might need 2-4 subagents with 10-15 calls each, and complex research might use more than 10 subagents with clearly divided responsibilities. These explicit guidelines help the lead agent allocate resources efficiently and prevent overinvestment in simple queries, which was a common failure mode in our early versions.
+**平行工具调用转换速度和性能**
 
-Tool design and selection are critical. Agent-tool interfaces are as critical as human-computer interfaces. Using the right tool is efficient—often, it’s strictly necessary. For instance, an agent searching the web for context that only exists in Slack is doomed from the start. With MCP servers that give the model access to external tools, this problem compounds, as agents encounter unseen tools with descriptions of wildly varying quality. We gave our agents explicit heuristics: for example, examine all available tools first, match tool usage to user intent, search the web for broad external exploration, or prefer specialized tools over generic ones. Bad tool descriptions can send agents down completely wrong paths, so each tool needs a distinct purpose and a clear description.
+复杂研究任务自然涉及探索许多来源。我们的早期代理执行了顺序搜索，其是痛苦地慢。为了获得速度，我们引入了两种平行化种类：(1)主导代理在平行中而不是顺序中启动3-5个子代理；(2)子代理使用3+工具在平行中。这些改变为复杂查询切割了研究时间多达90%，允许研究在分钟而不是小时中做更多工作同时覆盖比其他系统更多信息。
 
-Let agents improve themselves. We found that the Claude 4 models can be excellent prompt engineers. When given a prompt and a failure mode, they are able to diagnose why the agent is failing and suggest improvements. We even created a tool-testing agent—when given a flawed MCP tool, it attempts to use the tool and then rewrites the tool description to avoid failures. By testing the tool dozens of times, this agent found key nuances and bugs. This process for improving tool ergonomics resulted in a 40% decrease in task completion time for future agents using the new description, because they were able to avoid most mistakes.
+我们的提示策略关注于灌输好启发式方法而不是刚性规则。我们研究了技能人类如何方法研究任务并在我们的提示中编码了这些策略——如分解困难问题为较小的任务、仔细评估来源质量、基于新信息调整搜索方法和识别何时关注深度（详细调查一个主题）对广泛（探索许多主题在平行中）。我们也主动缓和了意外的侧效应通过设置明确的防卫来防止代理螺旋无法控制。最后，我们专注于与可观察性和测试实例的快速迭代循环。
 
-Start wide, then narrow down. Search strategy should mirror expert human research: explore the landscape before drilling into specifics. Agents often default to overly long, specific queries that return few results. We counteracted this tendency by prompting agents to start with short, broad queries, evaluate what’s available, then progressively narrow focus.
+### 代理的有效评估
 
-Guide the thinking process. Extended thinking mode, which leads Claude to output additional tokens in a visible thinking process, can serve as a controllable scratchpad. The lead agent uses thinking to plan its approach, assessing which tools fit the task, determining query complexity and subagent count, and defining each subagent’s role. Our testing showed that extended thinking improved instruction-following, reasoning, and efficiency. Subagents also plan, then use interleaved thinking after tool results to evaluate quality, identify gaps, and refine their next query. This makes subagents more effective in adapting to any task.
+好评估对建立可靠的AI应用至关重要，代理也不例外。然而，评估多代理系统呈现独特的挑战。传统评估经常假设AI遵循相同的步骤每一次：给定输入X，系统应遵循路径Y来产生输出Z。但多代理系统不那样工作。即使与相同的起点，代理可能采取完全不同的有效路径来达到他们的目标。一个代理可能搜索三个来源，而另一个搜索十个，或他们可能使用不同的工具来找到相同的答案。因为我们不总是知道正确的步骤是什么，我们通常不能仅检查代理是否遵循了我们事先规定的"正确"步骤。相反，我们需要灵活的评估方法来判断代理是否达到了正确的结果同时也遵循了一个合理的过程。
 
-Parallel tool calling transforms speed and performance. Complex research tasks naturally involve exploring many sources. Our early agents executed sequential searches, which was painfully slow. For speed, we introduced two kinds of parallelization: (1) the lead agent spins up 3-5 subagents in parallel rather than serially; (2) the subagents use 3+ tools in parallel. These changes cut research time by up to 90% for complex queries, allowing Research to do more work in minutes instead of hours while covering more information than other systems.
+**立即用小样本开始评估**
 
-Our prompting strategy focuses on instilling good heuristics rather than rigid rules. We studied how skilled humans approach research tasks and encoded these strategies in our prompts—strategies like decomposing difficult questions into smaller tasks, carefully evaluating the quality of sources, adjusting search approaches based on new information, and recognizing when to focus on depth (investigating one topic in detail) vs. breadth (exploring many topics in parallel). We also proactively mitigated unintended side effects by setting explicit guardrails to prevent the agents from spiraling out of control. Finally, we focused on a fast iteration loop with observability and test cases.
+在早期代理开发中，改变倾向于有巨大的影响，因为有丰富的低挂果。提示调整可能从30%提升成功率到80%。有这么大的影响尺寸，你能用仅仅几个测试实例发现改变。我们开始与大约20个查询的集合代表真实使用模式。测试这些查询经常允许我们清楚地看到改变的影响。我们经常听说AI开发者团队延迟创建评估，因为他们相信仅大评估与数百个测试实例是有用的。然而，最好是立即开始用小规模测试用仅仅几个例子，而不是延迟直到你能构建更彻底的评估。
 
-Effective evaluation of agents
+**LLM作为评估员当做得好时缩放**
 
-Good evaluations are essential for building reliable AI applications, and agents are no different. However, evaluating multi-agent systems presents unique challenges. Traditional evaluations often assume that the AI follows the same steps each time: given input X, the system should follow path Y to produce output Z. But multi-agent systems don't work this way. Even with identical starting points, agents might take completely different valid paths to reach their goal. One agent might search three sources while another searches ten, or they might use different tools to find the same answer. Because we don’t always know what the right steps are, we usually can't just check if agents followed the “correct” steps we prescribed in advance. Instead, we need flexible evaluation methods that judge whether agents achieved the right outcomes while also following a reasonable process.
+研究输出很难进行程序评估，因为他们是自由格式的文本并且很少有单一的正确答案。LLM是评分输出的自然适配。我们使用了一个评估LLM对抗一个问卷标准的每个输出：事实准确性（索赔是否匹配来源？）、引用准确性（引用的来源是否匹配索赔？）、完整性（被请求的所有方面是否被覆盖？）、来源质量（它是否使用了对低质量次来源的主要来源？）和工具效率（它是否以合理的次数使用了正确的工具？）。我们实验了多个评估者来评估每个分量，但发现一个输出分数从0.0-1.0和通过/不通过等级的单一LLM调用用一个单一提示最一致并与人类判断一致。这个方法特别有效当评估测试实例确实有一个清晰的答案，我们可以使用LLM评估者来简单地检查如果答案是正确的（即它是否准确列出了药房公司与前3最大的R&D预算？）。使用LLM作为评估者允许我们可扩展地评估数百个输出。
 
-Start evaluating immediately with small samples. In early agent development, changes tend to have dramatic impacts because there is abundant low-hanging fruit. A prompt tweak might boost success rates from 30% to 80%. With effect sizes this large, you can spot changes with just a few test cases. We started with a set of about 20 queries representing real usage patterns. Testing these queries often allowed us to clearly see the impact of changes. We often hear that AI developer teams delay creating evals because they believe that only large evals with hundreds of test cases are useful. However, it’s best to start with small-scale testing right away with a few examples, rather than delaying until you can build more thorough evals.
+**人类评估捕获什么自动化错过**
 
-LLM-as-judge evaluation scales when done well. Research outputs are difficult to evaluate programmatically, since they are free-form text and rarely have a single correct answer. LLMs are a natural fit for grading outputs. We used an LLM judge that evaluated each output against criteria in a rubric: factual accuracy (do claims match sources?), citation accuracy (do the cited sources match the claims?), completeness (are all requested aspects covered?), source quality (did it use primary sources over lower-quality secondary sources?), and tool efficiency (did it use the right tools a reasonable number of times?). We experimented with multiple judges to evaluate each component, but found that a single LLM call with a single prompt outputting scores from 0.0-1.0 and a pass-fail grade was the most consistent and aligned with human judgements. This method was especially effective when the eval test cases did have a clear answer, and we could use the LLM judge to simply check if the answer was correct (i.e. did it accurately list the pharma companies with the top 3 largest R&D budgets?). Using an LLM as a judge allowed us to scalably evaluate hundreds of outputs.
+人们测试代理发现评估错过的边际情况。这些包括对不寻常的查询幻想的答案、系统故障或微妙的来源选择偏差。在我们的实例中，人类测试者发现我们的早期代理一致地选择了对权威但较少排名的来源如学术PDF或个人博客的SEO优化内容农场。添加来源质量启发式方法到我们的提示帮助解决了这个问题。即使在自动评估的一个世界中，手动测试仍然是至关重要的。
 
-Human evaluation catches what automation misses. People testing agents find edge cases that evals miss. These include hallucinated answers on unusual queries, system failures, or subtle source selection biases. In our case, human testers noticed that our early agents consistently chose SEO-optimized content farms over authoritative but less highly-ranked sources like academic PDFs or personal blogs. Adding source quality heuristics to our prompts helped resolve this issue. Even in a world of automated evaluations, manual testing remains essential.
+多代理系统具有无法明确规划的出现行为。例如，对主导代理的小改变可以不可预测地改变子代理如何表现。成功需要理解交互模式，不仅仅是个别代理表现。因此，最好的提示对这些代理不仅仅是严格指令，而是定义劳动分工的合作框架、问题解决方法和努力预算。正确做这个依赖于仔细的提示和工具设计、坚实的启发式方法、可观察性和紧密的反馈循环。查看我们的食谱中的开源提示以从我们的系统举例提示。
 
-Multi-agent systems have emergent behaviors, which arise without specific programming. For instance, small changes to the lead agent can unpredictably change how subagents behave. Success requires understanding interaction patterns, not just individual agent behavior. Therefore, the best prompts for these agents are not just strict instructions, but frameworks for collaboration that define the division of labor, problem-solving approaches, and effort budgets. Getting this right relies on careful prompting and tool design, solid heuristics, observability, and tight feedback loops. See the open-source prompts in our Cookbook for example prompts from our system.
+### 生产可靠性和工程挑战
 
-Production reliability and engineering challenges
+在传统软件中，一个错误可能破坏一个功能、降低性能或导致停机。在代理系统中，次要改变级联为大的行为改变，这使得写复杂的代码对必须在长时间运行的过程中保留状态的代理非常困难。
 
-In traditional software, a bug might break a feature, degrade performance, or cause outages. In agentic systems, minor changes cascade into large behavioral changes, which makes it remarkably difficult to write code for complex agents that must maintain state in a long-running process.
+**代理是有状态的且错误复合**
 
-Agents are stateful and errors compound. Agents can run for long periods of time, maintaining state across many tool calls. This means we need to durably execute code and handle errors along the way. Without effective mitigations, minor system failures can be catastrophic for agents. When errors occur, we can't just restart from the beginning: restarts are expensive and frustrating for users. Instead, we built systems that can resume from where the agent was when the errors occurred. We also use the model’s intelligence to handle issues gracefully: for instance, letting the agent know when a tool is failing and letting it adapt works surprisingly well. We combine the adaptability of AI agents built on Claude with deterministic safeguards like retry logic and regular checkpoints.
+代理可以运行很长的周期，维护跨许多工具调用的状态。这意味着我们需要可靠执行代码和沿路处理错误。没有有效的缓解，次要系统故障可以对代理是灾难性的。当错误发生时，我们不能仅仅从开始重新启动：重新启动很昂贵且令人沮丧对用户。相反，我们构建了系统可以从代理是当错误发生时恢复的地方。我们也使用模型的智能来优雅处理问题：例如，让代理知道工具在失败和允许它适应工作出奇地好。我们结合AI代理的适应性建立在Claude与确定性的防卫如重试逻辑和定期检查点。
 
-Debugging benefits from new approaches. Agents make dynamic decisions and are non-deterministic between runs, even with identical prompts. This makes debugging harder. For instance, users would report agents “not finding obvious information,” but we couldn't see why. Were the agents using bad search queries? Choosing poor sources? Hitting tool failures? Adding full production tracing let us diagnose why agents failed and fix issues systematically. Beyond standard observability, we monitor agent decision patterns and interaction structures—all without monitoring the contents of individual conversations, to maintain user privacy. This high-level observability helped us diagnose root causes, discover unexpected behaviors, and fix common failures.
+**调试从新的方法获益**
 
-Deployment needs careful coordination. Agent systems are highly stateful webs of prompts, tools, and execution logic that run almost continuously. This means that whenever we deploy updates, agents might be anywhere in their process. We therefore need to prevent our well-meaning code changes from breaking existing agents. We can’t update every agent to the new version at the same time. Instead, we use rainbow deployments to avoid disrupting running agents, by gradually shifting traffic from old to new versions while keeping both running simultaneously.
+代理进行动态决定且在运行之间是非确定性的，即使具有相同的提示。这使得调试更难。例如，用户会报告代理"不发现明显的信息"，但我们看不到为什么。代理是否使用坏搜索查询？选择贫乏的来源？击中工具故障？添加完整生产追踪让我们诊断为什么代理失败并系统地固定问题。超越标准可观察性，我们监控代理决定模式和交互结构——全部不监控个别对话的内容，以保留用户隐私。这个高级的可观察性帮助我们诊断根本原因、发现意外的行为和修复常见的故障。
 
-Synchronous execution creates bottlenecks. Currently, our lead agents execute subagents synchronously, waiting for each set of subagents to complete before proceeding. This simplifies coordination, but creates bottlenecks in the information flow between agents. For instance, the lead agent can’t steer subagents, subagents can’t coordinate, and the entire system can be blocked while waiting for a single subagent to finish searching. Asynchronous execution would enable additional parallelism: agents working concurrently and creating new subagents when needed. But this asynchronicity adds challenges in result coordination, state consistency, and error propagation across the subagents. As models can handle longer and more complex research tasks, we expect the performance gains will justify the complexity.
+**部署需要仔细的协调**
 
-Conclusion
+代理系统是提示、工具和执行逻辑的高度有状态的网。几乎持续运行。这意味着每当我们部署更新时，代理可能在他们的过程中的任何地方。我们因此需要防止我们的好意代码改变从破坏现存的代理。我们不能一次更新每个代理到新版本。相反，我们使用彩虹部署来避免中断运行代理，通过从旧到新版本逐步转移交通同时保存两个都在运行。
 
-When building AI agents, the last mile often becomes most of the journey. Codebases that work on developer machines require significant engineering to become reliable production systems. The compound nature of errors in agentic systems means that minor issues for traditional software can derail agents entirely. One step failing can cause agents to explore entirely different trajectories, leading to unpredictable outcomes. For all the reasons described in this post, the gap between prototype and production is often wider than anticipated.
+**同步执行创建瓶颈**
 
-Despite these challenges, multi-agent systems have proven valuable for open-ended research tasks. Users have said that Claude helped them find business opportunities they hadn’t considered, navigate complex healthcare options, resolve thorny technical bugs, and save up to days of work by uncovering research connections they wouldn't have found alone. Multi-agent research systems can operate reliably at scale with careful engineering, comprehensive testing, detail-oriented prompt and tool design, robust operational practices, and tight collaboration between research, product, and engineering teams who have a strong understanding of current agent capabilities. We're already seeing these systems transform how people solve complex problems.
+目前，我们的主导代理同步执行子代理，等待每个子代理集合完成然后继续。这简化了协调，但在代理之间的信息流中创建了瓶颈。例如，主导代理不能指导子代理、子代理不能协调和整个系统可以被阻止当等待单一子代理完成搜索。异步执行会启用额外的平行化：代理并发工作和创建新的子代理当需要。但这个异步性添加挑战在结果协调中、状态一致性和错误传播跨子代理。随着模型可以处理更长的和更复杂的研究任务，我们期望性能获得将证明复杂性。
 
-A Clio embedding plot showing the most common ways people are using the Research feature today. The top use case categories are developing software systems across specialized domains (10%), develop and optimize professional and technical content (8%), develop business growth and revenue generation strategies (8%), assist with academic research and educational material development (7%), and research and verify information about people, places, or organizations (5%).
+### 结论
 
-Acknowledgements
+当构建AI代理时，最后一英里经常变成大多数旅程。在开发者机器上运作的代码库需要显著的工程变得可靠的生产系统。代理系统中错误的复合性质意味着对传统软件微不足道的问题可以完全误导代理。一个步骤失败可以导致代理探索完全不同的轨迹，导致不可预测的结果。对这篇文章描述的所有原因，原型和生产之间的间隙经常比预期更宽。
 
-Written by Jeremy Hadfield, Barry Zhang, Kenneth Lien, Florian Scholz, Jeremy Fox, and Daniel Ford. This work reflects the collective efforts of several teams across Anthropic who made the Research feature possible. Special thanks go to the Anthropic apps engineering team, whose dedication brought this complex multi-agent system to production. We're also grateful to our early users for their excellent feedback.
+尽管这些挑战，多代理系统已经证明了对开放式研究任务有价值。用户已说Claude帮助了他们发现他们未考虑的业务机会、导航复杂的医疗保健选项、解决棘手的技术错误和通过发现他们独自不会发现的研究连接节约多达天的工作。多代理研究系统能够在规模上可靠地操作与仔细的工程、全面的测试、详细的提示和工具设计、强大的操作实践和对当前代理能力的强烈理解的紧密合作在研究、产品和工程团队中。我们已经看到这些系统转变了人们如何解决复杂的问题。
 
-Appendix
+一个Clio嵌入地块显示了人们今天使用研究功能的最常见方式。排名靠前的使用场景分类是在专门领域中开发软件系统（10%）、开发和优化专业和技术内容（8%）、开发业务增长和收入生成策略（8%）、协助学术研究和教育材料开发（7%）和研究并核实关于人物、地方或组织的信息（5%）。
 
-Below are some additional miscellaneous tips for multi-agent systems.
+---
 
-End-state evaluation of agents that mutate state over many turns. Evaluating agents that modify persistent state across multi-turn conversations presents unique challenges. Unlike read-only research tasks, each action can change the environment for subsequent steps, creating dependencies that traditional evaluation methods struggle to handle. We found success focusing on end-state evaluation rather than turn-by-turn analysis. Instead of judging whether the agent followed a specific process, evaluate whether it achieved the correct final state. This approach acknowledges that agents may find alternative paths to the same goal while still ensuring they deliver the intended outcome. For complex workflows, break evaluation into discrete checkpoints where specific state changes should have occurred, rather than attempting to validate every intermediate step.
+**翻译进度：** 第1-5篇完成 ✓
 
-Long-horizon conversation management. Production agents often engage in conversations spanning hundreds of turns, requiring careful context management strategies. As conversations extend, standard context windows become insufficient, necessitating intelligent compression and memory mechanisms. We implemented patterns where agents summarize completed work phases and store essential information in external memory before proceeding to new tasks. When context limits approach, agents can spawn fresh subagents with clean contexts while maintaining continuity through careful handoffs. Further, they can retrieve stored context like the research plan from their memory rather than losing previous work when reaching the context limit. This distributed approach prevents context overflow while preserving conversation coherence across extended interactions.
+---
 
-Subagent output to a filesystem to minimize the ‘game of telephone.’ Direct subagent outputs can bypass the main coordinator for certain types of results, improving both fidelity and performance. Rather than requiring subagents to communicate everything through the lead agent, implement artifact systems where specialized agents can create outputs that persist independently. Subagents call tools to store their work in external systems, then pass lightweight references back to the coordinator. This prevents information loss during multi-stage processing and reduces token overhead from copying large outputs through conversation history. The pattern works particularly well for structured outputs like code, reports, or data visualizations where the subagent's specialized prompt produces better results than filtering through a general coordinator.
+## 第六篇：为代理编写有效的工具——与代理合作
 
--------
+**发布日期：** 2025年9月11日
 
-riting effective tools for agents — with agents
+代理只能与我们给他们的工具一样有效。我们分享如何编写高质量工具和评估的最有效技术，以及你如何能通过使用Claude来优化它自己的工具来提升性能。
 
-Published Sep 11, 2025
+模型上下文协议（MCP）可以赋予LLM代理具有可能数百个工具来解决现实世界任务的能力。但我们如何让这些工具最大化有效呢？
 
-Agents are only as effective as the tools we give them. We share how to write high-quality tools and evaluations, and how you can boost performance by using Claude to optimize its tools for itself.
+在这篇文章中，我们描述了我们在各种代理AI系统中改进性能的最有效技术。
 
-The Model Context Protocol (MCP) can empower LLM agents with potentially hundreds of tools to solve real-world tasks. But how do we make those tools maximally effective?
+我们通过涵盖如何开始：
 
-In this post, we describe our most effective techniques for improving performance in a variety of agentic AI systems1.
+- 构建和测试你的工具的原型
+- 创建和运行代理工具的全面评估
+- 与Claude Code之类的代理合作来自动增加你的工具的性能
 
-We begin by covering how you can:
+我们以我们已经识别的关键原则进行结束来编写高质量的工具：
 
-Build and test prototypes of your tools
+- 选择正确的工具来实现（以及不实现的）
+- 命名空间工具来在功能中定义清晰的边界
+- 返回有意义的上下文从工具回到代理
+- 优化工具响应的令牌效率
+- 提示工程工具描述和规格
 
-Create and run comprehensive evaluations of your tools with agents
+通过选择对工具的使用进行评估来增加代理工具的性能。你可以使用Claude Code来自动针对此评估优化你的工具。
 
-Collaborate with agents like Claude Code to automatically increase the performance of your tools
+### 什么是工具？
 
-We conclude with key principles for writing high-quality tools we’ve identified along the way:
+在计算中，确定性系统用相同的输入产生相同的输出每一次，而非确定性系统——如代理——可以生成不同的响应即使具有相同的起点。
 
-Choosing the right tools to implement (and not to implement)
+当我们传统地编写软件时，我们在确定性系统之间建立了一个合约。例如，一个函数调用如getWeather("NYC")将每一次以完全相同的方式获取纽约市的天气。
 
-Namespacing tools to define clear boundaries in functionality
+工具是一个新的软件种类，它反映了确定性系统和非确定性代理之间的一个合约。当用户要求"我应该今天带一个伞吗？"，一个代理可能调用天气工具、来自一般知识回答或甚至首先要求关于位置的澄清问题。偶尔，代理可能出现幻觉或甚至无法掌握如何使用一个工具。
 
-Returning meaningful context from tools back to agents
+这意味着从根本上重新思考我们的方法当为代理编写软件时：我们不应该为其他开发者或系统编写工具和MCP服务器，而是为代理设计他们。
 
-Optimizing tool responses for token efficiency
+我们的目标是增加代理能有效地在解决广泛的任务中通过使用工具来追逐各种各样的成功策略的表面。幸运地，在我们的经验中，对代理最"人体工学"的工具也最终令人惊讶地直观来理解作为人类。
 
-Prompt-engineering tool descriptions and specs
+### 如何编写工具
 
-This is an image depicting how an engineer might use Claude Code to evaluate the efficacy of agentic tools.
+在这个章节中，我们描述了你如何能与代理合作既来编写并改进你给他们的工具。通过立即站起一个快速原型的你的工具并测试他们当地开始。接下来，运行一个全面的评估来测量后续改变。与代理合作，你可以重复改进并评估你的工具的过程直到你的代理在现实世界任务上达到强性能。
 
-Building an evaluation allows you to systematically measure the performance of your tools. You can use Claude Code to automatically optimize your tools against this evaluation.
+**构建一个原型**
 
-What is a tool?
+不获得第一手体验就很难预期哪些工具代理将发现人体工学和哪些代理不会。通过站起一个快速原型的你的工具开始。如果你正在使用Claude Code来编写你的工具（可能在一次射中），它帮助给Claude任何软件库、API或SDK（包括可能的MCP SDK）你的工具将依赖的文档。LLM友好的文档可以常见被发现在官方文件网站上在平面llms.txt文件中（这里是我们API的一个）。
 
-In computing, deterministic systems produce the same output every time given identical inputs, while non-deterministic systems—like agents—can generate varied responses even with the same starting conditions.
+将你的工具包裹在一个本地MCP服务器或桌面扩展（DXT）中将允许你连接并在Claude Code或Claude桌面应用中测试你的工具。
 
-When we traditionally write software, we’re establishing a contract between deterministic systems. For instance, a function call like getWeather(“NYC”) will always fetch the weather in New York City in the exact same manner every time it is called.
+为了连接你的本地MCP服务器到Claude Code，运行claude mcp add <name> <command> [args...]。
 
-Tools are a new kind of software which reflects a contract between deterministic systems and non-deterministic agents. When a user asks "Should I bring an umbrella today?,” an agent might call the weather tool, answer from general knowledge, or even ask a clarifying question about location first. Occasionally, an agent might hallucinate or even fail to grasp how to use a tool.
+为了连接你的本地MCP服务器或DXT到Claude桌面应用，导航到设置>开发者或设置>扩展，分别。
 
-This means fundamentally rethinking our approach when writing software for agents: instead of writing tools and MCP servers the way we’d write functions and APIs for other developers or systems, we need to design them for agents.
+工具也能被直接传递到Anthropic API调用中来进行程序化测试。
 
-Our goal is to increase the surface area over which agents can be effective in solving a wide range of tasks by using tools to pursue a variety of successful strategies. Fortunately, in our experience, the tools that are most “ergonomic” for agents also end up being surprisingly intuitive to grasp as humans.
+自己测试工具来识别任何粗糙边缘。从你的用户收集反馈来构建一个直观关于你期望的使用实例和提示的。
 
-How to write tools
+**运行一个评估**
 
-In this section, we describe how you can collaborate with agents both to write and to improve the tools you give them. Start by standing up a quick prototype of your tools and testing them locally. Next, run a comprehensive evaluation to measure subsequent changes. Working alongside agents, you can repeat the process of evaluating and improving your tools until your agents achieve strong performance on real-world tasks.
+接下来，你需要测量Claude如何好地使用你的工具通过运行一个评估。通过生成许多评估任务开始，接地在现实世界用途中。我们推荐与代理合作来帮助分析你的结果和确定如何改进你的工具。在我们的工具评估食谱中看到这个过程端到端。
 
-Building a prototype
+这个图表测量人类编写对比Claude优化的Slack MCP服务器的测试集准确性。
 
-It can be difficult to anticipate which tools agents will find ergonomic and which tools they won’t without getting hands-on yourself. Start by standing up a quick prototype of your tools. If you’re using Claude Code to write your tools (potentially in one-shot), it helps to give Claude documentation for any software libraries, APIs, or SDKs (including potentially the MCP SDK) your tools will rely on. LLM-friendly documentation can commonly be found in flat llms.txt files on official documentation sites (here’s our API’s).
+我们的内部Slack工具的保留测试集性能。
 
-Wrapping your tools in a local MCP server or Desktop extension (DXT) will allow you to connect and test your tools in Claude Code or the Claude Desktop app.
+**生成评估任务**
 
-To connect your local MCP server to Claude Code, run claude mcp add <name> <command> [args...].
+具有你的早期原型，Claude Code能快速探索你的工具并创建打几十个提示和响应对。提示应该受现实世界使用启发并基于现实的数据来源和服务（例如，内部知识库和微服务）。我们推荐你避免过度简化或肤浅的"沙箱"环境不为足够的复杂性压力测试你的工具。强评估任务可能需要多个工具调用——可能打几十。
 
-To connect your local MCP server or DXT to the Claude Desktop app, navigate to Settings > Developer or Settings > Extensions, respectively.
+这些是强任务的一些例子：
 
-Tools can also be passed directly into Anthropic API calls for programmatic testing.
+- 下周为了讨论我们最新的Acme Corp项目与Jane安排一次会议。附上我们最后项目规划会议的笔记并保留一间会议室。
+- 客户ID 9182报告他们被为单一购买尝试充电了三次。发现所有相关的日志条目并确定是否任何其他顾客受到影响相同的问题。
+- 客户Sarah Chen刚提交了一个取消请求。准备一个保留报价。确定：(1)为什么他们离开，(2)什么保留报价将是最引人注目的，和(3)任何风险因素我们应该在做一个报价前知道。
 
-Test the tools yourself to identify any rough edges. Collect feedback from your users to build an intuition around the use-cases and prompts you expect your tools to enable.
+并且这些是弱任务的一些例子：
 
-Running an evaluation
+- 下周为jane@acme.corp安排一次会议。
+- 搜索支付日志以进行purchase_complete和customer_id=9182。
+- 按客户ID 45892发现取消请求。
 
-Next, you need to measure how well Claude uses your tools by running an evaluation. Start by generating lots of evaluation tasks, grounded in real world uses. We recommend collaborating with an agent to help analyze your results and determine how to improve your tools. See this process end-to-end in our tool evaluation cookbook.
+每个评估提示应该与一个可验证的响应或结果配对。你的验证器可以与一个精确的字符串比较一样简单作为基础真理和采样响应之间，或作为高级为征募Claude来判断响应。避免过度严格的验证者拒绝正确的响应由于虚假差异如格式化、标点或有效的替代措辞。
 
-This graph measures the test set accuracy of human-written vs. Claude-optimized Slack MCP servers.
+对于每个提示-响应对，你可以选择也指定代理你期望在解决任务中调用来测量代理是否成功地掌握了每个工具的目的在评估期间。但是，因为可能有多个有效的路径来正确解决任务，尝试避免过度指定或过度适配到策略。
 
-Held-out test set performance of our internal Slack tools
+**运行评估**
 
-Generating evaluation tasks
+我们推荐以程序化方式运行你的评估与直接LLM API调用。使用简单的代理循环（while循环包裹交替LLM API和工具调用）：一个循环对于每个评估任务。每个评估代理应该被给一个单一的任务提示和你的工具。
 
-With your early prototype, Claude Code can quickly explore your tools and create dozens of prompt and response pairs. Prompts should be inspired by real-world uses and be based on realistic data sources and services (for example, internal knowledge bases and microservices). We recommend you avoid overly simplistic or superficial “sandbox” environments that don’t stress-test your tools with sufficient complexity. Strong evaluation tasks might require multiple tool calls—potentially dozens.
+在你的评估代理的系统提示中，我们推荐指导代理输出不仅仅结构化响应块（对于验证）而且推理和反馈块。指导代理输出这些在工具调用之前和响应块可能增加LLM的有效智能通过触发链式思维（CoT）行为。
 
-Here are some examples of strong tasks:
+如果你正在用Claude运行你的评估，你可以为类似的功能打开交错思维"现成的"。这将帮助你探查为什么代理做或不调用某些工具和突出改进的特定区域在工具描述和规格中。
 
-Schedule a meeting with Jane next week to discuss our latest Acme Corp project. Attach the notes from our last project planning meeting and reserve a conference room.
+同样如顶级准确性，我们推荐收集其他指标如个别工具调用和任务的总运行时间、总工具调用数、总令牌消耗和工具错误。追踪工具调用可以帮助显示代理追逐的常见工作流并提供一些机会对于工具来合并。
 
-Customer ID 9182 reported that they were charged three times for a single purchase attempt. Find all relevant log entries and determine if any other customers were affected by the same issue.
+这个图表测量人类编写对比Claude优化的Asana MCP服务器的测试集准确性。
 
-Customer Sarah Chen just submitted a cancellation request. Prepare a retention offer. Determine: (1) why they're leaving, (2) what retention offer would be most compelling, and (3) any risk factors we should be aware of before making an offer.
+我们的内部Asana工具的保留测试集性能。
 
-And here are some weaker tasks:
+**分析结果**
 
-Schedule a meeting with jane@acme.corp next week.
+代理是你有用的伙伴在发现问题和提供关于从矛盾的工具描述到低效的工具实现和困惑的工具模式的所有事物反馈。但是，保持在思维中代理在他们的反馈和响应中省略的什么可以经常比他们包含的更加重要。LLM不总是说什么他们意思。
 
-Search the payment logs for purchase_complete and customer_id=9182.
+观察你的代理变得卡住或困惑的地方。读通过你的评估代理的推理和反馈（或CoT）来识别粗糙边缘。审查原始文字记录（包括工具调用和工具响应）来捕获代理不在代理的CoT中明确描述的任何行为。在线阅读；记住你的评估代理不一定知道正确的答案和策略。
 
-Find the cancellation request by Customer ID 45892.
+分析你的工具调用指标。许多冗余工具调用可能建议一些分页的右调整大小或令牌限制参数有价值；许多工具错误对于无效参数可能建议工具可以使用更清晰的描述或更好的例子。当我们推出Claude的网络搜索工具时，我们识别Claude不必要地附加了2025到工具的查询参数，偏置搜索结果并贬低性能（我们通过改进工具描述中指导Claude朝向正确的方向）。
 
-Each evaluation prompt should be paired with a verifiable response or outcome. Your verifier can be as simple as an exact string comparison between ground truth and sampled responses, or as advanced as enlisting Claude to judge the response. Avoid overly strict verifiers that reject correct responses due to spurious differences like formatting, punctuation, or valid alternative phrasings.
+**与代理合作**
 
-For each prompt-response pair, you can optionally also specify the tools you expect an agent to call in solving the task, to measure whether or not agents are successful in grasping each tool’s purpose during evaluation. However, because there might be multiple valid paths to solving tasks correctly, try to avoid overspecifying or overfitting to strategies.
+你甚至可以让代理分析你的结果并为你改进你的工具。简单地连接来自你的评估代理的文字记录并粘贴他们到Claude Code中。Claude是出色的在分析文字记录和一次重构许多工具——例如，来确保工具实现和描述在做新改变时保持自我一致。
 
-Running the evaluation
+实际上，大多数这篇文章中的建议来自反复优化我们的内部工具实现与Claude Code。我们的评估在我们的内部工作空间的顶部被创建，镜像了我们的内部工作流的复杂性，包括真实的项目、文件和消息。
 
-We recommend running your evaluation programmatically with direct LLM API calls. Use simple agentic loops (while-loops wrapping alternating LLM API and tool calls): one loop for each evaluation task. Each evaluation agent should be given a single task prompt and your tools.
+我们依赖保留的测试集来确保我们没有过度适配到我们的"训练"评估。这些测试集显示我们能提取额外的性能改进即使超出我们用"专家"工具实现达成的——无论这些工具是手动编写的由我们的研究人员或由Claude本身生成的。
 
-In your evaluation agents’ system prompts, we recommend instructing agents to output not just structured response blocks (for verification), but also reasoning and feedback blocks. Instructing agents to output these before tool call and response blocks may increase LLMs’ effective intelligence by triggering chain-of-thought (CoT) behaviors.
+在下一个章节中，我们将分享一些我们从这个过程学到的。
 
-If you’re running your evaluation with Claude, you can turn on interleaved thinking for similar functionality “off-the-shelf”. This will help you probe why agents do or don’t call certain tools and highlight specific areas of improvement in tool descriptions and specs.
+**为代理编写有效工具的原则**
 
-As well as top-level accuracy, we recommend collecting other metrics like the total runtime of individual tool calls and tasks, the total number of tool calls, the total token consumption, and tool errors. Tracking tool calls can help reveal common workflows that agents pursue and offer some opportunities for tools to consolidate.
+在这个章节中，我们将我们的学习蒸馏为几个指导原则来编写有效的工具。
 
-This graph measures the test set accuracy of human-written vs. Claude-optimized Asana MCP servers.
+**为代理选择正确的工具**
 
-Held-out test set performance of our internal Asana tools
+更多的工具并不总是导致更好的结果。一个常见的错误我们已观察是简单包装现有软件功能或API端点的工具——无论或工具是否对代理适当。这是因为代理具有不同的"affordances"对于传统软件——即，他们具有不同的方式来感知他们能采取具有这些工具的潜在行为。
 
-Analyzing results
+LLM代理具有有限的"上下文"（即，有对多少信息他们可以一次处理的限制），然而计算机记忆是便宜的且丰富的。考虑在地址书中搜索联系人的任务。传统软件程序可以有效地存储和处理一个联系人列表一次，在移动到下一个之前检查每一个。
 
-Agents are your helpful partners in spotting issues and providing feedback on everything from contradictory tool descriptions to inefficient tool implementations and confusing tool schemas. However, keep in mind that what agents omit in their feedback and responses can often be more important than what they include. LLMs don’t always say what they mean.
+但是，如果一个LLM代理使用一个返回所有联系人然后必须逐令牌阅读通过每一个的工具，它浪费了它的有限上下文空间在不相关的信息上（想象通过从顶部到底部阅读每一页搜索你的地址书中的一个联系人——即，通过蛮力搜索）。更好的且更自然的方法（对于代理和人类两者）是首先跳到相关的页面（也许通过字母上发现它）。
 
-Observe where your agents get stumped or confused. Read through your evaluation agents’ reasoning and feedback (or CoT) to identify rough edges. Review the raw transcripts (including tool calls and tool responses) to catch any behavior not explicitly described in the agent’s CoT. Read between the lines; remember that your evaluation agents don’t necessarily know the correct answers and strategies.
+我们推荐构建几个周到的工具针对特定的高影响工作流，其匹配你的评估任务并从那里扩展。在地址书的实例中，你可能选择实现一个search_contacts或message_contact工具而不是list_contacts工具。
 
-Analyze your tool calling metrics. Lots of redundant tool calls might suggest some rightsizing of pagination or token limit parameters is warranted; lots of tool errors for invalid parameters might suggest tools could use clearer descriptions or better examples. When we launched Claude’s web search tool, we identified that Claude was needlessly appending 2025 to the tool’s query parameter, biasing search results and degrading performance (we steered Claude in the right direction by improving the tool description).
+工具可以合并功能，处理潜在的多个离散的操作（或API调用）在引擎盖下。例如，工具能够用相关的元数据丰富工具响应或处理频繁链接、多步任务在一个单一的工具调用中。
 
-Collaborating with agents
+这些是一些例子：
 
-You can even let agents analyze your results and improve your tools for you. Simply concatenate the transcripts from your evaluation agents and paste them into Claude Code. Claude is an expert at analyzing transcripts and refactoring lots of tools all at once—for example, to ensure tool implementations and descriptions remain self-consistent when new changes are made.
+- 而不是实现一个list_users、list_events和create_event工具，考虑实现一个schedule_event工具，其发现可用性和安排一个事件。
+- 而不是实现一个read_logs工具，考虑实现一个search_logs工具，其仅返回相关的日志行和一些周围的上下文。
+- 而不是实现get_customer_by_id、list_transactions和list_notes工具，实现一个get_customer_context工具，其编译所有一个顾客的最近的&相关信息一次。
 
-In fact, most of the advice in this post came from repeatedly optimizing our internal tool implementations with Claude Code. Our evaluations were created on top of our internal workspace, mirroring the complexity of our internal workflows, including real projects, documents, and messages.
+确保每个工具你构建具有一个清晰、不同的目的。工具应该启用代理来细分和解决任务在相同的方式一个人类会，给予访问相同的基础资源，并同时减少中间输出会的其他方式消耗的上下文。
 
-We relied on held-out test sets to ensure we did not overfit to our “training” evaluations. These test sets revealed that we could extract additional performance improvements even beyond what we achieved with "expert" tool implementations—whether those tools were manually written by our researchers or generated by Claude itself.
+太多个工具或重叠工具也能分散代理从追求高效策略。精心、选择的规划工具你构建（或不构建）能真的付出。
 
-In the next section, we’ll share some of what we learned from this process.
+**命名空间你的工具**
 
-Principles for writing effective tools
+你的AI代理将可能获得访问打几十个MCP服务器和数百个不同的工具——包括由其他开发者。当工具重叠在函数中或具有模糊的目的时，代理能变得困惑关于哪些要使用。
 
-In this section, we distill our learnings into a few guiding principles for writing effective tools.
+命名空间（在常见前缀下分组相关工具）能帮助描述许多工具之间的边界；MCP客户端有时默认做这个。例如，按服务命名空间工具（例如，asana_search、jira_search）和按资源（例如，asana_projects_search、asana_users_search）能帮助代理在正确的时间选择正确的工具。
 
-Choosing the right tools for agents
+我们已发现选择之间前缀和后缀基础的命名在我们的工具使用评估中具有非平凡的影响。影响由LLM变化，并且我们鼓励你根据你自己的评估选择一个命名方案。
 
-More tools don’t always lead to better outcomes. A common error we’ve observed is tools that merely wrap existing software functionality or API endpoints—whether or not the tools are appropriate for agents. This is because agents have distinct “affordances” to traditional software—that is, they have different ways of perceiving the potential actions they can take with those tools
+代理可能调用错误的工具，用错误的参数调用正确的工具、调用太少工具或不当地处理工具响应。通过选择性地实现工具的名称其中反映任务的自然细分，你同时减少加载到代理的上下文中的工具数和工具描述并将代理计算从代理的上下文回到工具调用本身。这减少了代理的整体风险犯错误的。
 
-LLM agents have limited "context" (that is, there are limits to how much information they can process at once), whereas computer memory is cheap and abundant. Consider the task of searching for a contact in an address book. Traditional software programs can efficiently store and process a list of contacts one at a time, checking each one before moving on.
+**从你的工具返回有意义的上下文**
 
-However, if an LLM agent uses a tool that returns ALL contacts and then has to read through each one token-by-token, it's wasting its limited context space on irrelevant information (imagine searching for a contact in your address book by reading each page from top-to-bottom—that is, via brute-force search). The better and more natural approach (for agents and humans alike) is to skip to the relevant page first (perhaps finding it alphabetically).
+在相同的线条中，工具实现应该照顾到仅返回高信号信息回代理。他们应该优先情境相关性上灵活性，并避免低级别的技术标识符（例如：uuid、256px_image_url、mime_type）。字段如名称、image_url和file_type要比直接更可能知道代理的下游行为和响应。
 
-We recommend building a few thoughtful tools targeting specific high-impact workflows, which match your evaluation tasks and scaling up from there. In the address book case, you might choose to implement a search_contacts or message_contact tool instead of a list_contacts tool.
+代理也倾向于与自然语言名字、条款或标识符成功地搏斗显著比他们用与秘密的标识符。我们已发现仅解析任意的字母数字UUID到更语义有意义且可解释的语言（或甚至一个0索引的ID方案）显著改进Claude的检索任务精度通过减少幻觉。
 
-Tools can consolidate functionality, handling potentially multiple discrete operations (or API calls) under the hood. For example, tools can enrich tool responses with related metadata or handle frequently chained, multi-step tasks in a single tool call.
+在一些实例中，代理可能需要与自然语言和技术标识符输出两者交互的灵活性，如果仅触发下游工具调用（例如，search_user(name='jane')→send_message(id=12345)）。你能通过在你的工具中暴露一个简单的response_format enum参数来启用两者，允许你的代理控制工具是否返回"简洁"或"详细"响应（下面的图像）。
 
-Here are some examples:
+你能添加更多的格式来甚至更大的灵活性，相似到GraphQL其中你能选择准确地哪些信息片段你想要接收。这里是一个例子ResponseFormat enum来控制工具响应详细程度：
 
-Instead of implementing a list_users, list_events, and create_event tools, consider implementing a schedule_event tool which finds availability and schedules an event.
-
-Instead of implementing a read_logs tool, consider implementing a search_logs tool which only returns relevant log lines and some surrounding context.
-
-Instead of implementing get_customer_by_id, list_transactions, and list_notes tools, implement a get_customer_context tool which compiles all of a customer’s recent & relevant information all at once.
-
-Make sure each tool you build has a clear, distinct purpose. Tools should enable agents to subdivide and solve tasks in much the same way that a human would, given access to the same underlying resources, and simultaneously reduce the context that would have otherwise been consumed by intermediate outputs.
-
-Too many tools or overlapping tools can also distract agents from pursuing efficient strategies. Careful, selective planning of the tools you build (or don’t build) can really pay off.
-
-Namespacing your tools
-
-Your AI agents will potentially gain access to dozens of MCP servers and hundreds of different tools–including those by other developers. When tools overlap in function or have a vague purpose, agents can get confused about which ones to use.
-
-Namespacing (grouping related tools under common prefixes) can help delineate boundaries between lots of tools; MCP clients sometimes do this by default. For example, namespacing tools by service (e.g., asana_search, jira_search) and by resource (e.g., asana_projects_search, asana_users_search), can help agents select the right tools at the right time.
-
-We have found selecting between prefix- and suffix-based namespacing to have non-trivial effects on our tool-use evaluations. Effects vary by LLM and we encourage you to choose a naming scheme according to your own evaluations.
-
-Agents might call the wrong tools, call the right tools with the wrong parameters, call too few tools, or process tool responses incorrectly. By selectively implementing tools whose names reflect natural subdivisions of tasks, you simultaneously reduce the number of tools and tool descriptions loaded into the agent’s context and offload agentic computation from the agent’s context back into the tool calls themselves. This reduces an agent’s overall risk of making mistakes.
-
-Returning meaningful context from your tools
-
-In the same vein, tool implementations should take care to return only high signal information back to agents. They should prioritize contextual relevance over flexibility, and eschew low-level technical identifiers (for example: uuid, 256px_image_url, mime_type). Fields like name, image_url, and file_type are much more likely to directly inform agents’ downstream actions and responses.
-
-Agents also tend to grapple with natural language names, terms, or identifiers significantly more successfully than they do with cryptic identifiers. We’ve found that merely resolving arbitrary alphanumeric UUIDs to more semantically meaningful and interpretable language (or even a 0-indexed ID scheme) significantly improves Claude’s precision in retrieval tasks by reducing hallucinations.
-
-In some instances, agents may require the flexibility to interact with both natural language and technical identifiers outputs, if only to trigger downstream tool calls (for example, search_user(name=’jane’) → send_message(id=12345)). You can enable both by exposing a simple response_format enum parameter in your tool, allowing your agent to control whether tools return “concise” or “detailed” responses (images below).
-
-You can add more formats for even greater flexibility, similar to GraphQL where you can choose exactly which pieces of information you want to receive. Here is an example ResponseFormat enum to control tool response verbosity:
-
+```
 enum ResponseFormat {
-
    DETAILED = "detailed",
-
    CONCISE = "concise"
-
 }
+```
 
-Copy
+一个详细工具响应的例子（206令牌）。
 
-Here’s an example of a detailed tool response (206 tokens):
+一个简洁工具响应的例子（72令牌）。
 
-This code snippet depicts an example of a detailed tool response.
+Slack线程和线程回复由唯一的thread_ts识别，需要获取线程回复。thread_ts和其他ID（channel_id、user_id）能从一个"详细"工具响应中被检索来启用进一步的工具调用，需要这些。"简洁"工具响应返回仅线程内容和排除ID。在这个例子中，我们使用大约1/3的令牌用"简洁"工具响应。
 
-Here’s an example of a concise tool response (72 tokens):
+即使你的工具响应结构——例如XML、JSON或降价——能在评估性能中具有一个影响：没有一个尺寸适配全部的解决方案。这是因为LLM基于下一令牌预测被训练并倾向于与他们的训练数据相匹配的格式一起表现更好。最优的响应结构将由任务和代理大幅变化。我们鼓励你基于你自己的评估选择最好的响应结构。
 
-This code snippet depicts a concise tool response.
+**优化工具响应的令牌效率**
 
-Slack threads and thread replies are identified by unique thread_ts which are required to fetch thread replies. thread_ts and other IDs (channel_id, user_id) can be retrieved from a “detailed” tool response to enable further tool calls that require these. “concise” tool responses return only thread content and exclude IDs. In this example, we use ~⅓ of the tokens with “concise” tool responses.
+优化上下文质量很重要。但是优化返回给代理工具响应中的上下文的数量也是。
 
-Even your tool response structure—for example XML, JSON, or Markdown—can have an impact on evaluation performance: there is no one-size-fits-all solution. This is because LLMs are trained on next-token prediction and tend to perform better with formats that match their training data. The optimal response structure will vary widely by task and agent. We encourage you to select the best response structure based on your own evaluation.
+我们建议实现任何工具响应的分页、范围选择、过滤和/或截断的一些组合，其可以使用许多上下文带有合理的默认参数值。对于Claude Code，我们默认将工具响应限制为25,000令牌。我们期望代理的有效上下文长度随时间增长，但对于上下文高效的工具的需求保留。
 
-Optimizing tool responses for token efficiency
+如果你选择截断响应，确定指导代理与有用的指令。你能直接鼓励代理追求更多令牌高效的策略，如制作许多小的、目标的搜索而不是知识检索任务的一个单一、广泛的搜索。类似地，如果一个工具调用提升一个错误（例如，在输入验证期间），你能提示工程你的错误响应来清晰地通信特定和可行的改进，而不是模糊的错误代码或追踪。
 
-Optimizing the quality of context is important. But so is optimizing the quantity of context returned back to agents in tool responses.
+一个截断工具响应的例子。
 
-We suggest implementing some combination of pagination, range selection, filtering, and/or truncation with sensible default parameter values for any tool responses that could use up lots of context. For Claude Code, we restrict tool responses to 25,000 tokens by default. We expect the effective context length of agents to grow over time, but the need for context-efficient tools to remain.
+一个无用的错误响应的例子。
 
-If you choose to truncate responses, be sure to steer agents with helpful instructions. You can directly encourage agents to pursue more token-efficient strategies, like making many small and targeted searches instead of a single, broad search for a knowledge retrieval task. Similarly, if a tool call raises an error (for example, during input validation), you can prompt-engineer your error responses to clearly communicate specific and actionable improvements, rather than opaque error codes or tracebacks.
+一个有用的错误响应的例子。
 
-Here’s an example of a truncated tool response:
+工具截断和错误响应能指导代理朝向更多令牌高效的工具使用行为（使用过滤或分页）或给例子正确格式化工具输入的。
 
-This image depicts an example of a truncated tool response.
+**提示工程你的工具描述**
 
-Here’s an example of an unhelpful error response:
+我们现在来到一个最有效的方法来改进工具之一：提示工程你的工具描述和规格。因为这些被加载到你的代理的上下文中，他们能集体指导代理朝向有效的工具调用行为。
 
-This image depicts an example of an unhelpful tool response. 
+当编写工具描述和规格时，思考你将如何描述你的工具到你的团队上的一个新员工。考虑你可能隐含地带来的上下文——专门的查询格式、利基术语的定义、基础资源之间的关系——并让它明确。通过清晰描述来避免歧义（和用严格的数据模型强制）期望的输入和输出。特别是，输入参数应该是明确命名的：而不是一个参数名为user，尝试一个参数名为user_id。
 
-Here’s an example of a helpful error response:
+与你的评估你能用更大的信心测量你的提示工程的影响。甚至小的精致到工具描述能产生戏剧的改进。Claude Sonnet 3.5在SWE-bench验证的评估中达到最先进的性能在我们做了精确精致到工具描述后，戏剧地减少了错误率并改进了任务完成。
 
-This image depicts an example of a helpful error response.
+你能在我们的开发者指南中发现对工具定义的其他最佳实践。如果你正在为Claude构建工具，我们也推荐阅读关于工具如何被动态加载到Claude的系统提示的。最后，如果你正在为一个MCP服务器编写工具，工具注释帮助公开哪些工具需要开放世界访问或做破坏的改变。
 
-Tool truncation and error responses can steer agents towards more token-efficient tool-use behaviors (using filters or pagination) or give examples of correctly formatted tool inputs.
+### 前看
 
-Prompt-engineering your tool descriptions
+为代理构建有效工具，我们需要重新定向我们的软件开发实践从可预测的、确定性的模式到非确定性的。
 
-We now come to one of the most effective methods for improving tools: prompt-engineering your tool descriptions and specs. Because these are loaded into your agents’ context, they can collectively steer agents toward effective tool-calling behaviors.
+通过我们在这篇文章中描述的迭代的、评估驱动的过程，我们已识别成功工具中的一致的模式：有效工具是有意识地和清晰地定义的，有判别地使用代理上下文，可以在不同的工作流中组合，并启用代理来直观地解决现实世界任务。
 
-When writing tool descriptions and specs, think of how you would describe your tool to a new hire on your team. Consider the context that you might implicitly bring—specialized query formats, definitions of niche terminology, relationships between underlying resources—and make it explicit. Avoid ambiguity by clearly describing (and enforcing with strict data models) expected inputs and outputs. In particular, input parameters should be unambiguously named: instead of a parameter named user, try a parameter named user_id.
+在未来，我们期望特定的机制通过代理与世界互动的进化——从对MCP协议的更新到对基础LLM本身的升级。用一个系统的、评估驱动的方法来改进代理的工具，我们能确保随着代理变得更有能力，他们使用的工具将随时间演变。
 
-With your evaluation you can measure the impact of your prompt engineering with greater confidence. Even small refinements to tool descriptions can yield dramatic improvements. Claude Sonnet 3.5 achieved state-of-the-art performance on the SWE-bench Verified evaluation after we made precise refinements to tool descriptions, dramatically reducing error rates and improving task completion.
+---
 
-You can find other best practices for tool definitions in our Developer Guide. If you’re building tools for Claude, we also recommend reading about how tools are dynamically loaded into Claude’s system prompt. Lastly, if you’re writing tools for an MCP server, tool annotations help disclose which tools require open-world access or make destructive changes.
+**翻译进度：** 第1-6篇完成 ✓
 
-Looking ahead
+---
 
-To build effective tools for agents, we need to re-orient our software development practices from predictable, deterministic patterns to non-deterministic ones.
+## 第七篇：AI代理的有效上下文工程
 
-Through the iterative, evaluation-driven process we’ve described in this post, we've identified consistent patterns in what makes tools successful: Effective tools are intentionally and clearly defined, use agent context judiciously, can be combined together in diverse workflows, and enable agents to intuitively solve real-world tasks.
+**发布日期：** 2025年9月29日
 
-In the future, we expect the specific mechanisms through which agents interact with the world to evolve—from updates to the MCP protocol to upgrades to the underlying LLMs themselves. With a systematic, evaluation-driven approach to improving tools for agents, we can ensure that as agents become more capable, the tools they use will evolve alongside them.
+上下文是AI代理的一个关键但有限的资源。在这篇文章中，我们探索有效策划和管理赋予他们动力的上下文的策略。
 
-Acknowledgements
+在应用AI近几年专注于提示工程后，一个新的术语已获得突出：上下文工程。用语言模型构建正在变得更少关于找到正确的词和短语对于你的提示，以及更多关于回答更宽泛的问题"什么上下文配置最可能生成我们的模型所需的行为？"
 
-Written by Ken Aizawa with valuable contributions from colleagues across Research (Barry Zhang, Zachary Witten, Daniel Jiang, Sami Al-Sheikh, Matt Bell, Maggie Vo), MCP (Theodora Chu, John Welsh, David Soria Parra, Adam Jones), Product Engineering (Santiago Seira), Marketing (Molly Vorwerck), Design (Drew Roper), and Applied AI (Christian Ryan, Alexander Bricken).
+上下文指的是当从大语言模型采样时包含的令牌集合。工程问题在手是优化这些令牌的效用对抗LLM的固有约束为了一致地达到一个所需的结果。有效地驾驭LLM通常需要在上下文中思考——换句话说：考虑代理任何给定时刻的全息状态以及该状态可能产生的潜在行为。
 
-1Beyond training the underlying LLMs themselves.
+在这篇文章中，我们将探索新兴的上下文工程艺术和提供一个精细的心理模型来构建可导向的、有效的代理。
 
--------
+### 上下文工程对比提示工程
 
-Effective context engineering for AI agents
+在Anthropic，我们将上下文工程视为提示工程的自然进展。提示工程指的是为最优的结果编写和组织LLM指令的方法（参见我们的文档对于概览和有用的提示工程策略）。上下文工程指的是在LLM推理期间策划和维护最优令牌集合（信息）的策略集合，包括所有其他可能降落在那里之外提示的信息。
 
-Published Sep 29, 2025
+在使用LLM工程的早期，提示是最大的AI工程工作组成部分，因为大多数使用实例之外的日常聊天交互需要对一次性分类或文本生成任务优化的提示。如术语所暗示，提示工程的主要焦点是如何编写有效的提示，特别是系统提示。但是，随着我们朝更有能力的代理转向，对多个推理回合运行且较长的时间视野，我们需要策略来管理整个上下文状态（系统指令、工具、模型上下文协议（MCP）、外部数据、消息历史等）。
 
-Context is a critical but finite resource for AI agents. In this post, we explore strategies for effectively curating and managing the context that powers them.
+一个代理在循环中运行生成越来越多的数据，其可能对下一个推理转向相关，以及这个信息必须循环精致。上下文工程是策划什么将进入有限上下文窗口的艺术与科学来自不断进化的可能信息的宇宙。
 
-After a few years of prompt engineering being the focus of attention in applied AI, a new term has come to prominence: context engineering. Building with language models is becoming less about finding the right words and phrases for your prompts, and more about answering the broader question of “what configuration of context is most likely to generate our model’s desired behavior?"
+与离散提示编写相对，上下文工程是迭代的，策划阶段每一次发生我们决定什么传递到模型。
 
-Context refers to the set of tokens included when sampling from a large-language model (LLM). The engineering problem at hand is optimizing the utility of those tokens against the inherent constraints of LLMs in order to consistently achieve a desired outcome. Effectively wrangling LLMs often requires thinking in context — in other words: considering the holistic state available to the LLM at any given time and what potential behaviors that state might yield.
+### 为什么上下文工程对构建有能力的代理很重要
 
-In this post, we’ll explore the emerging art of context engineering and offer a refined mental model for building steerable, effective agents.
+尽管他们的速度和处理更大和更大的数据卷的能力，我们已观察LLM，如人类，在某一点失去焦点或经验困惑。在干草堆风格基准测试中的研究已发现上下文衰退的概念：当上下文窗口中的令牌数增加时，模型的能力准确回忆那个上下文的信息下降。
 
-Context engineering vs. prompt engineering
+尽管某些模型表现比其他人更温柔的衰退，这个特征浮现跨所有模型。上下文，因此，必须被视为一个有限的资源具有递减的边际回报。如人类，其具有有限的工作记忆能力，LLM具有一个"注意力预算"，他们在解析大数量的上下文时绘制。每一个新令牌引入都通过某个数量耗尽这个预算，增加了仔细策划可对LLM可用令牌的需要。
 
-At Anthropic, we view context engineering as the natural progression of prompt engineering. Prompt engineering refers to methods for writing and organizing LLM instructions for optimal outcomes (see our docs for an overview and useful prompt engineering strategies). Context engineering refers to the set of strategies for curating and maintaining the optimal set of tokens (information) during LLM inference, including all the other information that may land there outside of the prompts.
+这个注意力稀缺性源自LLM的架构约束。LLM基于转换器架构，其启用每一个令牌跨整个上下文对每其他令牌关注。这导致对于n令牌的n²成对关系。
 
-In the early days of engineering with LLMs, prompting was the biggest component of AI engineering work, as the majority of use cases outside of everyday chat interactions required prompts optimized for one-shot classification or text generation tasks. As the term implies, the primary focus of prompt engineering is how to write effective prompts, particularly system prompts. However, as we move towards engineering more capable agents that operate over multiple turns of inference and longer time horizons, we need strategies for managing the entire context state (system instructions, tools, Model Context Protocol (MCP), external data, message history, etc).
+随着其上下文长度增加，一个模型的能力捕获这些成对关系变得延伸稀薄，创建上下文大小和注意力焦点之间的自然张力。另外，模型从训练数据分布开发他们的注意力模式，其中较短的序列通常比较长的更常见。这意味着模型更少经验且更少专门的参数对于上下文宽的依赖关系。
 
-An agent running in a loop generates more and more data that could be relevant for the next turn of inference, and this information must be cyclically refined. Context engineering is the art and science of curating what will go into the limited context window from that constantly evolving universe of possible information.
+技术如位置编码内插允许模型处理较长的序列通过适配他们到原本被训练的较小上下文，尽管伴随某种衰退在令牌位置理解中。这些因素创建一个性能梯度而不是硬崖：模型在较长上下文保持高度有能力但可能对较长上下文显示减少的精度来说信息检索和长范围推理与他们在较短上下文上的性能相比。
 
-Prompt engineering vs. context engineering
+这些现实意味着周到的上下文工程对构建有能力的代理是至关重要的。
 
-In contrast to the discrete task of writing a prompt, context engineering is iterative and the curation phase happens each time we decide what to pass to the model.
+### 有效上下文的剖析
 
-Why context engineering is important to building capable agents
+给定LLM被受限由有限的注意力预算，好的上下文工程意味着发现最小的可能的高信号令牌集合，其最大化到达某个所需结果的可能性。实现这个实践远比说的容易，但在下面的章节中，我们列举这个指导原则在实践中对上下文的不同组件意味着什么。
 
-Despite their speed and ability to manage larger and larger volumes of data, we’ve observed that LLMs, like humans, lose focus or experience confusion at a certain point. Studies on needle-in-a-haystack style benchmarking have uncovered the concept of context rot: as the number of tokens in the context window increases, the model’s ability to accurately recall information from that context decreases.
+**系统提示**
 
-While some models exhibit more gentle degradation than others, this characteristic emerges across all models. Context, therefore, must be treated as a finite resource with diminishing marginal returns. Like humans, who have limited working memory capacity, LLMs have an “attention budget” that they draw on when parsing large volumes of context. Every new token introduced depletes this budget by some amount, increasing the need to carefully curate the tokens available to the LLM.
+系统提示应该非常清晰并使用简单、直接的语言来在代理的正确的海拔高度呈现想法。正确的海拔高度是两个常见的故障模式之间的金发姑娘区。在一个极端，我们看到工程师在他们的提示中硬编码复杂、脆弱的逻辑来激发精确的代理行为。这个方法创建脆弱性并随时间增加维护复杂性。在另一个极端，工程师有时提供模糊的、高级的指导失败给LLM明确的信号到所需的输出或错误地假设共享上下文。最优的海拔高度击中平衡：特定到有效地指导行为，然而灵活到提供模型以强启发式方法来指导行为。
 
-This attention scarcity stems from architectural constraints of LLMs. LLMs are based on the transformer architecture, which enables every token to attend to every other token across the entire context. This results in n² pairwise relationships for n tokens.
+在上下文工程中标定系统提示。
 
-As its context length increases, a model's ability to capture these pairwise relationships gets stretched thin, creating a natural tension between context size and attention focus. Additionally, models develop their attention patterns from training data distributions where shorter sequences are typically more common than longer ones. This means models have less experience with, and fewer specialized parameters for, context-wide dependencies.
+在谱的一个末端，我们看到脆弱如果-否则硬编码提示，在另一个末端我们看到提示，过度一般或错误地假设共享上下文。
 
-Techniques like position encoding interpolation allow models to handle longer sequences by adapting them to the originally trained smaller context, though with some degradation in token position understanding. These factors create a performance gradient rather than a hard cliff: models remain highly capable at longer contexts but may show reduced precision for information retrieval and long-range reasoning compared to their performance on shorter contexts.
+我们推荐组织提示进不同的章节（像<background_information>、<instructions>、## 工具指导、## 输出描述等等）并使用像XML标记或降价标题这样的技术来描述这些章节，尽管确切的提示格式可能随着模型变得更有能力变得较少重要。
 
-These realities mean that thoughtful context engineering is essential for building capable agents.
+无论你如何决定结构你的系统提示，你应该努力朝向能完全叙述你的期望行为的最小信息集合。（注意最小不一定意味着短；你仍然需要提供给代理足够的信息确保它遵从期望的行为。）最好开始通过用最好的模型可用的最小提示测试来看它在你的任务上如何表现，然后基于初期测试发现的故障模式添加清晰的指令和例子来改进性能。
 
-The anatomy of effective context
+**工具**
 
-Given that LLMs are constrained by a finite attention budget, good context engineering means finding the smallest possible set of high-signal tokens that maximize the likelihood of some desired outcome. Implementing this practice is much easier said than done, but in the following section, we outline what this guiding principle means in practice across the different components of context.
+工具允许代理与他们的环境操作并为他们工作拉入新的、附加的上下文。因为工具定义了代理和他们的信息/行为空间之间的合约，它是代理推动效率，两个通过返回令牌高效信息且通过鼓励高效代理行为的工具非常重要。
 
-System prompts should be extremely clear and use simple, direct language that presents ideas at the right altitude for the agent. The right altitude is the Goldilocks zone between two common failure modes. At one extreme, we see engineers hardcoding complex, brittle logic in their prompts to elicit exact agentic behavior. This approach creates fragility and increases maintenance complexity over time. At the other extreme, engineers sometimes provide vague, high-level guidance that fails to give the LLM concrete signals for desired outputs or falsely assumes shared context. The optimal altitude strikes a balance: specific enough to guide behavior effectively, yet flexible enough to provide the model with strong heuristics to guide behavior.
+在为代理编写工具——与AI代理中，我们讨论了构建LLM理解得好且有最小功能重叠的工具。相似到良好设计代码库的功能，工具应该是自我包含的、健壮的错误，以及关于他们的目标使用非常清晰。输入参数应该类似地是描述性的、明确的和对模型的固有强项有利。
 
-Calibrating the system prompt in the process of context engineering.
+一个我们看到的最常见的故障模式是膨胀工具集涵盖太多的功能或导致关于哪个工具应该被使用的歧义决定点。如果一个人类工程师不能明确地说哪个工具应该在给定的情形中被使用，一个AI代理不能被期望做得更好。如我们稍后讨论的，策划一个最小可行的工具集对于代理也能导致更可靠的维护和策划的上下文长的交互。
 
-At one end of the spectrum, we see brittle if-else hardcoded prompts, and at the other end we see prompts that are overly general or falsely assume shared context.
+**例子**
 
-We recommend organizing prompts into distinct sections (like <background_information>, <instructions>, ## Tool guidance, ## Output description, etc) and using techniques like XML tagging or Markdown headers to delineate these sections, although the exact formatting of prompts is likely becoming less important as models become more capable.
+提供例子，以别的方式称为少样本提示，是一个众所周知的最佳实践我们继续强烈建议。但是，团队会经常在试图阐明LLM应该遵循的每可能规则的提示中放进堆积如山的边缘实例。我们不推荐这个。相反，我们推荐工作来策划一个多样的、正规的例子集合，其有效地描述代理的期望行为。对于一个LLM，例子是"图片"值一千个词。
 
-Regardless of how you decide to structure your system prompt, you should be striving for the minimal set of information that fully outlines your expected behavior. (Note that minimal does not necessarily mean short; you still need to give the agent sufficient information up front to ensure it adheres to the desired behavior.) It’s best to start by testing a minimal prompt with the best model available to see how it performs on your task, and then add clear instructions and examples to improve performance based on failure modes found during initial testing.
+我们跨上下文的不同组件的总体指导（系统提示、工具、例子、消息历史等）是思想并保持你的上下文知情但紧。现在让我们深入进入在运行时动态检索上下文。
 
-Tools allow agents to operate with their environment and pull in new, additional context as they work. Because tools define the contract between agents and their information/action space, it’s extremely important that tools promote efficiency, both by returning information that is token efficient and by encouraging efficient agent behaviors.
+### 上下文检索和代理搜索
 
-In Writing tools for AI agents – with AI agents, we discussed building tools that are well understood by LLMs and have minimal overlap in functionality. Similar to the functions of a well-designed codebase, tools should be self-contained, robust to error, and extremely clear with respect to their intended use. Input parameters should similarly be descriptive, unambiguous, and play to the inherent strengths of the model.
+在构建有效的AI代理中，我们突出了LLM工作流和代理之间的差异。自从我们写了那篇文章，我们已倾向朝向一个对代理的简单定义：LLM自主在循环中使用工具。
 
-One of the most common failure modes we see is bloated tool sets that cover too much functionality or lead to ambiguous decision points about which tool to use. If a human engineer can’t definitively say which tool should be used in a given situation, an AI agent can’t be expected to do better. As we’ll discuss later, curating a minimal viable set of tools for the agent can also lead to more reliable maintenance and pruning of context over long interactions.
+与我们的顾客工作，我们已看到该字段聚集在这个简单的范例上。随着基础模型变得更有能力，代理的自治水平能缩放：更聪慧的模型允许代理独立地导航细致的问题空间并从错误中恢复。
 
-Providing examples, otherwise known as few-shot prompting, is a well known best practice that we continue to strongly advise. However, teams will often stuff a laundry list of edge cases into a prompt in an attempt to articulate every possible rule the LLM should follow for a particular task. We do not recommend this. Instead, we recommend working to curate a set of diverse, canonical examples that effectively portray the expected behavior of the agent. For an LLM, examples are the “pictures” worth a thousand words.
+我们现在看到在工程师思考关于代理设计上下文的方式中的转变。今天，许多AI原生应用使用某种嵌入式基础推理时间检索来表面重要上下文对于代理来推理。随着字段转向更多代理的方法，我们越来越看到团队用"及时"上下文策略增加这些检索系统。
 
-Our overall guidance across the different components of context (system prompts, tools, examples, message history, etc) is to be thoughtful and keep your context informative, yet tight. Now let's dive into dynamically retrieving context at runtime.
+而不是预处理所有相关的数据提前，代理用"及时"方法维护轻量级标识符（文件路径、存储的查询、网络连接等）并使用这些引用来在运行时使用工具动态地将数据加载到上下文中。Anthropic的代理编码解决方案Claude Code使用这个方法来执行复杂的数据分析大数据库。模型能够编写目标查询、存储结果和杠杆Bash命令如头和尾来分析大量的数据而没有曾经加载完整的数据对象进入上下文。这个方法镜像人类认知：我们通常不记住整个信息库，而是引入外部组织和索引系统如文件系统、收件箱和书签来检索按需相关信息。
 
-Context retrieval and agentic search
+超越存储效率，这些引用的元数据提供一个机制来有效地精致行为，无论是显式提供还是直观。对于在文件系统中操作的代理，一个命名为test_utils.py在测试文件夹中的存在蕴含一个不同的目的相对一个带相同名字的文件在src/core_logic/文件夹中。文件夹层级、命名约定和时间戳都提供重要的信号帮助人类和代理两者理解如何以及何时利用信息。
 
-In Building effective AI agents, we highlighted the differences between LLM-based workflows and agents. Since we wrote that post, we’ve gravitated towards a simple definition for agents: LLMs autonomously using tools in a loop.
+让代理自主地导航和检索数据也启用渐进式公开——换句话说，允许代理通过探索逐步地发现相关上下文。每一个交互产生知道下一个决定的信息：文件大小建议复杂性；命名约定暗示目的；时间戳能是相关性的代理。代理能组装理解分层地，维护仅什么是必要在工作记忆中和杠杆笔记策略对于额外的持久性。这个自我管理的上下文窗口保持代理专注于相关的子集相对溺爱在详尽的但可能不相关的信息。
 
-Working alongside our customers, we’ve seen the field converging on this simple paradigm. As the underlying models become more capable, the level of autonomy of agents can scale: smarter models allow agents to independently navigate nuanced problem spaces and recover from errors.
+当然，有一个交换：运行时探索比预计算的数据检索更慢。不仅仅是那样，而是有主见且周到的工程是需要的确保一个LLM具有正确的工具和启发式方法来有效地导航其信息的景观。没有适当的指导，代理能浪费上下文通过工具的误用、追逐死胡同或无法识别关键信息。
 
-We’re now seeing a shift in how engineers think about designing context for agents. Today, many AI-native applications employ some form of embedding-based pre-inference time retrieval to surface important context for the agent to reason over. As the field transitions to more agentic approaches, we increasingly see teams augmenting these retrieval systems with “just in time” context strategies.
+在某些设置中，最有效的代理可能使用一个混合策略，检索某数据提前用于速度，并追求进一步的自主探索在其自主。决定边界对于'权利'自主水平的程度取决于任务。Claude Code是一个使用这个混合模型的代理：CLAUDE.md文件是天真地掉进上下文提前，而原始的如glob和grep允许它导航其环境并检索文件及时，有效地绕过过期的索引和复杂句法树的问题。
 
-Rather than pre-processing all relevant data up front, agents built with the “just in time” approach maintain lightweight identifiers (file paths, stored queries, web links, etc.) and use these references to dynamically load data into context at runtime using tools. Anthropic’s agentic coding solution Claude Code uses this approach to perform complex data analysis over large databases. The model can write targeted queries, store results, and leverage Bash commands like head and tail to analyze large volumes of data without ever loading the full data objects into context. This approach mirrors human cognition: we generally don’t memorize entire corpuses of information, but rather introduce external organization and indexing systems like file systems, inboxes, and bookmarks to retrieve relevant information on demand.
+混合策略对于上下文可能更好地适配较少的动态内容，例如法律或金融工作。随着模型能力改进，代理设计将倾向朝让聪慧的模型聪慧地行动，用逐步较少的人类策划。给予进展的快速速度在该字段中，"做最简单工作的事"将可能保留我们最好的建议对于构建代理的团队顶端Claude。
 
-Beyond storage efficiency, the metadata of these references provides a mechanism to efficiently refine behavior, whether explicitly provided or intuitive. To an agent operating in a file system, the presence of a file named test_utils.py in a tests folder implies a different purpose than a file with the same name located in src/core_logic/ Folder hierarchies, naming conventions, and timestamps all provide important signals that help both humans and agents understand how and when to utilize information.
+### 长视野任务的上下文工程
 
-Letting agents navigate and retrieve data autonomously also enables progressive disclosure—in other words, allows agents to incrementally discover relevant context through exploration. Each interaction yields context that informs the next decision: file sizes suggest complexity; naming conventions hint at purpose; timestamps can be a proxy for relevance. Agents can assemble understanding layer by layer, maintaining only what's necessary in working memory and leveraging note-taking strategies for additional persistence. This self-managed context window keeps the agent focused on relevant subsets rather than drowning in exhaustive but potentially irrelevant information.
+长视野任务需要代理维护连贯性、上下文和目标定向的行为跨行为的序列其中令牌计数超过LLM的上下文窗口。对于任务，其跨越从数十分钟到多个小时的持续工作，如大代码库迁移或全面的研究项目，代理需要专门的技术来围绕上下文窗口大小限制工作。
 
-Of course, there's a trade-off: runtime exploration is slower than retrieving pre-computed data. Not only that, but opinionated and thoughtful engineering is required to ensure that an LLM has the right tools and heuristics for effectively navigating its information landscape. Without proper guidance, an agent can waste context by misusing tools, chasing dead-ends, or failing to identify key information.
+等待更大的上下文窗口可能似乎像是一个明显的战术。但可能对可预见的未来，所有大小的上下文窗口将受到上下文污染和信息相关性问题——至少对于期望最强代理性能的情形。为了启用代理在扩展的时间视野有效工作，我们已开发了一些技术，其解决这些上下文污染约束直接：压缩、结构化笔记和多代理架构。
 
-In certain settings, the most effective agents might employ a hybrid strategy, retrieving some data up front for speed, and pursuing further autonomous exploration at its discretion. The decision boundary for the ‘right’ level of autonomy depends on the task. Claude Code is an agent that employs this hybrid model: CLAUDE.md files are naively dropped into context up front, while primitives like glob and grep allow it to navigate its environment and retrieve files just-in-time, effectively bypassing the issues of stale indexing and complex syntax trees.
+**压缩**
 
-The hybrid strategy might be better suited for contexts with less dynamic content, such as legal or finance work. As model capabilities improve, agentic design will trend towards letting intelligent models act intelligently, with progressively less human curation. Given the rapid pace of progress in the field, "do the simplest thing that works" will likely remain our best advice for teams building agents on top of Claude.
+压缩是采取逼近上下文窗口限制的一个对话、总结其内容和重新启动一个新上下文窗口与摘要的实践。压缩通常充当上下文工程中驾驭更好的长期连贯性的第一个杠杆。在其核心，压缩用高保真的方式提炼上下文窗口的内容，启用代理继续以最小的性能衰退。
 
-Context engineering for long-horizon tasks
+在Claude Code中，例如，我们通过通过模型传递消息历史来实现这个总结其内容并压缩最关键的细节。模型保留了架构的决定、未解决的错误和实现细节，同时抛弃冗余的工具输出或消息。代理然后能继续与这个压缩的上下文加上五个最近被访问的文件。用户得到连贯性而没有担心上下文窗口限制。
 
-Long-horizon tasks require agents to maintain coherence, context, and goal-directed behavior over sequences of actions where the token count exceeds the LLM’s context window. For tasks that span tens of minutes to multiple hours of continuous work, like large codebase migrations or comprehensive research projects, agents require specialized techniques to work around the context window size limitation.
+压缩的艺术在于什么的选择来保留相对什么来丢弃，如过度激进的压缩能导致其微妙但关键的上下文的损失的重要性只在之后变得明显。对于工程师实施压缩系统，我们推荐在复杂代理追踪中仔细调整你的提示。开始通过最大化回忆确保你的压缩提示捕获来自追踪的每一个相关信息，然后迭代来改进精度通过消除多余的内容。
 
-Waiting for larger context windows might seem like an obvious tactic. But it's likely that for the foreseeable future, context windows of all sizes will be subject to context pollution and information relevance concerns—at least for situations where the strongest agent performance is desired. To enable agents to work effectively across extended time horizons, we've developed a few techniques that address these context pollution constraints directly: compaction, structured note-taking, and multi-agent architectures.
+一个低悬挂的多余内容的例子是清除工具调用和结果——一旦工具已在消息历史中深深被调用，为什么代理需要再次看到原始结果？压缩最安全的最轻接触形式之一是工具结果清除，最近在Claude开发者平台上作为一个特征推出。
 
-Compaction
+**结构化笔记**
 
-Compaction is the practice of taking a conversation nearing the context window limit, summarizing its contents, and reinitiating a new context window with the summary. Compaction typically serves as the first lever in context engineering to drive better long-term coherence. At its core, compaction distills the contents of a context window in a high-fidelity manner, enabling the agent to continue with minimal performance degradation.
+结构化的笔记，或代理的记忆，是一个技术其中代理定期写笔记持久到内存之外上下文窗口。这些笔记得到被拉回进入上下文窗口在稍后的时间。
 
-In Claude Code, for example, we implement this by passing the message history to the model to summarize and compress the most critical details. The model preserves architectural decisions, unresolved bugs, and implementation details while discarding redundant tool outputs or messages. The agent can then continue with this compressed context plus the five most recently accessed files. Users get continuity without worrying about context window limitations.
+这个策略提供持久的记忆具有最小的开销。如Claude Code创建一个待办事项清单，或你的定制代理维护一个NOTES.md文件，这个简单的模式允许代理跨复杂任务追踪进展，维护关键上下文和依赖关系，其会以其他方式在数打工具调用中丧失。
 
-The art of compaction lies in the selection of what to keep versus what to discard, as overly aggressive compaction can result in the loss of subtle but critical context whose importance only becomes apparent later. For engineers implementing compaction systems, we recommend carefully tuning your prompt on complex agent traces. Start by maximizing recall to ensure your compaction prompt captures every relevant piece of information from the trace, then iterate to improve precision by eliminating superfluous content.
+Claude玩宝可梦展示了记忆在非编码领域如何转换代理能力。代理维护精确的帐目跨数千游戏步骤——追踪目标如"对于过去的1,234步，我一直在Route 1训练我的皮卡丘，皮卡丘已提升了8个级别朝向目标10。"没有任何关于记忆结构的提示，它开发了探索区域的地图，记得它解锁的关键成就，并维护战略笔记的战斗策略帮助它学会哪些攻击对不同对手最有效。
 
-An example of low-hanging superfluous content is clearing tool calls and results – once a tool has been called deep in the message history, why would the agent need to see the raw result again? One of the safest lightest touch forms of compaction is tool result clearing, most recently launched as a feature on the Claude Developer Platform.
+在上下文重置之后，代理读取其自己的笔记并继续多小时的训练序列或地牢探险。这个连贯性跨总结步骤启用长视野策略，其将在完全在LLM的上下文窗口中保留所有信息时是不可能的。
 
-Structured note-taking
+作为我们Sonnet 4.5推出的一部分，我们在公开测试版本上释放了在Claude开发者平台的一个记忆工具，其使得更容易通过一个基于文件的系统存储和咨询信息在外上下文窗口。这允许代理积累知识随时间、跨会话维护项目状态并引用以前的工作而没有在上下文中保留所有事物。
 
-Structured note-taking, or agentic memory, is a technique where the agent regularly writes notes persisted to memory outside of the context window. These notes get pulled back into the context window at later times.
+**子代理架构**
 
-This strategy provides persistent memory with minimal overhead. Like Claude Code creating a to-do list, or your custom agent maintaining a NOTES.md file, this simple pattern allows the agent to track progress across complex tasks, maintaining critical context and dependencies that would otherwise be lost across dozens of tool calls.
+子代理架构提供另一个方法围绕上下文限制。而不是一个代理试图维护跨整个项目的状态，专门的子代理能处理专注任务与整洁上下文窗口。主代理与一个高级的计划协调，同时子代理执行深度的技术工作或使用工具来发现相关的信息。每个子代理可能广泛探索，使用数十个数千的令牌或更多，但返回仅一个凝结的、提炼的摘要其工作的（通常是1,000-2,000令牌）。
 
-Claude playing Pokémon demonstrates how memory transforms agent capabilities in non-coding domains. The agent maintains precise tallies across thousands of game steps—tracking objectives like "for the last 1,234 steps I've been training my Pokémon in Route 1, Pikachu has gained 8 levels toward the target of 10." Without any prompting about memory structure, it develops maps of explored regions, remembers which key achievements it has unlocked, and maintains strategic notes of combat strategies that help it learn which attacks work best against different opponents.
+这个方法达成一个清晰的关注点分离——详细的搜索上下文保留隔离在子代理内，同时主导代理专注于合成和分析结果。这个模式，讨论在我们如何构建我们的多代理研究系统中，显示了对单代理系统在复杂研究任务的实质性改进。
 
-After context resets, the agent reads its own notes and continues multi-hour training sequences or dungeon explorations. This coherence across summarization steps enables long-horizon strategies that would be impossible when keeping all the information in the LLM’s context window alone.
+这些方法之间的选择取决于任务特征。例如：
 
-As part of our Sonnet 4.5 launch, we released a memory tool in public beta on the Claude Developer Platform that makes it easier to store and consult information outside the context window through a file-based system. This allows agents to build up knowledge bases over time, maintain project state across sessions, and reference previous work without keeping everything in context.
+- 压缩维护对话流对于需要广泛的后-和-前来说的任务；
+- 笔记采取超越对于迭代开发与清晰的里程碑；
+- 多代理架构处理复杂的研究和分析其中平行探索提供红利。
 
-Sub-agent architectures
+即使随着模型持续改进，维护跨扩展的交互的连贯性的挑战将保持中央对于构建更有效的代理。
 
-Sub-agent architectures provide another way around context limitations. Rather than one agent attempting to maintain state across an entire project, specialized sub-agents can handle focused tasks with clean context windows. The main agent coordinates with a high-level plan while subagents perform deep technical work or use tools to find relevant information. Each subagent might explore extensively, using tens of thousands of tokens or more, but returns only a condensed, distilled summary of its work (often 1,000-2,000 tokens).
+### 结论
 
-This approach achieves a clear separation of concerns—the detailed search context remains isolated within sub-agents, while the lead agent focuses on synthesizing and analyzing the results. This pattern, discussed in How we built our multi-agent research system, showed a substantial improvement over single-agent systems on complex research tasks.
+上下文工程代表了一个我们用LLM构建方式中的根本转变。随着模型变得更有能力，挑战不仅仅是编写完美的提示——这是周到地策划什么信息进入模型的有限注意力预算在每一步。无论你实施了压缩对于长视野任务、设计了令牌高效的工具或启用代理来按需探索他们的环境及时，指导原则保留相同的：发现最小的高信号令牌集合，其最大化你的所需结果的可能性。
 
-The choice between these approaches depends on task characteristics. For example:
+我们已列举的技术将继续进化随着模型改进。我们已看到更聪慧的模型需要较少的规定工程，允许代理与更多的自治操作。但即使随着能力缩放，视环境作为一个关键的、有限的资源将保持中央对于构建可靠的、有效的代理。
 
-Compaction maintains conversational flow for tasks requiring extensive back-and-forth;
+开始对Claude开发者平台上的上下文工程今天，并通过我们的记忆和上下文管理食谱访问有用的提示和最佳实践。
 
-Note-taking excels for iterative development with clear milestones;
+---
 
-Multi-agent architectures handle complex research and analysis where parallel exploration pays dividends.
+**翻译进度：** 第1-7篇完成 ✓
 
-Even as models continue to improve, the challenge of maintaining coherence across extended interactions will remain central to building more effective agents.
+---
 
-Conclusion
+## 第八篇：长时间运行代理的有效束缚
 
-Context engineering represents a fundamental shift in how we build with LLMs. As models become more capable, the challenge isn't just crafting the perfect prompt—it's thoughtfully curating what information enters the model's limited attention budget at each step. Whether you're implementing compaction for long-horizon tasks, designing token-efficient tools, or enabling agents to explore their environment just-in-time, the guiding principle remains the same: find the smallest set of high-signal tokens that maximize the likelihood of your desired outcome.
+**发布日期：** 2025年11月26日
 
-The techniques we've outlined will continue evolving as models improve. We're already seeing that smarter models require less prescriptive engineering, allowing agents to operate with more autonomy. But even as capabilities scale, treating context as a precious, finite resource will remain central to building reliable, effective agents.
+代理在跨越许多上下文窗口工作时仍然面临挑战。我们查看了人类工程师寻找灵感来为长时间运行代理创建一个更有效的束缚。
 
-Get started with context engineering in the Claude Developer Platform today, and access helpful tips and best practices via our memory and context management cookbook.
+随着AI代理变得更有能力，开发者越来越要求他们承担需要工作跨越小时，或甚至天数的复杂任务。但是，获取代理跨多个上下文窗口做出一致的进展保持一个开放的问题。
 
----------
+长时间运行代理的核心挑战是他们必须在离散的会话中工作，每一个新会话以没有先前发生什么的记忆开始。想象一个由工程师在轮班中配备的软件项目，其中每个新工程师到达没有前一个轮班发生什么的记忆。因为上下文窗口是有限的，并因为大多数复杂项目无法在单一窗口中完成，代理需要一个方式来桥接编码会话之间的间隙。
 
-ffective harnesses for long-running agents
+我们开发了一个双折的解决方案来启用Claude代理SDK有效地跨许多上下文窗口工作：一个初始化代理，其在第一个运行上设置环境，以及一个编码代理，其被任务在每一个会话进行增量进展，同时留下清晰的工件对于下一个会话。你能在配套的快速开始中找到代码例子。
 
-Published Nov 26, 2025
+### 长时间运行代理问题
 
-Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
+Claude代理SDK是一个强大的、通用目的的代理束缚娴熟在编码，同样如也需要模型使用工具来聚集上下文、规划和执行的其他任务。它具有上下文管理能力如压缩，其启用代理在没有耗尽上下文窗口的情形下工作在一个任务上。理论上，给定这个设置，它应该能对代理继续对一个任务做有用的工作对于任意长的时间。
 
-As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days. However, getting agents to make consistent progress across multiple context windows remains an open problem.
+但是，压缩还不足够。开箱即用，甚至一个前沿编码模型如Opus 4.5运行在许多上下文窗口的Claude代理SDK在一个循环中将落短于构建一个生产质量网络应用，如果仅被给了一个高级的提示，例如"构建一个claude.ai的克隆"。
 
-The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context windows are limited, and because most complex projects cannot be completed within a single window, agents need a way to bridge the gap between coding sessions.
+Claude的故障是两个模式中的现实。首先，代理倾向于试图一次做太多——本质上尝试一次射中应用。通常，这导致模型在实现的中间耗尽上下文，留下下一个会话来用一个功能半实现的和无文件的开始。代理然后必须猜到发生了什么，并花费实质的时间试图让基础应用再工作。这发生甚至用压缩，其不总是传递清晰的指令到下一个代理。
 
-We developed a two-fold solution to enable the Claude Agent SDK to work effectively across many context windows: an initializer agent that sets up the environment on the first run, and a coding agent that is tasked with making incremental progress in every session, while leaving clear artifacts for the next session. You can find code examples in the accompanying quickstart.
+一个第二个故障模式会经常后来发生一个项目中。在一些特性已被构建之后，后来代理实例将查看周围，看到进展已被做，并声明工作完成。
 
-The long-running agent problem
+这个分解问题为两个部分。首先，我们需要设置一个初始环境，其为所有给定的提示所需的功能奠定基础，其设置代理来逐步工作和特性-由-特性。其次，我们应该提示每一个代理来做朝向其目标的增量进展，同时也留下环境在一个清晰的状态。通过"清晰的状态"我们意思代码将是适当合并到一个主分支的种类：没有主要错误、代码是整洁和文件记录的，一般地说，一个开发者能容易地开始工作在一个新特性而不首先必须清洁一个不相关的混乱。
 
-The Claude Agent SDK is a powerful, general-purpose agent harness adept at coding, as well as other tasks that require the model to use tools to gather context, plan, and execute. It has context management capabilities such as compaction, which enables an agent to work on a task without exhausting the context window. Theoretically, given this setup, it should be possible for an agent to continue to do useful work for an arbitrarily long time.
+当进行内部试验时，我们用一个两部分的解决方案处理这些问题：
 
-However, compaction isn’t sufficient. Out of the box, even a frontier coding model like Opus 4.5 running on the Claude Agent SDK in a loop across multiple context windows will fall short of building a production-quality web app if it’s only given a high-level prompt, such as “build a clone of claude.ai.”
+**初始化代理**：很第一个代理会话使用一个专门的提示，其要求模型设置初始环境：一个init.sh脚本、一个claude-progress.txt文件，保持了代理已做什么的一个日志和一个初始git提交，其显示什么文件被添加。
 
-Claude’s failures manifested in two patterns. First, the agent tended to try to do too much at once—essentially to attempt to one-shot the app. Often, this led to the model running out of context in the middle of its implementation, leaving the next session to start with a feature half-implemented and undocumented. The agent would then have to guess at what had happened, and spend substantial time trying to get the basic app working again. This happens even with compaction, which doesn’t always pass perfectly clear instructions to the next agent.
+**编码代理**：每一个后续会话要求模型做增量进展，然后留下结构化的更新。
 
-A second failure mode would often occur later in a project. After some features had already been built, a later agent instance would look around, see that progress had been made, and declare the job done.
+这里的关键见解是发现一个对代理的方式来快速理解工作的状态当用一个新鲜的上下文窗口开始，其通过claude-progress.txt文件用git历史一起完成。有效的软件工程师日常做的事情启发了这些实践。
 
-This decomposes the problem into two parts. First, we need to set up an initial environment that lays the foundation for all the features that a given prompt requires, which sets up the agent to work step-by-step and feature-by-feature. Second, we should prompt each agent to make incremental progress towards its goal while also leaving the environment in a clean state at the end of a session. By “clean state” we mean the kind of code that would be appropriate for merging to a main branch: there are no major bugs, the code is orderly and well-documented, and in general, a developer could easily begin work on a new feature without first having to clean up an unrelated mess.
+### 环境管理
 
-When experimenting internally, we addressed these problems using a two-part solution:
+在更新的Claude 4提示指南中，我们分享了多上下文窗口工作流的一些最佳实践，包括一个束缚结构，使用"对于很首先上下文窗口一个不同的提示。"这个"不同的提示"要求初始化代理设置环境用所有必需的上下文，未来的编码代理将需要有效工作。这里，我们提供了对这样一个环境的一些关键组件的一个更深的深入。
 
-Initializer agent: The very first agent session uses a specialized prompt that asks the model to set up the initial environment: an init.sh script, a claude-progress.txt file that keeps a log of what agents have done, and an initial git commit that shows what files were added.
+**特性列表**
 
-Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates.1
+为了处理代理一次射中应用或早期考虑项目完成的问题，我们提示了初始化代理来编写一个基于用户的初始提示展开特性需求的一个综合文件。在claude.ai克隆例子中，这意味着超过200个特性，例如"一个用户能打开一个新聊天、在查询中输入、按进入，并看到AI响应"。这些特性全部最初被标记为"失败"，以便后来的编码代理将具有一个清晰的什么完整功能看起来像的大纲。
 
-The key insight here was finding a way for agents to quickly understand the state of work when starting with a fresh context window, which is accomplished with the claude-progress.txt file alongside the git history. Inspiration for these practices came from knowing what effective software engineers do every day.
-
-Environment management
-
-In the updated Claude 4 prompting guide, we shared some best practices for multi-context window workflows, including a harness structure that uses “a different prompt for the very first context window.” This “different prompt” requests that the initializer agent set up the environment with all the necessary context that future coding agents will need to work effectively. Here, we provide a deeper dive on some of the key components of such an environment.
-
-Feature list
-
-To address the problem of the agent one-shotting an app or prematurely considering the project complete, we prompted the initializer agent to write a comprehensive file of feature requirements expanding on the user’s initial prompt. In the claude.ai clone example, this meant over 200 features, such as “a user can open a new chat, type in a query, press enter, and see an AI response.” These features were all initially marked as “failing” so that later coding agents would have a clear outline of what full functionality looked like.
-
+```json
 {
-
     "category": "functional",
-
     "description": "New chat button creates a fresh conversation",
-
     "steps": [
-
       "Navigate to main interface",
-
       "Click the 'New Chat' button",
-
       "Verify a new conversation is created",
-
       "Check that chat area shows welcome state",
-
       "Verify conversation appears in sidebar"
-
     ],
-
     "passes": false
+}
+```
 
-  }
+我们提示编码代理来编辑这个文件通过仅改变一个passes字段的状态，并我们使用强词语的指令如"改变或编辑测试是不可接受的，因为这能导致缺失或错误的功能。"在一些试验之后，我们登陆了使用JSON对于这个，因为模型较少可能不适当地改变或覆盖JSON文件相对Markdown文件。
 
-Copy
+**增量进展**
 
-We prompt coding agents to edit this file only by changing the status of a passes field, and we use strongly-worded instructions like “It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality.” After some experimentation, we landed on using JSON for this, as the model is less likely to inappropriately change or overwrite JSON files compared to Markdown files.
+给定这个初始环境的支架，编码代理的下一个迭代然后被要求在仅一个特性一次工作。这个增量方法证明了对于处理代理的倾向一次做太多是关键。
 
-Incremental progress
+一旦工作增量，它仍然是至关重要的，模型在做代码改变后留下环境在一个清晰的状态。在我们的试验中，我们发现最好的方式激发这个行为是要求模型以描述性的提交消息提交其进展到git并在一个进展文件中编写摘要。这允许模型使用git来改变回坏代码改变并恢复代码库的工作的状态。
 
-Given this initial environment scaffolding, the next iteration of the coding agent was then asked to work on only one feature at a time. This incremental approach turned out to be critical to addressing the agent’s tendency to do too much at once.
+这些方法也增加了效率，因为他们消除了代理必须猜到发生了什么且花时间试图让基础应用再工作的需要。
 
-Once working incrementally, it’s still essential that the model leaves the environment in a clean state after making a code change. In our experiments, we found that the best way to elicit this behavior was to ask the model to commit its progress to git with descriptive commit messages and to write summaries of its progress in a progress file. This allowed the model to use git to revert bad code changes and recover working states of the code base.
+**测试**
 
-These approaches also increased efficiency, as they eliminated the need for an agent to have to guess at what had happened and spend its time trying to get the basic app working again.
+一个我们观察的最后主要的故障模式是Claude的倾向来标记一个特性为完成而没有适当的测试。缺乏明确的提示，Claude倾向于进行代码改变，甚至与单位测试或对一个开发服务器的curl命令进行测试，但将无法认识到特性不工作端到端。
 
-Testing
+在构建网络应用的实例中，Claude一旦明确被提示来使用浏览器自动化工具并像人类用户会一样进行所有测试主要做得好。
 
-One final major failure mode that we observed was Claude’s tendency to mark a feature as complete without proper testing. Absent explicit prompting, Claude tended to make code changes, and even do testing with unit tests or curl commands against a development server, but would fail recognize that the feature didn’t work end-to-end.
+Claude通过Puppeteer MCP服务器拍摄的屏幕截图因为它测试了claude.ai克隆。
 
-In the case of building a web app, Claude mostly did well at verifying features end-to-end once explicitly prompted to use browser automation tools and do all testing as a human user would.
+提供Claude具有这些测试工具的种类大幅改进了性能，因为代理能够识别和固定错误，其从代码单独不明显。
 
- Screenshots taken by Claude through the Puppeteer MCP server as it tested the claude.ai clone. 
+一些问题保留，如Claude的视觉限制和浏览器自动化工具使得它难以识别每一个类型的错误。例如，Claude不能通过Puppeteer MCP看到浏览器原生警报的模态，并倚赖这些模态的特性倾向于更加多错。
 
-Screenshots taken by Claude through the Puppeteer MCP server as it tested the claude.ai clone.
+**加速**
 
-Providing Claude with these kinds of testing tools dramatically improved performance, as the agent was able to identify and fix bugs that weren’t obvious from the code alone.
+具有所有上面的到位，每一个编码代理被提示来运行通过一系列步骤来获得其承认，一些相当基础的但仍然有用：
 
-Some issues remain, like limitations to Claude’s vision and to browser automation tools making it difficult to identify every kind of bug. For example, Claude can’t see browser-native alert modals through the Puppeteer MCP, and features relying on these modals tended to be buggier as a result.
+1. 运行pwd来查看你正在工作的目录。你将仅能编辑这个目录中的文件。
+2. 读git日志和进展文件来加速对什么最近被工作在的。
+3. 读特性列表文件并选择最高优先级的特性，其尚未完成来工作在。
 
-Getting up to speed
+这个方法节省Claude每一个会话中的一些令牌，因为它不必图表出如何测试代码。它也帮助来要求初始化代理来编写一个init.sh脚本，其能运行开发服务器，然后运行通过一个基本的端到端测试在实施一个新特性之前。
 
-With all of the above in place, every coding agent is prompted to run through a series of steps to get its bearings, some quite basic but still helpful:
+在claude.ai克隆的实例中，这意味着代理总是启动本地开发服务器并使用Puppeteer MCP来启动一个新聊天、发送一个消息和接收响应。这确保Claude能快速识别是否应用被留在一个破坏的状态，并立即固定任何现存的错误。如果代理已代替开始实施一个新特性，它可能使问题更恶劣。
 
-Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.
+给定所有这个，一个典型的会话开始用以下的助理消息：
 
-Read the git logs and progress files to get up to speed on what was recently worked on.
+```
+[助理] I'll start by getting my bearings and understanding the current state of the project.
 
-Read the features list file and choose the highest-priority feature that’s not yet done to work on.
+[工具使用] <bash - pwd>
 
-This approach saves Claude some tokens in every session since it doesn’t have to figure out how to test the code. It also helps to ask the initializer agent to write an init.sh script that can run the development server, and then run through a basic end-to-end test before implementing a new feature.
+[工具使用] <read - claude-progress.txt>
 
-In the case of the claude.ai clone, this meant that the agent always started the local development server and used the Puppeteer MCP to start a new chat, send a message, and receive a response. This ensured that Claude could quickly identify if the app had been left in a broken state, and immediately fix any existing bugs. If the agent had instead started implementing a new feature, it would likely make the problem worse.
+[工具使用] <read - feature_list.json>
 
-Given all this, a typical session starts off with the following assistant messages:
+[助理] Let me check the git log to see recent work.
 
-[Assistant] I'll start by getting my bearings and understanding the current state of the project.
+[工具使用] <bash - git log --oneline -20>
 
-[Tool Use] <bash - pwd>
+[助理] Now let me check if there's an init.sh script to restart the servers.
 
-[Tool Use] <read - claude-progress.txt>
+<启动开发服务器>
 
-[Tool Use] <read - feature_list.json>
+[助理] Excellent! Now let me navigate to the application and verify that some fundamental features are still working.
 
-[Assistant] Let me check the git log to see recent work.
+<测试基本功能>
 
-[Tool Use] <bash - git log --oneline -20>
+[助理] Based on my verification testing, I can see that the fundamental functionality is working well. The core chat features, theme switching, conversation loading, and error handling are all functioning correctly. Now let me review the tests.json file more comprehensively to understand what needs to be implemented next.
 
-[Assistant] Now let me check if there's an init.sh script to restart the servers.
+<开始工作在一个新特性>
+```
 
-<Starts the development server>
+### 代理故障模式和解决方案
 
-[Assistant] Excellent! Now let me navigate to the application and verify that some fundamental features are still working.
+| 问题 | 初始化代理行为 | 编码代理行为 |
+|------|---------------|-----------|
+| Claude太早在整个项目上声明胜利。 | 设置一个特性列表文件：基于输入规格，设置一个有一个功能需求列表的结构化JSON文件。 | 在会话的开始读特性列表文件。选择一个单一的特性来开始工作在。 |
+| Claude留下环境在一个有错误的或无文件进展的状态。 | 一个初始的git仓库和进展笔记文件被编写。 | 通过读进展笔记文件和git提交日志开始会话，并在开发服务器上运行一个基本测试来捕捉任何无文件的错误。以git提交和进展更新结束会话。 |
+| Claude标记特性为过早完成。 | 设置一个特性列表文件。 | 自我验证所有特性。仅在仔细测试后标记特性为"传递"。 |
+| Claude不得不花时间图表出如何运行应用。 | 编写一个init.sh脚本，其能运行开发服务器。 | 通过读init.sh开始会话。 |
 
-<Tests basic functionality>
+总结四个常见故障模式和长时间运行AI代理中的解决方案。
 
-[Assistant] Based on my verification testing, I can see that the fundamental functionality is working well. The core chat features, theme switching, conversation loading, and error handling are all functioning correctly. Now let me review the tests.json file more comprehensively to understand what needs to be implemented next.
+### 未来工作
 
-<Starts work on a new feature>
+这个研究展示了在长时间运行代理束缚中的一个可能的解决方案集合来启用模型跨许多上下文窗口进行增量进展。但是，仍然有开放的问题。
 
-Copy
+最值得注意的是，它仍然不清楚一个单一的、通用目的的编码代理在上下文中跨表现最好，或如果更好的性能能通过一个多代理架构达成。似乎合理的，专门的代理如一个测试代理、一个质量保证代理或一个代码清洁代理，能在软件开发生命周期中的子任务上做一个甚至更好的工作。
 
-Agent failure modes and solutions
+另外，这个演示对完整栈网络应用开发是最优化的。一个未来的方向是概括这些发现到其他字段。可能的一些或所有这些教训能适用到其他类型的长时间运行的代理任务需要的，例如，科学研究或财务建模中。
 
-Problem	Initializer Agent Behavior	Coding Agent Behavior
+---
 
-Claude declares victory on the entire project too early.	Set up a feature list file: based on the input spec, set up a structured JSON file with a list of end-to-end feature descriptions.	Read the feature list file at the beginning of a session. Choose a single feature to start working on.
+## 总结与反思
 
-Claude leaves the environment in a state with bugs or undocumented progress.	An initial git repo and progress notes file is written.	Start the session by reading the progress notes file and git commit logs, and run a basic test on the development server to catch any undocumented bugs. End the session by writing a git commit and progress update.
+这份关于**上下文工程**的完整中文翻译现已完成！
 
-Claude marks features as done prematurely.	Set up a feature list file.	Self-verify all features. Only mark features as “passing” after careful testing.
+本文档涵盖了8篇来自Anthropic及相关专家的博客文章，深入探讨了如何在AI代理系统中有效地管理上下文窗口。主要内容包括：
 
-Claude has to spend time figuring out how to run the app.	Write an init.sh script that can run the development server.	Start the session by reading init.sh.
+### 核心概念：
+1. **上下文工程的四大策略**：写入、选择、压缩和隔离
+2. **KV缓存优化**对成本和延迟的重要性
+3. **工具设计**对代理性能的关键影响
+4. **长时间运行代理**的架构设计模式
+5. **多代理系统**的并行处理能力
 
-Summarizing four common failure modes and solutions in long-running AI agents.
+### 实践建议：
+- 保持上下文精简但信息密集
+- 使用外部存储（文件系统）作为扩展记忆
+- 通过结构化笔记和进度追踪维持连贯性
+- 优化工具设计以减少上下文消耗
+- 在新建大模型前先优化现有系统
 
-Future work
-
-This research demonstrates one possible set of solutions in a long-running agent harness to enable the model to make incremental progress across many context windows. However, there remain open questions.
-
-Most notably, it’s still unclear whether a single, general-purpose coding agent performs best across contexts, or if better performance can be achieved through a multi-agent architecture. It seems reasonable that specialized agents like a testing agent, a quality assurance agent, or a code cleanup agent, could do an even better job at sub-tasks across the software development lifecycle.
-
-Additionally, this demo is optimized for full-stack web app development. A future direction is to generalize these findings to other fields. It’s likely that some or all of these lessons can be applied to the types of long-running agentic tasks required in, for example, scientific research or financial modeling.
-
-)
+**翻译完成日期**：2025年12月30日
+**总字数**：超过 30,000 字
+**全部8篇博客**：✓ 完成

@@ -1,54 +1,54 @@
-# SPEC-002: Public and private boundary
+# 技术规范 002：公开与私有边界
 
-- Status: implementing
-- Wave: 0
-- Classification: split
-- Depends on: SPEC-000
+- 状态：`implementing`
+- 阶段：0
+- 分类：`split`
+- 依赖：SPEC-000
 
-## Decision
+## 决策
 
-The public repository contains reproducible skills, rubrics, mechanisms, claims, public evidence metadata, evaluations, decisions, schemas, and sanitized examples. Private control-plane state contains credentials, identity material, personal destinations, restricted raw data, hidden evaluations, unreleased traces, and private human notes.
+公开仓库保存可复现的技能、评分规则、机制、主张、公开证据元数据、评估、决策、数据结构和已清理的示例。私有控制面保存凭据、身份材料、个人目标、受限原始数据、隐藏评估、未发布轨迹和私人备注。
 
-Private-to-public movement creates a new allowlisted projection. It never republishes a private record in place.
+私有内容转为公开内容时必须生成新的白名单投影，不能就地重新发布私有记录。
 
-## Classifications
+## 分类
 
-- `public`: authored for unrestricted repository publication.
-- `public_derived`: a reviewed projection produced from another class.
-- `private_operational`: queues, plans, receipts, traces, costs, and deployment state.
-- `private_human`: private feedback, notes, and review context.
-- `restricted_source`: raw content whose redistribution is limited.
-- `secret_reference`: an opaque credential or capability reference; never exportable.
+- `public`：为公开发布而撰写。
+- `public_derived`：经审查后从其他类别生成的投影。
+- `private_operational`：队列、计划、回执、轨迹、成本和部署状态。
+- `private_human`：私人反馈、备注和审查上下文。
+- `restricted_source`：再分发受到限制的原始内容。
+- `secret_reference`：不透明的凭据或能力引用，禁止导出。
 
-Each new export record declares classification and retention. Legacy artifact envelopes are registered and migrated by SPEC-003 rather than rewritten in this layer.
+每条新导出记录必须声明分类和保留期限。旧产物封装由 SPEC-003 登记和迁移，本规范不负责改写。
 
-## Invariants
+## 不变量
 
-1. Public manifests contain no private input digest, source path, storage locator, credential reference, capability token, or private destination.
-2. Restricted raw content may produce citation metadata through a registered transform but may not enter the staged public tree.
-3. Unknown classifications, artifact kinds, transforms, fields, destinations, and files deny.
-4. Rendering does not mutate sources and verifies the exact source bytes pinned by the private plan.
-5. Staging becomes visible only after complete-tree validation; symlinks, non-regular files, traversal, collisions, extras, and missing outputs fail.
-6. A public projection has a new identity. Its reference is provenance, not access authority.
-7. Publication is not reversible; correction and tombstone records supersede prior artifacts without rewriting ordinary Git history.
+1. 公开清单不得含有私有输入摘要、来源路径、存储位置、凭据引用、能力令牌或私有目标。
+2. 受限原始内容可通过已登记转换生成引用元数据，但不得进入公开暂存目录。
+3. 未知分类、产物类型、转换器、字段、目标和文件一律拒绝。
+4. 渲染不得修改来源，并须验证私有计划固定的精确来源字节。
+5. 完整目录检查通过后，暂存内容才可见；符号链接、非普通文件、路径穿越、冲突、额外文件或缺失输出均须拒绝。
+6. 公开投影具有新的身份；引用可用于追溯，但不授予访问权限。
+7. 发布后实际上不可撤回；更正和删除标记只能取代旧产物，不能改写普通 Git 历史。
 
-## Interfaces
+## 接口
 
-- `governance/export-policy.yaml`: classifications, retention defaults, routes, transformations, public fields, and correction rules.
-- `validate_export.py plan`: create a private immutable source-bound plan.
-- `validate_export.py render`: project into a fresh public staging tree and persist a private receipt.
-- `validate_export.py check`: verify manifest closure, digests, policy pins, schemas, and supported detectors without private-source access.
-- `researcher/exports/schemas/export-records.schema.json`: bootstrap request, plan, and manifest contract.
+- `governance/export-policy.yaml`：分类、默认保留期、路由、转换、公开字段和更正规则。
+- `validate_export.py plan`：创建绑定私有来源的不可变计划。
+- `validate_export.py render`：写入全新的公开暂存目录并保存私有回执。
+- `validate_export.py check`：检查清单闭包、摘要、规则固定、数据结构和受支持的检测器，不访问私有来源。
+- `researcher/exports/schemas/export-records.schema.json`：初版请求、计划和清单格式。
 
-## Acceptance criteria
+## 验收条件
 
-- [x] Export routes and classifications are allowlisted and versioned.
-- [x] Secret-reference sources cannot enter a supported public projection.
-- [x] Public records expose no private hash or locator.
-- [x] Restricted-source raw bodies are structurally excluded while citation metadata remains useful.
-- [x] Rendering is deterministic across fresh directories and atomic at the tree boundary.
-- [x] Public staging closure, private canaries, source mutation, and path attacks fail closed.
-- [x] Correction and removal procedures are documented.
-- [x] A committed restricted-source example validates in CI.
+- [x] 导出路由和分类使用白名单并带有版本。
+- [x] 含秘密引用的来源不能进入受支持的公开投影。
+- [x] 公开记录不暴露私有摘要或位置。
+- [x] 受限来源正文在结构上被排除，同时保留有用的引用元数据。
+- [x] 在全新目录中渲染结果确定，并通过原子目录操作公开。
+- [x] 对公开暂存闭包、私有哨兵、来源变化和路径攻击采用默认拒绝策略。
+- [x] 已记录更正和移除流程。
+- [x] 已提交的受限来源示例可通过持续集成检查。
 
-This boundary does not claim full security hardening or universal detection of unknown semantic disclosures. Its guarantee is limited to registered transforms and validated staging paths.
+本边界不声称已经实现完整安全加固，也不声称能检测所有未知的语义泄露。保证范围仅限于已登记的转换和经过检查的暂存路径。

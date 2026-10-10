@@ -1,122 +1,125 @@
 ---
 name: memory-systems
-description: "This skill should be used for persistent semantic memory in agent systems: cross-session knowledge retention, entity tracking, temporal validity, graph or vector retrieval, memory consolidation, and memory benchmark selection. Route file-backed scratchpads to filesystem-context, handoff summaries to context-compression, and token-efficiency tactics to context-optimization."
+description: "用于设计智能体持久记忆，包括跨会话知识、实体追踪、时间有效性、图或向量检索与记忆整合。"
 ---
 
-# Memory System Design
+# 记忆系统设计
 
-Memory provides the persistence layer that allows agents to maintain continuity across sessions and reason over accumulated knowledge. Simple agents rely entirely on context for memory, losing all state when sessions end. Sophisticated agents implement layered memory architectures that balance immediate context needs with long-term knowledge retention. The evolution from vector stores to knowledge graphs to temporal knowledge graphs represents increasing investment in structured memory for improved retrieval and reasoning.
+记忆提供持久化层，使智能体能够跨会话保持连续性，并对累积的知识进行推理。简单的智能体完全依赖上下文作为记忆，会在会话结束时丢失所有状态。更完善的智能体会采用分层记忆架构，在即时上下文需求与长期知识保留之间取得平衡。从向量存储到知识图谱，再到时序知识图谱，结构化程度逐步提高，以改善检索与推理。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
-- Building agents that must persist knowledge across sessions
-- Choosing between memory frameworks (Mem0, Zep/Graphiti, Letta, LangMem, Cognee)
-- Needing to maintain entity consistency across conversations
-- Implementing reasoning over accumulated knowledge
-- Designing memory architectures that scale in production
-- Evaluating memory systems against benchmarks (LoCoMo, LongMemEval, DMR)
-- Building dynamic memory with automatic entity/relationship extraction and self-improving memory (Cognee)
+在以下情况下启用此技能：
 
-Do not activate this skill for adjacent work owned by other skills:
-- File-backed scratchpads, run logs, and tool-output offloading: `filesystem-context`.
-- Conversation compaction or human-readable handoff summaries: `context-compression`.
-- Masking, prefix caching, token budgets, or retrieval scoping inside one trajectory: `context-optimization`.
-- Formal belief/desire/intention models over RDF state: `bdi-mental-states`.
+- 构建需要跨会话保留知识的智能体。
+- 在记忆框架之间做选择（Mem0、Zep/Graphiti、Letta、LangMem、Cognee）。
+- 需要在多次对话中保持实体身份一致。
+- 实现基于累积知识的推理。
+- 设计可在生产环境扩展的记忆架构。
+- 使用基准（LoCoMo、LongMemEval、DMR）评估记忆系统。
+- 构建能够自动抽取实体和关系、并可自我改进的动态记忆（Cognee）。
 
-## Core Concepts
+相邻任务由其他技能负责，不要为这些任务启用本技能：
 
-Think of memory as a spectrum from volatile context window to persistent storage. Default to the simplest layer that meets retrieval needs, because benchmark evidence suggests tool complexity matters less than reliable retrieval for some memory workloads (claim-memory-locomo-filesystem-baseline). Add structure (graphs, temporal validity) only when retrieval quality degrades or the agent needs multi-hop reasoning, relationship traversal, or time-travel queries.
+- 基于文件的临时记事、运行日志和工具输出卸载：`filesystem-context`。
+- 对话压缩或便于阅读的交接摘要：`context-compression`。
+- 单次执行过程中的遮罩、前缀缓存、Token 预算或检索范围控制：`context-optimization`。
+- 基于 RDF 状态的形式化信念、愿望和意图模型：`bdi-mental-states`。
 
-## Detailed Topics
+## 核心概念
 
-### Production Framework Landscape
+把记忆看作一条从易失的上下文窗口延伸到持久化存储的连续谱。默认选择能够满足检索需求的最简单层级，因为基准证据表明，在某些记忆任务中，可靠检索比复杂工具更重要（claim-memory-locomo-filesystem-baseline）。只有在检索质量下降，或智能体需要多跳推理、关系遍历或按时间回溯查询时，才增加图结构和时间有效性等复杂度。
 
-Select a framework based on the dominant retrieval pattern the agent requires. Use this table to narrow the shortlist, then validate with the benchmark data below.
+## 详细主题
 
-| Framework | Architecture | Best For | Trade-off |
-|-----------|-------------|----------|-----------|
-| **Mem0** | Vector store + graph memory, pluggable backends | Multi-tenant systems, broad integrations | Less specialized for multi-agent |
-| **Zep/Graphiti** | Temporal knowledge graph, bi-temporal model | Enterprise requiring relationship modeling + temporal reasoning | Advanced features cloud-locked |
-| **Letta** | Self-editing memory with tiered storage (in-context/core/archival) | Full agent introspection, stateful services | Complexity for simple use cases |
-| **Cognee** | Multi-layer semantic graph via customizable ECL pipeline with customizable Tasks | Evolving agent memory that adapts and learns; multi-hop reasoning | Heavier ingest-time processing |
-| **LangMem** | Memory tools for LangGraph workflows | Teams already on LangGraph | Tightly coupled to LangGraph |
-| **File-system** | Plain files with naming conventions | Simple agents, prototyping | No semantic search, no relationships |
+### 生产级框架概览
 
-Choose Zep/Graphiti when the agent needs bi-temporal modeling (tracking both when events occurred and when they were ingested) because its three-tier knowledge graph (episode, semantic entity, community subgraphs) excels at temporal queries. Choose Mem0 when the priority is fast time-to-production with managed infrastructure. Choose Letta when the agent needs deep self-introspection through its Agent Development Environment. Choose Cognee when the agent must build dense multi-layer semantic graphs — it layers text chunks and entity types as nodes with detailed relationship edges, and every core piece (ingestion, entity extraction, post-processing, retrieval) is customizable.
+根据智能体的主要检索模式选择框架。先用下表缩小候选范围，再结合下方的基准数据进行验证。
 
-**Benchmark Performance Comparison**
+| 框架 | 架构 | 适用场景 | 取舍 |
+|-----------|----------|-----------|-----------|
+| **Mem0** | 向量存储 + 图记忆，可插拔后端 | 多租户系统、广泛集成 | 对多智能体场景的专门支持较少 |
+| **Zep/Graphiti** | 时序知识图谱，双时态模型 | 需要关系建模和时序推理的企业场景 | 高级功能受云服务限制 |
+| **Letta** | 可自我编辑的分层存储记忆（上下文/核心/归档） | 需要充分自省的智能体、有状态服务 | 用于简单场景时显得复杂 |
+| **Cognee** | 通过可定制 ECL 流程和任务构建多层语义图 | 会演进和学习的智能体记忆、多跳推理 | 写入时处理较重 |
+| **LangMem** | 面向 LangGraph 工作流的记忆工具 | 已采用 LangGraph 的团队 | 与 LangGraph 耦合较紧 |
+| **文件系统** | 按约定命名的普通文件 | 简单智能体、原型 | 没有语义搜索和关系结构 |
 
-Consult these benchmarks to set expectations, but treat them as source-specific signals for retrieval dimensions rather than absolute rankings. No single benchmark is definitive.
+如果智能体需要双时态建模（同时追踪事件发生时间和数据写入时间），可考虑 Zep/Graphiti；它的三层知识图（事件、语义实体、社区子图）适合时序查询。如果重点是快速投入生产并使用托管基础设施，可考虑 Mem0。如果智能体需要通过 Agent Development Environment 深入自省，可考虑 Letta。如果需要构建稠密的多层语义图，可考虑 Cognee：它把文本块和实体类型建成节点，并用细化的关系边连接；写入、实体抽取、后处理和检索等核心环节都可以定制。
 
-| System | DMR Accuracy | LoCoMo | HotPotQA (multi-hop) | Latency |
-|--------|-------------|--------|---------------------|---------|
-| Cognee | — | — | Published high score | Variable |
-| Zep (Temporal KG) | Published high score | — | Mid-range across metrics | Low-latency reported |
-| Letta (filesystem) | — | Published filesystem baseline | — | — |
-| Mem0 | — | Published specialized-tool baseline | Lower in one comparison | — |
-| MemGPT | Published high score | — | — | Variable |
-| GraphRAG | Published mid/high range | — | — | Variable |
-| Vector RAG baseline | Published lower range | — | — | Fast |
+**基准表现对比**
 
-Key takeaway: compare memory systems by retrieval shape, not brand. Use benchmark numbers as dated evidence that must be rechecked before making product claims; the stable design rule is to start shallow, measure retrieval quality, then add semantic or graph structure only when a simpler layer fails.
+参考以下基准设定预期，但应把它们视为针对特定检索维度、来自特定来源的信号，而不是绝对排名。没有哪个单一基准可以定论。
 
-### Memory Layers (Decision Points)
+| 系统 | DMR 准确率 | LoCoMo | HotPotQA（多跳） | 延迟 |
+|--------|-------------|---------|--------------------|---------|
+| Cognee | — | — | 已发表的高分 | 不定 |
+| Zep（时序知识图） | 已发表的高分 | — | 各项指标处于中等范围 | 有低延迟报告 |
+| Letta（文件系统） | — | 已发表的文件系统基线 | — | — |
+| Mem0 | — | 已发表的专用工具基线 | 一项对比中较低 | — |
+| MemGPT | 已发表的高分 | — | — | 不定 |
+| GraphRAG | 已发表的中高区间 | — | — | 不定 |
+| 向量 RAG 基线 | 已发表的较低区间 | — | — | 快 |
 
-Pick the shallowest memory layer that satisfies the persistence requirement. Each deeper layer adds infrastructure cost and operational complexity, so only escalate when the shallower layer cannot meet the retrieval or durability need.
+关键在于按检索任务形态比较记忆系统，而不是只看品牌。基准数值是有时效性的证据；用于产品结论前应重新核实。较稳定的设计原则是：先从简单方案开始，测量检索质量，只有简单方案不够用时才增加语义或图结构。
 
-| Layer | Persistence | Implementation | When to Use |
-|-------|------------|----------------|-------------|
-| **Working** | Context window only | Scratchpad in system prompt | Always — optimize with attention-favored positions |
-| **Short-term** | Session-scoped | File-system, in-memory cache | Intermediate tool results, conversation state |
-| **Long-term** | Cross-session | Key-value store → graph DB | User preferences, domain knowledge, entity registries |
-| **Entity** | Cross-session | Entity registry + properties | Maintaining identity ("John Doe" = same person across conversations) |
-| **Temporal KG** | Cross-session + history | Graph with validity intervals | Facts that change over time, time-travel queries, preventing context clash |
+### 记忆层级（决策点）
 
-### Retrieval Strategies
+选择能够满足持久化要求的最浅记忆层级。更深的层级会增加基础设施成本和运维复杂度，只有浅层方案无法满足检索或持久性要求时才升级。
 
-Match the retrieval strategy to the query shape. Semantic search handles direct factual lookups well but degrades on multi-hop reasoning; entity-based traversal handles "everything about X" queries but requires graph structure; temporal filtering handles changing facts but requires validity metadata. When accuracy is paramount and infrastructure budget allows, combine strategies into hybrid retrieval.
+| 层级 | 持久性 | 实现方式 | 适用场景 |
+|-------|------------|------------|-------------|
+| **工作记忆** | 仅在上下文窗口内 | 系统提示词中的草稿区 | 始终需要——将信息放在注意力有利的位置 |
+| **短期记忆** | 仅限当前会话 | 文件系统、内存缓存 | 工具中间结果、对话状态 |
+| **长期记忆** | 跨会话 | 键值存储 → 图数据库 | 用户偏好、领域知识、实体登记表 |
+| **实体记忆** | 跨会话 | 实体登记表 + 属性 | 保持身份一致（例如“John Doe”在多次对话中是同一个人） |
+| **时序知识图** | 跨会话并保留历史 | 带有效期区间的图 | 会变化的事实、时间回溯查询、防止上下文冲突 |
 
-| Strategy | Use When | Limitation |
+### 检索策略
+
+根据查询形态选择检索策略。语义搜索适合直接查询事实，但在多跳推理时可能变差；基于实体的遍历适合“关于 X 的所有信息”这类查询，但需要图结构；时序筛选适合会变化的事实，但需要有效性元数据。当准确性非常重要且基础设施预算允许时，可以组合这些策略进行混合检索。
+
+| 策略 | 适用场景 | 局限 |
 |----------|----------|------------|
-| **Semantic** (embedding similarity) | Direct factual queries | Degrades on multi-hop reasoning |
-| **Entity-based** (graph traversal) | "Tell me everything about X" | Requires graph structure |
-| **Temporal** (validity filter) | Facts change over time | Requires validity metadata |
-| **Hybrid** (semantic + keyword + graph) | Best overall accuracy | Most infrastructure |
+| **语义**（嵌入相似度） | 直接事实查询 | 多跳推理能力会下降 |
+| **基于实体**（图遍历） | “告诉我关于 X 的所有信息” | 需要图结构 |
+| **时序**（有效期筛选） | 事实会随时间变化 | 需要有效期元数据 |
+| **混合**（语义 + 关键词 + 图） | 追求较高的整体准确性 | 基础设施需求最高 |
 
-Hybrid approaches reduce active context by retrieving only relevant subgraphs or memories. Cognee implements hybrid retrieval through multiple search modes across graph, vector, and relational stores, letting agents select the retrieval strategy that fits the query type rather than using a one-size-fits-all approach.
+混合方法只检索相关子图或记忆，从而减少进入当前上下文的内容。Cognee 通过图、向量和关系存储上的多种搜索模式实现混合检索，让智能体可以根据查询类型选择策略，而不是对所有查询使用同一种方式。
 
-### Memory Consolidation
+### 记忆整合
 
-Run consolidation periodically to prevent unbounded growth, because unchecked memory accumulation degrades retrieval quality over time. **Invalidate but do not discard** — preserving history matters for temporal queries that need to reconstruct past states. Trigger consolidation on memory count thresholds, degraded retrieval quality, or scheduled intervals. See [Implementation Reference](./references/implementation.md) for working consolidation code.
+定期整合记忆，避免无界增长；不受控制的累积会逐渐降低检索质量。**让失效信息失效，但不要丢弃历史**——时序查询需要历史记录来重建过去的状态。可以在记忆数量达到阈值、检索质量下降或定时触发整合。可参阅[实现参考](./references/implementation.md)中的整合代码。
 
-## Practical Guidance
+## 实践指南
 
-### Choosing a Memory Architecture
+### 选择记忆架构
 
-**Start with the simplest viable layer and add complexity only when retrieval quality degrades.** Most agents do not need a temporal knowledge graph on day one. Follow this escalation path:
+**从满足需求的最简单层级开始，只有检索质量下降时才增加复杂度。** 大多数智能体在第一天并不需要时序知识图。可以按以下路径逐步升级：
 
-1. **Prototype**: Use file-system memory. Store facts as structured JSON with timestamps. This validates agent behavior before committing to infrastructure.
-2. **Scale**: Move to Mem0 or a vector store with metadata when the agent needs semantic search and multi-tenant isolation, because file-based lookup cannot handle similarity queries.
-3. **Complex reasoning**: Add Zep/Graphiti when the agent needs relationship traversal, temporal validity, or cross-session synthesis. Graphiti uses structured ties with generic relations, keeping graphs simple and easy to reason about; Cognee builds denser multi-layer semantic graphs with detailed relationship edges — choose based on whether the agent needs temporal bi-modeling (Graphiti) or richer interconnected knowledge structures (Cognee).
-4. **Full control**: Use Letta or Cognee when the agent must self-manage its own memory with deep introspection, because these frameworks expose memory operations as first-class agent actions.
+1. **原型阶段**：使用文件系统记忆，以带时间戳的结构化 JSON 保存事实。先验证智能体行为，再投入基础设施。
+2. **扩展阶段**：当智能体需要语义搜索和多租户隔离时，迁移到 Mem0 或带元数据的向量存储；文件查找无法处理相似度查询。
+3. **复杂推理阶段**：当智能体需要关系遍历、时序有效性或跨会话综合时，加入 Zep/Graphiti。Graphiti 用结构化关联和通用关系保持图的简单性；Cognee 则用详细关系边构建更稠密的多层语义图。根据需求选择：需要双时态建模时使用 Graphiti，需要更丰富的互联知识结构时使用 Cognee。
+4. **完全控制阶段**：当智能体必须自行管理记忆并深入自省时，使用 Letta 或 Cognee；这些框架把记忆操作作为智能体的一等操作开放出来。
 
-### Integration with Context
+### 与上下文集成
 
-Load memories just-in-time rather than preloading everything, because large context payloads are expensive and degrade attention quality. Place retrieved memories in attention-favored positions (beginning or end of context) to maximize their influence on generation.
+按需加载记忆，不要预先装入所有内容：过大的上下文负载成本高，也会削弱注意力质量。把检索到的记忆放在注意力较容易利用的位置（上下文开头或结尾），以增强其对生成结果的影响。
 
-### Error Recovery
+### 错误恢复
 
-Handle retrieval failures gracefully because memory systems are inherently noisy. Apply these recovery strategies in order:
+记忆系统本身会有噪声，应妥善处理检索失败。按以下顺序恢复：
 
-- **Empty retrieval**: Fall back to broader search (remove entity filter, widen time range). If still empty, prompt user for clarification.
-- **Stale results**: Check `valid_until` timestamps. If most results are expired, trigger consolidation before retrying.
-- **Conflicting facts**: Prefer the fact with the most recent `valid_from`. Surface the conflict to the user if confidence is low.
-- **Storage failure**: Queue writes for retry. Never block the agent's response on a memory write.
+- **检索为空**：放宽搜索（移除实体筛选、扩大时间范围）。仍无结果时，请用户补充信息。
+- **结果已过期**：检查 `valid_until` 时间戳。如果大多数结果已失效，先整合记忆再重试。
+- **事实冲突**：优先采用 `valid_from` 较新的事实。如果置信度较低，应向用户说明存在冲突。
+- **存储失败**：将写入排队重试。不要让记忆写入阻塞智能体回复。
 
-## Examples
+## 示例
 
-**Example 1: Mem0 Integration**
+**示例 1：集成 Mem0**
+
 ```python
 from mem0 import Memory
 
@@ -128,7 +131,8 @@ m.add("User switched to light mode", user_id="alice")
 results = m.search("What theme does the user prefer?", user_id="alice")
 ```
 
-**Example 2: Temporal Query**
+**示例 2：时序查询**
+
 ```python
 # Track entity with validity periods
 graph.create_temporal_relationship(
@@ -146,7 +150,8 @@ results = graph.query_at_time(
 )
 ```
 
-**Example 3: Cognee Memory Ingestion and Search**
+**示例 3：Cognee 记忆写入与搜索**
+
 ```python
 import cognee
 from cognee.modules.search.types import SearchType
@@ -166,64 +171,67 @@ results = await cognee.search(
 )
 ```
 
-## Guidelines
+## 指南
 
-1. Start with file-system memory; add complexity only when retrieval quality demands it
-2. Track temporal validity for any fact that can change over time
-3. Use hybrid retrieval (semantic + keyword + graph) for best accuracy
-4. Consolidate memories periodically — invalidate but don't discard
-5. Design for retrieval failure: always have a fallback when memory lookup returns nothing
-6. Consider privacy implications of persistent memory (retention policies, deletion rights)
-7. Benchmark your memory system against LoCoMo or LongMemEval before and after changes
-8. Monitor memory growth and retrieval latency in production
+1. 从文件系统记忆开始；只有检索质量需要时才增加复杂度。
+2. 对任何可能随时间变化的事实记录其有效期。
+3. 使用混合检索（语义 + 关键词 + 图）以提高准确性。
+4. 定期整合记忆——让信息失效，但不要丢弃历史。
+5. 为检索失败设计后备方案；记忆查询无结果时也要能继续处理。
+6. 考虑持久化记忆的隐私影响（保留策略、删除权利）。
+7. 在变更前后使用 LoCoMo 或 LongMemEval 评估记忆系统。
+8. 在生产环境监控记忆增长和检索延迟。
 
-## Gotchas
+## 常见问题
 
-1. **Stuffing everything into context**: Loading all available memories into the prompt is expensive and degrades attention quality. Use just-in-time retrieval with relevance filtering instead.
-2. **Ignoring temporal validity**: Facts go stale. Without validity tracking, outdated information poisons the context and the agent acts on wrong assumptions.
-3. **Over-engineering early**: Simple filesystem-backed memory can outperform more specialized tooling on some benchmarks (claim-memory-locomo-filesystem-baseline). Add sophistication only when simple approaches demonstrably fail.
-4. **No consolidation strategy**: Unbounded memory growth degrades retrieval quality over time. Set memory count thresholds or scheduled intervals to trigger consolidation.
-5. **Embedding model mismatch**: Writing memories with one embedding model and reading with another produces poor retrieval because vector spaces are not interchangeable. Pin a single embedding model for each memory store and re-embed all entries if the model changes.
-6. **Graph schema rigidity**: Over-structured graph schemas (rigid node types, fixed relationship labels) break when the domain evolves. Prefer generic relation types and flexible property bags so new entity kinds do not require schema migrations.
-7. **Stale memory poisoning**: Old memories that contradict the current state corrupt agent behavior silently. Implement expiry policies or confidence decay so the agent deprioritizes aged facts, and surface contradictions explicitly when detected.
-8. **Memory-context mismatch**: Retrieving memories that are topically related but contextually wrong (e.g., a memory about "Python" the snake when the agent is discussing Python the language). Mitigate by including session or domain metadata in memory entries and filtering on it during retrieval.
+1. **把所有内容塞进上下文**：将所有可用记忆载入提示词既昂贵，又会削弱注意力质量。应按需检索并根据相关性筛选。
+2. **忽略时间有效性**：事实会过期。若不追踪有效期，过时信息会污染上下文，导致智能体基于错误假设行动。
+3. **过早过度设计**：在某些基准中，简单的文件系统记忆可能胜过专用工具（claim-memory-locomo-filesystem-baseline）。只有在简单方案被明确证明不足时才增加复杂度。
+4. **没有整合策略**：无界增长会降低检索质量。设置记忆数量阈值或定时触发整合。
+5. **嵌入模型不匹配**：用一个嵌入模型写入记忆、再用另一个模型读取，会导致检索质量变差，因为向量空间不可互换。每个记忆存储固定使用一个嵌入模型；模型变更时重新嵌入所有条目。
+6. **图模式过于僵化**：过度结构化的图模式（固定节点类型和关系标签）会在领域变化时失效。优先采用通用关系类型和灵活属性集合，避免每增加实体种类都要迁移模式。
+7. **过时记忆污染**：与当前状态矛盾的旧记忆会悄然干扰智能体行为。实现过期策略或置信度衰减，使智能体降低对旧事实的优先级；检测到矛盾时应明确呈现。
+8. **记忆与当前情境不匹配**：检索到主题相关、情境却错误的记忆（例如讨论 Python 语言时，检索到蟒蛇的 Python）。在记忆条目中加入会话或领域元数据，并在检索时筛选。
 
-## Integration
+## 集成
 
-This skill owns persistent semantic memory. Adjacent skills own scratch storage, compaction, and context tactics:
+本技能负责持久化语义记忆。相邻技能分别负责临时存储、上下文压缩和上下文策略：
 
-- `filesystem-context`: file-backed scratchpads, logs, and simple run state before semantic retrieval is needed.
-- `context-compression`: summaries and handoffs that preserve session state in prose.
-- `context-optimization`: just-in-time memory loading and retrieval scoping inside active context budgets.
-- `context-degradation`: stale or conflicting memories as context poisoning or clash.
-- `bdi-mental-states`: formal mental-state modeling when beliefs, desires, intentions, and provenance chains matter.
-- `multi-agent-patterns`: shared memory across agents.
-- `evaluation`: memory quality, retrieval correctness, and benchmark selection.
+- `filesystem-context`：在需要语义检索前，使用文件系统临时记事、日志和简单运行状态。
+- `context-compression`：用摘要和交接内容保留会话状态。
+- `context-optimization`：在当前上下文预算内按需加载记忆并限制检索范围。
+- `context-degradation`：处理过时或冲突记忆造成的上下文污染。
+- `bdi-mental-states`：在信念、愿望、意图及其来源链很重要时进行形式化心理状态建模。
+- `multi-agent-patterns`：在多个智能体之间共享记忆。
+- `evaluation`：评估记忆质量、检索正确性并选择基准。
 
-## References
+## 参考资料
 
-Internal references:
-- [Implementation Reference](./references/implementation.md) - Read when: implementing vector stores, property graphs, temporal queries, or memory consolidation logic from scratch
+内部参考：
 
-Related skills in this collection:
-- context-fundamentals - Read when: designing the context layer that memory feeds into
-- multi-agent-patterns - Read when: multiple agents need to share or coordinate memory state
+- [实现参考](./references/implementation.md)——从零实现向量存储、属性图、时序查询或记忆整合逻辑时阅读。
 
-External resources:
-- Zep temporal knowledge graph paper (arXiv:2501.13956) - Read when: evaluating bi-temporal modeling or Graphiti's architecture
-- Mem0 production architecture paper (arXiv:2504.19413) - Read when: assessing managed memory infrastructure trade-offs
-- Cognee optimized knowledge graph + LLM reasoning paper (arXiv:2505.24478) - Read when: comparing multi-layer semantic graph approaches
-- LoCoMo benchmark (Snap Research) - Read when: evaluating long-conversation memory retention
-- MemBench evaluation framework (ACL 2025) - Read when: designing memory evaluation suites
-- Graphiti open-source temporal KG engine (github.com/getzep/graphiti) - Read when: implementing temporal knowledge graphs
-- Cognee open-source knowledge graph memory (github.com/topoteretes/cognee) - Read when: building customizable ECL pipelines for memory
-- [Cognee comparison: Form vs Function](https://www.cognee.ai/blog/deep-dives/competition-comparison-form-vs-function) - Read when: comparing graph structures across Mem0, Graphiti, LightRAG, Cognee
+本资料集中的相关技能：
+
+- `context-fundamentals`——设计记忆所依赖的上下文层时阅读。
+- `multi-agent-patterns`——多个智能体需要共享或协调记忆状态时阅读。
+
+外部资源：
+
+- Zep 时序知识图论文（arXiv:2501.13956）——评估双时态建模或 Graphiti 架构时阅读。
+- Mem0 生产架构论文（arXiv:2504.19413）——评估托管记忆基础设施的取舍时阅读。
+- Cognee 优化知识图与 LLM 推理论文（arXiv:2505.24478）——比较多层语义图方案时阅读。
+- LoCoMo 基准（Snap Research）——评估长对话记忆能力时阅读。
+- MemBench 评估框架（ACL 2025）——设计记忆评估套件时阅读。
+- Graphiti 开源时序知识图引擎（github.com/getzep/graphiti）——实现时序知识图时阅读。
+- Cognee 开源知识图记忆系统（github.com/topoteretes/cognee）——构建可定制 ECL 流程时阅读。
+- [Cognee 对比：形式与功能](https://www.cognee.ai/blog/deep-dives/competition-comparison-form-vs-function)——比较 Mem0、Graphiti、LightRAG 和 Cognee 的图结构时阅读。
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 4.1.0
+**创建时间**：2025-12-20
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering 贡献者
+**版本**：4.1.0

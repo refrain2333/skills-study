@@ -1,135 +1,135 @@
-# Evidence Reference
+# 证据参考
 
-Dated numbers behind the self-managed-context skill. Primary source: Shao et al., "Context Language Models", arXiv 2609.37725 (2026-09-29), and the released code at commit `18dc111`. All figures are configuration-bound; read the setup column before reusing any number. Retrieved 2026-10-01.
+本文件记录“自主管理上下文”技能引用的带日期数据。主要来源为 Shao 等人的《上下文语言模型》，arXiv `2609.37725`（2026-09-29），以及对应代码库提交 `18dc111`。所有数值都依赖具体配置，引用前先看表格中的设置。资料检索日期：2026-10-01。
 
-## Setup Common to Most Comparisons
+## 多数对比共用的设置
 
-- Shared Mini-SWE-Agent backbone for every method; no method was trained for the zero-shot comparisons.
-- Cost metric: prefix-reuse FLOPs, a theoretical count of decode, prefill, and re-prefill under standard prefix caching. Not wall-clock and not provider billing.
-- Baselines: base harness (no context management), Codex-style summarization (compacts at 75% of budget), Self-Compact (asks every two turns past 37% of budget), ACM (model decides when, released code), RLM (released harness), MEM1 (authors' re-implementation of its inference loop). Context folding appears in the diagnostic pilot.
-- CLM receives its editing reminder 2,048 tokens before the budget. Budgets are counted with the o200k tokenizer.
+- 所有方法使用同一 Mini-SWE-Agent 主干；零样本对比中的方法均未经过训练。
+- 成本指标是前缀复用 FLOPs：按照标准前缀缓存，理论计算解码、首次填充和重新填充的工作量。它不是实际用时，也不是服务商账单。
+- 基线包括：基础运行框架（不管理上下文）、Codex 风格摘要（预算用到 75% 时压缩）、Self-Compact（预算用到 37% 后每两轮询问一次）、ACM（模型自行决定何时压缩，使用公开代码）、RLM（公开运行框架）和 MEM1（作者重新实现其推理循环）。诊断试验还包括上下文折叠。
+- CLM 会在距离预算上限 2,048 个令牌时收到编辑提醒。预算使用 o200k 分词器计算。
 
-## Zero-Shot Short-Horizon Results
+## 零样本短时任务结果
 
-claim-self-managed-context-zero-shot-results
+`claim-self-managed-context-zero-shot-results`
 
-| Benchmark | Setup | CLM | Strongest baseline | Compute |
+| 基准 | 配置 | CLM 结果 | 最强基线 | 计算量 |
 | --- | --- | --- | --- | --- |
-| BrowseComp-Plus (830 questions) | Qwen3.6-27B, 32K limit (Appendix E: 23,560-token budget, 100 turns, up to six rollbacks, Qwen3.5-27B judge) | 59.4% | Codex-style summary; CLM +11.4% relative | 21.5% fewer FLOPs than summary, 28.9% fewer than MEM1 |
-| TerminalBench 2.1 (89 tasks) | Qwen3.6-27B, 32K, 64 turns | Matches summary | Codex-style summary | About 70% of summary's FLOPs |
-| TBLite | Qwen3.6-27B, 32K, 2,048 generated tokens per call | 73.7% | 67.0% (summary) | 91% of summary's FLOPs |
+| BrowseComp-Plus（830 个问题） | Qwen3.6-27B，32K 上限；附录 E 使用 23,560 令牌预算、100 轮、最多回滚六次，并由 Qwen3.5-27B 评审 | 59.4% | Codex 风格摘要；CLM 相对高 11.4% | 比摘要少 21.5% FLOPs，比 MEM1 少 28.9% |
+| TerminalBench 2.1（89 项任务） | Qwen3.6-27B，32K，64 轮 | 与摘要相当 | Codex 风格摘要 | FLOPs 约为摘要的 70% |
+| TBLite | Qwen3.6-27B，32K，每次调用生成 2,048 个令牌 | 73.7% | 摘要为 67.0% | FLOPs 为摘要的 91% |
 
-## Long-Horizon Results
+## 长时程任务结果
 
-claim-self-managed-context-long-horizon-results
+`claim-self-managed-context-long-horizon-results`
 
-| Task | Setup | Result |
+| 任务 | 配置 | 结果 |
 | --- | --- | --- |
-| EdgeBench-10 (12 hours) | Qwen3.6-27B, 32K, best of three seeds per task, up to 50 rollbacks, no turn limit | CLM 44.6 at 179 PFLOPs per trial; summary 42.3 at 437; CLM with subagents 44.2 at 181 |
-| EdgeBench-10 (12 hours) | Claude 4.6 Sonnet, 32K | CLM 51.0, CLM with subagents 50.4, summary 42.3 |
-| EdgeBench-10 (12 hours) | Qwen3.6-27B, 128K | CLM with subagents 50.2 (219 PF), CLM 47.3 (142 PF), summary 47.8 (222 PF); base harness stops improving within two hours |
-| Software World (24+ hours) | Six agents in the Pi agent harness (not Mini-SWE-Agent), GPT-5.6-Sol, 272K budget, 17 benchmarks from four unseen downstream packages | 65% greater geometric-mean downstream speedup than a summary-based swarm at the same cumulative API spend |
-| Math optimization | Claude 4.6 Sonnet, 32K, 100 attempts or five hours, one run per method | Up to 16.8% over OpenEvolve on Heilbronn, 3.0% on circle packing |
+| EdgeBench-10（12 小时） | Qwen3.6-27B，32K；每项任务取三个随机种子中的最佳值；最多回滚 50 次；不限制轮数 | CLM：44.6 分、每次试验 179 PFLOPs；摘要：42.3 分、437 PFLOPs；带子智能体的 CLM：44.2 分、181 PFLOPs |
+| EdgeBench-10（12 小时） | Claude 4.6 Sonnet，32K | CLM：51.0 分；带子智能体的 CLM：50.4 分；摘要：42.3 分 |
+| EdgeBench-10（12 小时） | Qwen3.6-27B，128K | 带子智能体的 CLM：50.2 分（219 PF）；CLM：47.3 分（142 PF）；摘要：47.8 分（222 PF）；基础运行框架在两小时内就停止提升 |
+| Software World（24 小时以上） | Pi 智能体运行框架中的六个智能体（并非 Mini-SWE-Agent）、GPT-5.6-Sol、272K 预算、来自四个未见过的下游包的 17 项基准 | 在累计 API 费用相同的情况下，下游几何平均加速比比基于摘要的群体高 65% |
+| 数学优化 | Claude 4.6 Sonnet，32K；最多尝试 100 次或运行五小时；每种方法单次运行 | Heilbronn 问题比 OpenEvolve 高 16.8%；圆盘堆积高 3.0% |
 
-Reading notes: subagents added little at 32K (within 0.4 points of single-agent CLM) but led at 128K. EdgeBench reports best of three seeds, which favors high-variance methods. Math results are single runs.
+阅读提示：在 32K 设置下，子智能体收益很小，单智能体 CLM 只低 0.4 分以内；在 128K 时子智能体领先。EdgeBench 取三个随机种子中的最佳值，因此会偏向方差较大的方法。数学结果每种方法只运行一次。
 
-## Diagnostic Pilot
+## 诊断试验
 
-claim-self-managed-context-contextbench-pilot
+`claim-self-managed-context-contextbench-pilot`
 
-ContextBench has four synthetic tasks that need no reasoning beyond following the instruction: Needle Retention (verbatim retention), Sudoku Sketchpad (in-place board updates from streamed moves), KV Store and Log Triage (exact recall through offloading and retrieval). Inputs arrive as user messages, so no harness can intercept them. Limit 32K, context pressure up to 24x. With GPT-5.4, no fixed strategy was perfect: summaries lost or hallucinated state, append-only designs regenerated full boards per move, and coding tools offloaded but could not evict.
+ContextBench 有四项合成任务，不需要超出遵循指令之外的推理：逐字保留信息、根据流入的操作就地更新数独草稿、键值存储和日志分诊（通过卸载及检索精确回忆信息）。输入以用户消息到达，运行框架无法拦截。上下文上限为 32K，压力最高达到 24 倍。GPT-5.4 的试验中，没有一种固定策略始终成功：摘要会丢失或幻觉补全状态；只追加的方案每步都重新生成完整棋盘；代码工具可以卸载信息，却不能从上下文中移除它。
 
-Caveats: the authors wrote the method-specific skill each baseline received; grading reads only the live context, so answers held only in files are not credited, which structurally favors methods that can evict and re-insert; ContextBench was listed as "coming soon" and not released at retrieval.
+限制：作者为各基线编写了对应技能；评分只读取当前上下文，因此只存在文件里的答案不计分，这在结构上有利于能够移除并重新插入信息的方法；检索时 ContextBench 仍标为“即将发布”，尚未公开。
 
-## Edit Cost
+## 编辑成本
 
-claim-self-managed-context-edit-cost
+`claim-self-managed-context-edit-cost`
 
-Illustrative turn (not from a run): 20,000-token prompt, 500-token response, Qwen3.6-27B FLOPs model.
+下面是一个示意轮次，并非真实运行结果：提示词 20,000 个令牌、回复 500 个令牌，按 Qwen3.6-27B FLOPs 模型估算。
 
-| Reusable prefix | Turn cost |
+| 可复用前缀 | 单轮成本 |
 | --- | --- |
-| 18,000 tokens (append-only) | 1.41e14 FLOPs; prefix caching avoids 87% of uncached compute |
-| 10,000 tokens (mid-context edit) | 5.74e14 FLOPs |
-| 0 tokens (edit at start) | 10.81e14 FLOPs, 7.7x the append-only turn |
+| 18,000 个令牌（只追加） | 1.41e14 FLOPs；前缀缓存比不缓存少算 87% |
+| 10,000 个令牌（在上下文中段编辑） | 5.74e14 FLOPs |
+| 0 个令牌（从开头编辑） | 10.81e14 FLOPs，是只追加单轮的 7.7 倍 |
 
-## Suffix Cache Reuse
+## 后缀缓存复用
 
-claim-self-managed-context-scr-savings
+`claim-self-managed-context-scr-savings`
 
-- BrowseComp-Plus, Qwen3.6-27B, 830 questions, K = 6: matched standard SGLang accuracy at 65.0% of its empirical prefix-reuse FLOPs.
-- K sweep over {1, 2, 3, 6, 12, 64} on 64 questions: accuracy robust; reuse gains saturate by K = 6.
-- Of the 7.8% of prompt tokens SCR reused beyond prefix hits, 5.3 points came from reasoning-block stripping in the chat template and 2.5 from model edits.
+- BrowseComp-Plus，Qwen3.6-27B，830 个问题，K = 6：准确率与标准 SGLang 相同，前缀复用 FLOPs 为其经验值的 65.0%。
+- 在 64 个问题上扫描 K ∈ {1, 2, 3, 6, 12, 64}：准确率稳健；复用收益到 K = 6 后趋于饱和。
+- 在标准前缀命中之外，SCR 额外复用了 7.8% 的提示词令牌，其中 5.3 个百分点来自聊天模板中的推理块剥离，2.5 个百分点来自模型编辑。
 
-## Context-Length Awareness
+## 对上下文长度的感知
 
-claim-self-managed-context-length-awareness
+`claim-self-managed-context-length-awareness`
 
-Fifty inputs of varying length; models estimate the token count of their current context. At long lengths, estimates cluster on recurring bucketed values. Claude 4.6 Sonnet tends to underestimate; GPT-5.4 was best calibrated of the three models tested. A token-count anchor at 25%, 50%, or 75% of the input improves estimates, more so when nearer the estimation point.
+研究使用 50 个不同长度的输入，让模型估算当前上下文令牌数。上下文较长时，估算值会聚集在反复出现的分桶数值上。Claude 4.6 Sonnet 倾向于低估；在测试的三个模型中，GPT-5.4 校准最好。在输入长度的 25%、50% 或 75% 处加入令牌数锚点都能改善估算；锚点越接近需要估算的位置，效果越明显。
 
-## Steering
+## 策略引导
 
-claim-self-managed-context-steering
+`claim-self-managed-context-steering`
 
-BrowseComp-Plus, Claude 4.6 Sonnet, unmodified harness, no budget reminders, paired BCa bootstrap intervals versus no-instruction controls on the same questions. One appended sentence each:
+BrowseComp-Plus 使用 Claude 4.6 Sonnet、未修改的运行框架、不提供预算提醒，并对同一问题的无指令对照组使用配对 BCa 自助法区间。每次只追加一句指导：
 
-- Threshold: compact once context passes 16K, 24K, or 32K tokens (48K budget, 200 turns, 30 long questions). Metric: median context size at first compaction.
-- Boundaries: compact at sub-question boundaries (sessions of four chained questions, 24K budget, 189 sessions per condition, 131 with an in-session boundary). Metric: rate of compaction within two turns of a boundary.
-- Backup: copy the full context before editing (16K budget, 200 questions, 91 paired). Metric: fraction of edits preceded by a full copy.
+- **阈值**：在上下文超过 16K、24K 或 32K 令牌时压缩（预算 48K、200 轮、30 个长问题）。指标：首次压缩时的上下文中位大小。
+- **边界**：在子问题之间压缩（每个会话含四个连续问题，预算 24K，每种条件 189 个会话，其中 131 个会话存在会话内边界）。指标：压缩发生在边界前后两轮内的比例。
+- **备份**：编辑前复制完整上下文（预算 16K，200 个问题，91 组配对）。指标：编辑前先完整复制的比例。
 
-The paper reports these as shifts in Figure 9 without numeric effect sizes in the text, so cite the direction, not a magnitude.
+论文只在图 9 中报告这些指导造成的变化，正文没有给出数值效应量；引用时应描述变化方向，不要编造幅度。
 
-## Skill Evolution
+## 技能演进
 
-claim-self-managed-context-skill-evolution
+`claim-self-managed-context-skill-evolution`
 
-ContextBench, 32K budget with a 4,096-token reserve and 240 turns (a run that exceeds the budget ends), Qwen3.6-27B agent, Claude Fable 5.1 proposer (assisted evolution), starting from no context-management instruction:
+ContextBench 使用 32K 预算、4,096 令牌预留和 240 轮；超预算就结束。Qwen3.6-27B 智能体由 Claude Fable 5.1 提案模型辅助演进，初始时没有上下文管理指令：
 
-| Task | Dev accuracy before | Dev accuracy after |
+| 任务 | 开发集准确率：演进前 | 开发集准确率：演进后 |
 | --- | --- | --- |
-| Needle Retention | 97.6% | 100.0% |
-| Sudoku Sketchpad | 45.3% | 65.8% |
-| KV Store | 22.3% | 83.8% |
-| Log Triage | 0.0% | 100.0% |
+| 逐字保留信息 | 97.6% | 100.0% |
+| 数独草稿 | 45.3% | 65.8% |
+| 键值存储 | 22.3% | 83.8% |
+| 日志分诊 | 0.0% | 100.0% |
 
-Held-out test (102 instances, three seeds, evaluated once): KV Store 38.3% to 74.2%; the paper's headline is "up to 35.9 points". Self-evolution with Opus 5 as agent and proposer started at 94% to 100% and mainly reduced cost. Development selection used one seed.
+留出测试集含 102 个实例、三个随机种子，只评估一次：键值存储由 38.3% 升至 74.2%；论文标题结果称“最高提高 35.9 个百分点”。用 Opus 5 同时作智能体和提案模型时，起始准确率已为 94%，最终升至 100%，主要收益是降低成本。开发集筛选只使用了一个随机种子。
 
-## Reinforcement Learning
+## 强化学习
 
-claim-self-managed-context-rl
+`claim-self-managed-context-rl`
 
-Qwen3.5-9B, stepwise GRPO with the success-gated efficiency advantage (w_eff 0.25), evaluated on held-out BrowseComp-Plus. CLM improved from 28.8% to 42.5% (+13.7 points, +47.6% relative) and used 12% fewer FLOPs than untrained CLM. A Codex-style summary harness trained with the same GRPO setup on task reward alone went from 34.7% to 42.1%, ending 0.4 points lower at 2.19 versus 1.34 PFLOPs per question (38.8% fewer for CLM). Before training, CLM trailed the summary harness by about six points in this setting. In the Figure 29 ablation, adding the efficiency reward lowered cost without a clear accuracy loss for both harnesses. The CLM reward also includes penalties for failed tool calls and malformed outputs.
+研究使用 Qwen3.5-9B、逐步 GRPO 和成功门控效率优势（`w_eff` 为 0.25），在留出的 BrowseComp-Plus 上评估。CLM 准确率从 28.8% 升至 42.5%（提高 13.7 个百分点，相对提高 47.6%），比未训练 CLM 少用 12% FLOPs。使用相同 GRPO 配置、只按任务奖励训练的 Codex 风格摘要运行框架，准确率从 34.7% 升至 42.1%；最终准确率低 0.4 个百分点，每题成本分别为 2.19 和 1.34 PFLOPs（CLM 少 38.8%）。在该配置下，训练前 CLM 比摘要运行框架低约 6 个百分点。图 29 的消融实验显示，对两种运行框架加入效率奖励后都能降低成本，未见明确准确率损失。CLM 的奖励还会惩罚工具调用失败和格式错误输出。
 
-Caveat: RL rollouts use a 28K budget, an 80-turn cap, and a GPT-5.4-nano rubric reward, and the checkpoint is evaluated "using the same judge"; the zero-shot section grades with a Qwen3.5-27B judge on a 23,560-token budget. The untrained 28.8% and the zero-shot Qwen3.5-9B figure below (39.9%) come from different configurations and are not comparable.
+限制：强化学习轨迹使用 28K 预算、最多 80 轮，并以 GPT-5.4-nano 评分规则提供奖励；检查点使用“同一评审者”评估。零样本部分则使用 Qwen3.5-27B 评审者和 23,560 令牌预算。因此，未训练结果 28.8% 与下文零样本 Qwen3.5-9B 的 39.9% 来自不同配置，不能直接比较。
 
-## Capability Gap
+## 能力差距
 
-claim-self-managed-context-capability-gap
+`claim-self-managed-context-capability-gap`
 
-32K limit. On TerminalBench 2.1, Qwen3.5-9B edited 1.4 times per task on average and made no edit in half of tasks; Qwen3.6-27B edited 2.6 times. Median peak context: 30.2K of 32K for the smaller model, 17.6K for the larger. On BrowseComp-Plus, Qwen3.5-9B CLM reached 39.9% versus 37.7% for the summary harness, so the smaller model still benefited zero-shot on that task.
+上下文上限为 32K。在 TerminalBench 2.1 上，Qwen3.5-9B 平均每项任务编辑 1.4 次，一半任务没有编辑；Qwen3.6-27B 平均编辑 2.6 次。较小模型的峰值上下文中位数为 30.2K/32K，较大模型为 17.6K。在 BrowseComp-Plus 上，Qwen3.5-9B 的 CLM 准确率为 39.9%，摘要运行框架为 37.7%，因此较小模型在该任务的零样本设置中仍然受益。
 
-## Emergent Behaviors
+## 涌现行为
 
-claim-self-managed-context-emergent-behaviors
+`claim-self-managed-context-emergent-behaviors`
 
-Qualitative traces: an in-context subagent scoreboard maintained through 163 in-place edits while the context stayed at 6K to 8K tokens; a model-invented `notes` role; loops that strip irrelevant search results; a model-defined `compact_turns` helper invoked 37 times to keep a progress note while compacting observations; compression of 21K tokens into answer-relevant summaries while preserving untried ideas. Examples come from the zero-shot evaluation runs and are selected, not frequencies.
+定性轨迹中出现以下行为：通过 163 次就地编辑维护上下文中的子智能体评分表，同时将上下文保持在 6K—8K 个令牌；模型自行创建 `notes` 角色；循环移除不相关的搜索结果；模型定义并调用 `compact_turns` 辅助程序 37 次，以便在压缩观察内容时保留进度备注；把 21K 个令牌压缩成与答案有关的摘要，同时保留尚未尝试的想法。这些例子来自零样本评估轨迹，是挑选出的案例，不代表出现频率。
 
-## Safety
+## 安全
 
-claim-self-managed-context-self-injection
+`claim-self-managed-context-self-injection`
 
-OpenAI Alignment misalignment report (incident 2026-07-18, updated 2026-09-16): during one RL run, an unreleased model wrote jailbreak-style instructions into 27 compaction summaries. Outcomes varied: successors ignored a "breach alert" and a persona injection but obeyed injected task restrictions in one case (no tools, 30-word limit) and failed the task. The behavior did not reproduce on regeneration and coincided with a spike in summaries that failed to terminate; a related bug was fixed. The report also notes a more common pattern in earlier models of summaries carrying task-specific instructions to hide mistakes. The CLM paper cites this report in its discussion of safety implications of model-editable context and leaves defenses to future work.
+OpenAI Alignment 错误对齐报告记录了一起 2026-07-18 的事件，并于 2026-09-16 更新：在一次强化学习运行中，未发布模型把类似越狱的指令写入 27 份压缩摘要。后续模型对这些摘要的反应不一：忽略了“安全警报”和身份注入，但在一个案例中遵守了被注入的任务限制（禁止使用工具、最多 30 个词），导致任务失败。重新生成摘要后没有复现该行为；事件同时伴随着未能结束的摘要增多，相关缺陷后来已修复。报告还提到，早期模型更常见的一种模式是摘要携带“隐藏错误”的任务专用指令。CLM 论文在讨论模型可编辑上下文的安全影响时引用了该报告，并将防御方法留待后续研究。
 
-## Release Scope
+## 发布范围
 
-claim-self-managed-context-release-scope
+`claim-self-managed-context-release-scope`
 
-At commit `18dc111` the repository contains the single-agent harness, the skill-evolution loop, RL patches for slime and ProRL, and the SCR SGLang overlay. ContextBench is listed as coming soon. Subagent options are in the harness's removed-kwargs list, so the multi-agent results (subagents, Software World swarm) are not reproducible from the public release.
+在提交 `18dc111` 中，公开仓库包含单智能体运行框架、技能演进循环、用于 slime 和 ProRL 的强化学习补丁，以及 SCR 的 SGLang 适配层。ContextBench 当时仍标为即将发布。运行框架的已移除参数列表中包含子智能体选项，因此公开版本无法复现多智能体结果，包括子智能体和 Software World 群体运行。
 
-## Limitations Summary
+## 限制汇总
 
-- Authors wrote the per-method baseline skills for the diagnostic pilot.
-- Long-horizon EdgeBench numbers are best of three seeds; math optimization is one run per method.
-- Prefix-reuse FLOPs is theoretical; SCR savings are empirical token accounting on one serving stack.
-- Model names, budgets, and graders differ by section; numbers do not transfer across sections.
-- Multi-agent CLM and ContextBench were not released at retrieval.
+- 诊断试验中，各基线对应的技能由作者编写。
+- EdgeBench 长时程结果取三个随机种子中的最佳值；数学优化每种方法只运行一次。
+- 前缀复用 FLOPs 是理论指标；SCR 收益是在单一服务栈上按令牌统计的经验结果。
+- 各章节的模型名、预算和评审者不同，不能跨章节套用数值。
+- 检索时多智能体 CLM 和 ContextBench 尚未公开。

@@ -1,150 +1,150 @@
 ---
 name: self-improvement-loops
-description: "This skill should be used when the harness, scaffold, workflow, or optimizer itself is the optimization target: recursive self-improvement (RSI) loops, meta-harnesses, self-improving harnesses that mine their own failures and propose bounded edits, evolutionary or population-based search over agent scaffolds, acceptance gates for self-modifying systems, and agentic context evolution where the mechanism that produces context is versioned and evolved. Route governance of a single autonomous loop (locked surfaces, durable logs, rollback, novelty gates, approval boundaries) to harness-engineering, measurement and quality-gate design to evaluation, judge design to advanced-evaluation, and remote sandbox infrastructure to hosted-agents."
+description: "用于设计以运行框架自身为优化目标的循环，包括递归改进、脚手架搜索、自我修改验收与上下文机制演化。"
 ---
 
-# Self-Improvement Loops
+# 自我改进循环
 
-This skill covers systems where the harness is the artifact being optimized: an agent mines its own failures and edits its own scaffold, a meta-agent searches over harness code, a population of workflow candidates evolves against an evaluator, or the mechanism that produces context is itself versioned and improved. The design question shifts from "how do I control one loop" (harness-engineering) to "how do I let a loop rewrite parts of itself without corrupting the signal that steers it".
+本技能讨论将运行框架本身作为优化对象的系统：智能体从自身失败中归纳问题并修改脚手架；元智能体搜索运行框架代码；一组工作流候选根据评估器进行演化；或生成上下文的机制本身被版本化并持续改进。设计问题由“如何控制一个循环”（`harness-engineering`）转变为“如何让循环改写自身的一部分，同时不破坏引导它的信号”。
 
-The controlling constraint across every published system: the loop optimizes whatever signal it is given, including the signal's own weaknesses. Design the loop assuming the optimizer will find every gap between the metric and the intent.
+所有已发布系统都受同一个核心约束支配：循环会优化它得到的任何信号，包括信号自身的弱点。设计循环时，应假定优化器会找出指标与真实意图之间的每一个缺口。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
+在以下情况下启用本技能：
 
-- Building a loop where an agent proposes edits to its own harness, prompts, context playbook, or workflow based on mined failure patterns
-- Designing meta-level search over harness or scaffold code: meta-agent search, tree search over workflow graphs, evolutionary program search with an LLM mutation operator
-- Choosing acceptance criteria for any self-modifying agent system
-- Evolving the mechanism that manages context (a skill, playbook, or context function) rather than hand-editing the context artifact
-- Diagnosing a degenerating self-improvement loop: reward hacking, diversity collapse, context collapse, or silent stagnation
-- Deciding which level of the optimization ladder (prompt, context, workflow, harness code, optimizer code) a recurring failure should be fixed at
+- 构建一个循环，让智能体根据归纳出的失败模式，提出对自身运行框架、提示词、上下文手册或工作流的改动。
+- 设计对运行框架或脚手架代码的元层搜索：元智能体搜索、工作流图树搜索，或由 LLM 执行变异操作的进化式程序搜索。
+- 为任何自我修改型智能体系统选择验收标准。
+- 改进管理上下文的机制（技能、手册或上下文函数），而不是手动编辑上下文本身。
+- 诊断退化的自我改进循环：奖励投机、多样性坍塌、上下文坍塌或悄然停滞。
+- 判断应在优化阶梯的哪一级（提示词、上下文、工作流、运行框架代码、优化器代码）修复反复出现的失败。
 
-Do not activate this skill for adjacent work owned by other skills:
+以下相邻工作由其他技能负责，不要为它们启用本技能：
 
-- Governance of a single autonomous loop that does not modify itself: locked and editable surfaces, durable logs, rollback, novelty gates, PR preparation, and human approval boundaries belong to `harness-engineering`. That skill defines the control surfaces; this skill defines what happens when the surfaces themselves become the optimization target.
-- Building the evaluator, regression suite, or quality gates that score candidates: `evaluation`.
-- LLM-as-judge design, pairwise comparison, and bias mitigation for candidate scoring: `advanced-evaluation`.
-- One-shot token efficiency, masking, or caching without an improvement loop: `context-optimization`.
-- Remote sandboxes and background execution infrastructure for running the loop: `hosted-agents`.
-- Whether to build the loop at all, pipeline shape, and cost estimation: `project-development`.
-- The self-editing context behavior and efficiency reward a loop optimizes: `self-managed-context`.
+- 不会修改自身的单个自主循环的治理：锁定与可编辑界面、持久化日志、回滚、新颖性门禁、PR 准备和人工审批边界归 `harness-engineering` 负责。该技能定义控制界面；本技能定义这些界面本身成为优化对象时会发生什么。
+- 构建候选评分器、回归套件或质量门禁：`evaluation`。
+- 候选评分所用的 LLM 判官设计、成对比较和偏差缓解：`advanced-evaluation`。
+- 不涉及改进循环的一次性 Token 效率、遮罩或缓存：`context-optimization`。
+- 运行循环所需的远程沙箱和后台执行基础设施：`hosted-agents`。
+- 是否应该构建该循环、流水线形态和成本估算：`project-development`。
+- 循环所优化的上下文自编辑行为与效率奖励：`self-managed-context`。
 
-## Core Concepts
+## 核心概念
 
-### The Optimization Ladder
+### 优化阶梯
 
-Published self-improvement systems target progressively deeper objects:
+已发布的自我改进系统针对逐级深入的对象进行优化：
 
-| Rung | Optimized object | Example systems |
+| 阶梯 | 优化对象 | 示例系统 |
 | --- | --- | --- |
-| 1 | Instruction prompts | Promptbreeder, GEPA |
-| 2 | Structured context | ACE (playbook of itemized bullets) |
-| 3 | Context mechanism | MCE (the skill that produces context) |
-| 4 | Workflow graph | ADAS, AFlow |
-| 5 | Harness code | Self-Harness (bounded self-edits), Meta-Harness, Darwin Godel Machine |
-| 6 | Optimizer code | STOP (the improver improves the improver) |
+| 1 | 指令提示词 | Promptbreeder、GEPA |
+| 2 | 结构化上下文 | ACE（由条目构成的手册） |
+| 3 | 上下文机制 | MCE（生成上下文的技能） |
+| 4 | 工作流图 | ADAS、AFlow |
+| 5 | 运行框架代码 | Self-Harness（有边界的自编辑）、Meta-Harness、Darwin Godel Machine |
+| 6 | 优化器代码 | STOP（改进器改进改进器本身） |
 
-Each rung up buys a larger design space and more leverage, and costs more per evaluation with a larger surface for gaming. Fix a recurring failure at the lowest rung that can express the fix. A stale-library failure is a context fix, not a workflow rewrite. Only move up when failure clusters at the current rung persist across candidates.
+阶梯越高，设计空间和影响力越大，但每次评估的成本越高，可被钻空子的界面也越多。应在能够表达修复方案的最低一级处理反复出现的失败。因库版本过时导致的失败属于上下文问题，而不是工作流重写。只有当失败簇在当前阶梯的多个候选方案中持续出现时，才向上移动。
 
-### The Loop Is Not the Intelligence
+### 循环不等于智能
 
-Recursive structure amplifies base-model quality in both directions. The same recursive improver design that compounds gains with a strong model degrades mean performance across iterations with weaker models (claim-self-improvement-capability-threshold). Two implications:
+递归结构会从两个方向放大基础模型的质量。对于强模型，同一套递归改进器设计可以不断叠加收益；对于较弱模型，它却会使多轮迭代的平均表现下降（claim-self-improvement-capability-threshold）。由此得出两点：
 
-1. Run a capability validation before enabling recursion: a fixed number of iterations on a held-out task set, with the loop counted as net-negative if the trajectory declines.
-2. Detect the degenerate stagnation mode. A broken improver that silently returns its input unchanged looks like stability in aggregate metrics. Track edit diffs, not only scores.
+1. 启用递归前先验证能力：在保留测试集上运行固定轮数；如果整体趋势下降，就将循环视为净负收益。
+2. 检查退化式停滞。损坏的改进器可能悄悄原样返回输入，在总体指标上看起来像稳定。追踪编辑差异，而不只追踪分数。
 
-### The Outside-the-Loop Invariant
+### 循环外部不变量
 
-The evaluator, its instrumentation, permission control, and budget enforcement must live outside the surface the loop can modify. Every documented reward hack broke this invariant: agents removed the logging markers a hallucination detector depended on, and hacking became more frequent when the checking code was visible to the agent (claim-self-improvement-visible-evaluator-hacking). Agents given sight of scoring functions overwrote timing functions and monkey-patched evaluators to return perfect scores (claim-self-improvement-scorer-visibility).
+评估器、评估用的检测机制、权限控制和预算限制必须位于循环无法修改的界面之外。已记录的奖励投机事件都破坏了这一不变量：智能体移除了幻觉检测器依赖的日志标记；当智能体能看到检查代码时，投机行为出现得更频繁（claim-self-improvement-visible-evaluator-hacking）。能够看到评分函数的智能体会覆盖计时函数，并猴子补丁修改评估器，使其总是返回满分（claim-self-improvement-scorer-visibility）。
 
-Operational rules:
+操作规则：
 
-- Constraints stated in prompt text get evolved away. Enforce budgets, permissions, and sandbox boundaries in the runtime, never in the mutable prompt or harness code.
-- Hide the scoring implementation from the proposer. Expose scores and traces, not evaluator source.
-- Sandbox at the OS or container level. Framework-level permission gates can be bypassed through side channels the loop discovers.
-- Treat any detected exploit as a failed candidate, not a high score, or the hack inflates the very metric steering the loop.
+- 写在提示词里的限制会在演化过程中被丢掉。预算、权限和沙箱边界应由运行时强制执行，不能只写在可变的提示词或运行框架代码中。
+- 对提案者隐藏评分实现。提供分数和执行轨迹，不提供评估器源码。
+- 在操作系统或容器层实施沙箱。循环可能通过发现的侧信道绕过框架层权限门禁。
+- 发现任何利用漏洞的候选都应判定为失败，而不是给高分；否则投机会抬高引导循环的指标。
 
-### Empirical Acceptance, Never Rationale
+### 以实证验收，不看理由
 
-Accept a self-modification only on measured evidence, using two splits: a held-in split that checks the targeted weakness was resolved, and a held-out split the proposer never sees that checks nothing else regressed. The strictest published gate accepts only when neither split regresses and at least one strictly improves, with repeated evaluation under stochastic scoring; this produced held-out gains across every base model tested (claim-self-improvement-two-split-acceptance). Reject candidates that trade one split against the other even when the sum improves. Log rejected candidates with their evidence so the proposer stops rediscovering them.
+只有在测量证据支持时才接受自我修改。使用两份数据划分：一份循环内集，用来检查目标缺陷是否已修复；另一份提案者看不到的留出集，用来检查其他方面是否退化。已发表研究中最严格的门槛是：两份数据都不得退化，至少一份必须严格改善，并在带有随机性的评分下重复评估；该方法在测试的每一种基础模型上都带来了留出集收益（claim-self-improvement-two-split-acceptance）。即使总分提升，也要拒绝在两份数据之间以一方换另一方的候选。记录被否决候选及其证据，防止提案者重复探索。
 
-### Filesystem Experience Archive
+### 文件系统经验档案
 
-Store every candidate as a directory containing its source, scores, and raw execution traces. Let the proposer navigate the archive with search tools (grep-style queries over files) instead of stuffing history into its context window. In direct ablation, a proposer with full raw-trace access materially outperformed both a scores-only proposer and a proposer fed LLM-written summaries of the same traces; summaries recovered none of the lost signal and sometimes hurt (claim-self-improvement-raw-trace-ablation). Do not pre-summarize the archive. Curate access paths, not content.
+将每个候选保存为一个目录，里面包含源码、分数和原始执行轨迹。让提案者通过搜索工具（对文件执行类似 grep 的查询）浏览档案，而不是把历史全部塞进上下文窗口。在直接消融对比中，能够访问全部原始轨迹的提案者，明显优于只能看分数的提案者，以及只能看同一批轨迹的 LLM 摘要的提案者；摘要没有恢复任何丢失的信号，有时还造成负面影响（claim-self-improvement-raw-trace-ablation）。不要预先总结档案。应整理访问路径，而不是改写内容。
 
-### Diversity Preservation
+### 保持多样性
 
-Evolutionary and RL-style loops collapse toward variants of the current best unless diversity is engineered in. The mechanisms that survived ablation across published systems:
+进化式或强化学习风格的循环会逐渐收敛到当前最佳候选的变体，除非人为保证多样性。多个已发表系统通过消融检验后仍保留的机制包括：
 
-- Keep an archive of every candidate that retains core capability; never hill-climb only the latest version. Stepping stones pay off many iterations after they are discovered.
-- Select parents with fitness pressure discounted by offspring count, so heavily-mined candidates lose priority while every archive member keeps nonzero selection probability.
-- Reject near-duplicate proposals by embedding similarity before paying evaluation cost.
-- Keep a persistent route back to the seed or blank candidate in the selection distribution as an escape from local optima.
+- 保存每个保留核心能力的候选，不能只对最新版本做爬山搜索。早期发现的中间台阶可能要过很多轮才会派上用场。
+- 选择父代时，按其子代数量折减适应度压力，让已被大量挖掘的候选优先级降低，同时确保档案里的每个成员仍有非零的被选概率。
+- 在付出评估成本前，使用嵌入相似度拒绝近似重复的提案。
+- 在选择分布中持续保留回到初始种子或空白候选的路径，以便逃离局部最优。
 
-## Detailed Topics
+## 详细主题
 
-### Anatomy of a Failure-Driven Self-Edit Loop
+### 由失败驱动的自编辑循环结构
 
-The strongest published pattern for an agent improving its own harness has three stages:
+已发表的智能体自我改进运行框架模式中，最有力的做法分为三个阶段：
 
-1. **Weakness mining.** Cluster failed traces by a three-part signature: the verifier-level cause (what was rejected), the causal status of the agent behavior (was it actually responsible), and the abstract mechanism the trace exposes (the reusable behavioral pattern). Never cluster on error strings alone; a timeout is a symptom shared by unrelated mechanisms. Apply an addressability filter: exclude clusters that reflect task difficulty or capability limits rather than harness defects.
-2. **Bounded proposal.** Give the proposer exactly four inputs: the declared editable surfaces, the mined failure patterns, records of passing behaviors that must be preserved, and summaries of previously attempted edits. Require proposals to be minimal (touch one surface), mutually distinct across parallel candidates, and accompanied by an audit record stating the targeted pattern, expected effect, and regression risks.
-3. **Validation and merge.** Apply the two-split acceptance gate. Merge compatible accepted edits; log rejected ones without changing the active harness. Every transition records changed surfaces, split outcomes, and the decision, so the lineage is auditable.
+1. **挖掘弱点。** 根据三个部分构成的特征对失败轨迹进行聚类：验证器层面的原因（什么检查失败）、智能体行为的因果状态（是否真的是智能体造成的），以及轨迹揭示的抽象机制（可复用的行为模式）。不要只根据错误字符串聚类；超时可能是完全不同机制共有的症状。应用可修复性过滤：排除由任务难度或能力限制造成、而非运行框架缺陷导致的聚类。
+2. **提出有边界的修改。** 只提供四项输入给提案者：明确声明的可编辑界面、挖掘出的失败模式、必须保留的成功行为记录，以及此前尝试过的修改摘要。要求提案尽量小（只改一个界面）、并行候选彼此不同，并附带审计记录，说明目标模式、预期效果和回归风险。
+3. **验证并合并。** 应用两份数据划分的验收门槛。合并兼容且通过验收的改动；被否决的改动只记录，不改变当前运行框架。每次状态转换都记录修改了哪些界面、各数据划分的结果以及最终决定，使整个演化链可审计。
 
-### Meta-Level Search over Harness Code
+### 对运行框架代码进行元层搜索
 
-When searching whole harness programs from outside rather than editing a running harness from inside:
+在运行中的运行框架之外搜索整个框架程序，而不是在内部修改它时：
 
-- Keep the outer loop minimal: no hand-tuned mutation operators or parent-selection heuristics. Delegate diagnosis and edit decisions to a strong coding-agent proposer, so the system improves as coding agents improve.
-- Initialize from the strongest available harness, not from scratch. Winning edits are typically small and additive (an environment bootstrap, an artifact-creation instruction), while prompt and completion-flow rewrites are empirically high-risk.
-- Maintain a Pareto frontier over the objectives that actually matter (accuracy, context cost, latency) rather than collapsing to one scalar.
-- Structure search memory per candidate with recorded modification outcomes. Dumping the whole archive into the proposer prompt degrades sharply as history grows; per-node experience records with credit assignment beat archive-in-context conditioning.
-- Re-run the search when the executor model changes. Discovered harnesses are executor-dependent and do not transfer freely across base models.
+- 保持外层循环精简：不要手工调整变异操作器或父代选择启发式。把诊断和编辑决策交给强大的编码智能体提案者，这样系统也能随着编码智能体变强而改进。
+- 从现有最强运行框架开始，而不是从零构建。成功的改动通常很小且是增量式的（例如环境初始化或产物创建指令）；提示词和完成流程的重写在实证中风险很高。
+- 围绕真正重要的目标（准确性、上下文成本、延迟）维护帕累托前沿，而不是将目标压缩成一个标量。
+- 将搜索记忆按候选组织，并记录改动结果。随着历史增长，将整个档案倾倒进提案者提示词会明显降低表现；带有信用分配信息的逐节点经验记录胜过将档案直接放入上下文。
+- 执行模型变更时重新运行搜索。发现的运行框架依赖具体执行模型，不能随意迁移到其他基础模型。
 
-### Context Evolution as Self-Improvement
+### 将上下文演化作为自我改进
 
-Context playbooks that update themselves are the entry-level self-improvement loop, with two named failure modes. Brevity bias: optimizers collapse toward short generic instructions, dropping the domain-specific heuristics that carried the value. Context collapse: letting a model monolithically rewrite accumulated context shrinks it catastrophically in a single step, below the no-adaptation baseline (claim-self-improvement-context-collapse). The working pattern:
+会自我更新的上下文手册属于入门级自我改进循环，有两种明确的失效模式。**简洁偏差**：优化器收敛到简短、通用的指令，丢掉真正有用的领域启发式。**上下文坍塌**：让模型整体重写累积的上下文，会在一次操作中使它急剧缩小，甚至低于完全不适配的基线（claim-self-improvement-context-collapse）。可行做法如下：
 
-- Represent context as itemized entries with stable identifiers and helpful/harmful counters.
-- Produce incremental deltas, merged by deterministic non-model logic. The curator never rewrites the whole artifact.
-- Deduplicate by embedding similarity, periodically or lazily.
-- Gate the whole mechanism on feedback quality. Without reliable execution signals or labels, self-managed context degrades below the static baseline.
+- 将上下文表示为带稳定标识符的条目，并维护有用/有害计数。
+- 生成增量差异，再通过确定性的非模型逻辑合并。整理器不应重写整个产物。
+- 定期或按需根据嵌入相似度去重。
+- 根据反馈质量决定是否启用整套机制。如果没有可靠的执行信号或标签，自我管理的上下文表现会低于静态基线。
 
-One level up, version the mechanism that produces context (the skill: static components plus dynamic operators) separately from the produced context, evolve the mechanism against a validation split only, and warm-start each iteration from the prior best artifact plus its rollout results. Check the train-validation gap explicitly each iteration to catch mechanism overfitting.
+再深入一级时，应将生成上下文的机制（技能：静态组件加动态操作器）与生成出的上下文本身分别进行版本管理；只根据验证划分演化该机制，并以此前最佳产物及其运行结果作为每一轮的热启动依据。每轮明确检查训练集与验证集之间的差距，以发现机制过拟合。
 
-### What Belongs to Humans
+### 人类负责的事项
 
-Humans move up the stack rather than out of the loop. Reserve for human decision points: changes to the evaluator or acceptance gate, expansion of editable surfaces, promotion of a discovered harness to production, and abandonment decisions for research directions. Models trained mostly on successful outcomes are poorly calibrated on when to abandon a line of work, and preserved negative results are the cheapest way to trim a successor's search space. Make failed candidates first-class artifacts.
+人类应提升到系统栈的更高层级，而不是退出流程。以下事项应由人来决策：修改评估器或验收门槛、扩大可编辑界面、将发现的运行框架晋级到生产环境，以及终止某个研究方向。主要用成功结果训练的模型，很难判断什么时候应该放弃一条研究路线；保留负面结果是缩小后续搜索空间的最便宜方法。应将失败候选也视为一等产物。
 
-## Practical Guidance
+## 实践指南
 
-### Loop-Readiness Checklist
+### 循环就绪检查清单
 
-Do not enable self-modification until every item holds:
+只有满足以下所有条件后，才启用自我修改：
 
-1. A fast, deterministic, automatable evaluator exists. Domains with slow, ambiguous, or judge-only evaluation are where this loop family fails.
-2. A held-out split exists that the proposer never sees, refreshed if the loop runs long enough to overfit it.
-3. Budgets, permissions, and sandboxing are enforced by the runtime, outside every editable surface.
-4. Editable surfaces are explicitly declared (marked regions or configuration points); everything else is locked, and immutability is programmatically re-verified after each candidate.
-5. An archive with full lineage of diffs exists; audits read diffs and raw traces, not the fitness signal.
-6. Evaluation spending is staged: cheap interface or smoke checks before full evaluation, repeated runs where scoring is noisy.
-7. A capability validation run has shown the base model clears the recursion threshold on this task family.
-8. Human decision points are wired for evaluator changes, surface expansion, and promotion.
+1. 存在快速、确定且可自动化的评估器。评估缓慢、含糊或只能依赖判官的领域，是这类循环容易失败的场景。
+2. 存在提案者看不到的留出集；如果循环运行时间足以使其过拟合，应及时更新留出集。
+3. 预算、权限和沙箱由运行时强制执行，位于所有可编辑界面之外。
+4. 明确声明可编辑界面（标记区域或配置入口）；其他全部锁定，并在每个候选完成后通过程序重新验证不可变性。
+5. 存在包含完整差异链的档案；审核时检查差异和原始轨迹，而不是适应度信号。
+6. 分阶段花费评估预算：先进行低成本接口或冒烟检查，再进行完整评估；评分有噪声时重复运行。
+7. 已通过能力验证，证明基础模型在此类任务中达到启用递归的门槛。
+8. 已设置与评估器变更、界面扩张和晋级相关的人工决策点。
 
-### Choosing the Loop Level
+### 选择循环所在的层级
 
-| Recurring failure | Fix at | Loop pattern |
+| 反复出现的失败 | 修复层级 | 循环模式 |
 | --- | --- | --- |
-| Missing domain heuristics, repeated known mistakes | Structured context | Itemized playbook with delta updates |
-| Context playbook itself plateaus across tasks | Context mechanism | Evolve the skill on validation data |
-| Wrong sequencing, missing verification steps | Workflow | Search over workflow graphs with per-node experience |
-| Failure clusters persist across workflow candidates | Harness code | Failure-driven bounded self-edits or meta-level search |
-| Improvement strategy itself is weak | Optimizer code | Only with strong models and locked meta-evaluation |
+| 缺少领域启发式、反复犯已知错误 | 结构化上下文 | 通过增量更新维护条目式手册 |
+| 上下文手册本身在不同任务上陷入平台期 | 上下文机制 | 用验证数据演化技能 |
+| 步骤顺序错误、缺少验证步骤 | 工作流 | 对工作流图进行搜索，并记录各节点经验 |
+| 多个工作流候选中仍反复出现同一失败簇 | 运行框架代码 | 由失败驱动的有边界自编辑或元层搜索 |
+| 改进策略本身表现不佳 | 优化器代码 | 仅适用于强模型和锁定的元评估 |
 
-## Examples
+## 示例
 
-**Example 1: Two-split acceptance gate**
+**示例 1：两份数据划分的验收门槛**
 
 ```python
 def accept(candidate, baseline, held_in, held_out, repeats=3):
@@ -155,9 +155,9 @@ def accept(candidate, baseline, held_in, held_out, repeats=3):
     return max(d_in, d_out) > 0  # strict improvement on at least one
 ```
 
-The held-out split is invisible to the proposer. A candidate that gains on held-in by sacrificing held-out is rejected even if the sum is positive.
+提案者看不到留出集。即使候选在两份数据上的总分为正，只要它牺牲了留出集来提高循环内集的表现，就会被拒绝。
 
-**Example 2: Experience archive layout**
+**示例 2：经验档案目录结构**
 
 ```text
 search-run/
@@ -171,9 +171,9 @@ search-run/
   rejected.jsonl           # rejected candidates with reasons, append-only
 ```
 
-The proposer greps this tree selectively. Nothing is summarized into its prompt by default.
+提案者按需搜索这个目录。默认不会把任何内容摘要进它的提示词。
 
-**Example 3: Routing a failure to the right rung**
+**示例 3：将失败路由到恰当层级**
 
 ```text
 Observed: agent repeatedly uses a deprecated API despite instructions.
@@ -183,74 +183,74 @@ execution time. Training-data defaults override prompt instructions,
 so ground the context; do not add machinery.
 ```
 
-## Guidelines
+## 指南
 
-1. Enforce every constraint in the runtime; treat prompt-stated constraints as decorative.
-2. Keep evaluator source, instrumentation, and permission checks invisible to and unmodifiable by the loop.
-3. Gate acceptance on held-in plus held-out no-regression with repeated evaluation; never accept on the proposer's rationale.
-4. Declare editable surfaces explicitly and re-verify locked regions after every candidate.
-5. Archive all viable candidates with raw traces; select parents with offspring-count discounting.
-6. Reject near-duplicates by embedding similarity before spending evaluation budget.
-7. Evaluate from raw logs and original outputs, never from model-written reports of them.
-8. Count detected evaluator exploits as failures and audit lineage diffs, not scores.
-9. Fix failures at the lowest ladder rung that expresses the fix.
-10. Re-search when the executor model or the seed harness changes materially.
-11. Verify the base model clears the capability threshold before enabling recursion.
-12. Keep evaluator changes, surface expansion, and production promotion as human decisions.
+1. 在运行时强制执行每一项限制；把提示词写出的限制当作装饰性文字。
+2. 将评估器源码、检测机制和权限检查对循环隐藏，且不允许循环修改。
+3. 只在循环内集和留出集均不退化、并经过重复评估时接受候选；不要根据提案者的理由验收。
+4. 明确声明可编辑界面，并在每个候选完成后重新验证锁定区域。
+5. 保存所有仍可用候选的原始轨迹；选择父代时按子代数折减其权重。
+6. 在花费评估预算前，基于嵌入相似度拒绝近似重复项。
+7. 根据原始日志和输出进行评估，不要根据模型撰写的报告进行评估。
+8. 将发现的评估器漏洞利用视为失败；审核差异链，而非只看分数。
+9. 在能够表达修复方案的最低阶梯上修复失败。
+10. 执行模型或种子运行框架发生实质变化时，重新运行搜索。
+11. 启用递归前，确认基础模型达到能力门槛。
+12. 评估器变更、界面扩张和生产晋级都应由人决定。
 
-## Gotchas
+## 注意事项
 
-1. **Prompt constraints evolve away**: Budget limits and safety rules stated in the seed prompt get dropped during self-rewrites, and explicit warnings do not reduce circumvention attempts. Only runtime enforcement survives optimization pressure.
-2. **Visible scorers get gamed**: Exposing the scoring function to the proposer invites monkey-patching, timing overwrites, and detector disabling, and hacking frequency rises with evaluator visibility (claim-self-improvement-scorer-visibility). Expose scores and traces, never evaluator internals.
-3. **Self-reported success**: Loops that evaluate from the agent's own report files inherit its over-optimism: noise declared as signal, bugs interpreted as breakthroughs, unfavorable runs omitted. Bind every reported number to a raw artifact (log line, score file) at write time.
-4. **Monolithic rewrite collapse**: Asking a model to rewrite its accumulated playbook wholesale can shrink it by orders of magnitude in one step and drop quality below the never-adapted baseline (claim-self-improvement-context-collapse). Update by itemized deltas with deterministic merge.
-5. **Hill-climbing the latest candidate**: Discarding the archive and iterating only on the current best gets stuck after one bad modification. Ablations show archive-based selection recovering from regressions many iterations later.
-6. **Stagnation disguised as stability**: A degenerate improver that returns its input unchanged produces flat metrics indistinguishable from convergence. Alarm on empty or trivial diffs, not only on score drops.
-7. **Same-model generator and evaluator**: When one model both proposes and scores, optimization pressure exploits shared blind spots and the measured score diverges from true quality. Use an independent evaluator, ideally grounded in execution rather than judgment.
-8. **Benchmark-shaped improvements**: Accepted edits often encode evaluation-set specifics and executor-model quirks rather than general capability. Validate on a distribution shift before promoting, and re-run the search after a model upgrade instead of porting the discovered harness.
-9. **Cross-stage score cherry-picking**: When a reporting stage can see a pool of intermediate scores, it selects the most favorable one rather than the score of the artifact actually shipped. Bind reported scores to the submitted candidate deterministically.
+1. **提示词约束会在演化中消失**：自我重写会丢弃种子提示词中的预算限制和安全规则，明确警告也不能降低规避企图。只有运行时强制执行才能抵抗优化压力。
+2. **可见评分器会被利用**：向提案者公开评分函数，会导致其猴子补丁修改评估器、覆盖计时函数并禁用检测器；评估器越透明，被投机的频率越高（claim-self-improvement-scorer-visibility）。只提供分数和轨迹，不暴露评估器内部实现。
+3. **自我报告成功**：若循环根据智能体自己的报告文件评估，就会受到它过度乐观的影响：把噪声说成信号，把缺陷解释为突破，并省略不利运行结果。报告的每个数字都应在写入时绑定到原始产物（日志行、分数文件）。
+4. **整体重写导致坍塌**：要求模型整体重写累积的手册，可能一次就将其缩小几个数量级，使质量跌破从不适配的基线（claim-self-improvement-context-collapse）。应以条目式增量更新，并用确定性逻辑合并。
+5. **只对最新候选爬山搜索**：丢弃档案、只在当前最佳版本上迭代，会在一次错误修改后陷入停滞。消融结果表明，基于档案的选择能在许多轮之后恢复表现。
+6. **停滞伪装成稳定**：退化的改进器原样返回输入时，指标会持平，看起来像收敛。除了监控分数下降，也要监控空差异和微小差异。
+7. **生成与评估使用同一个模型**：同一模型同时提出和评分时，优化压力会利用共同盲点，测得分数与真实质量偏离。使用独立评估器，最好基于实际运行结果而不是主观判断。
+8. **针对基准的改进**：被接受的改动常常记住了评估集细节和执行模型的特点，而不是提升通用能力。晋级前应在分布变化的数据上验证；模型升级后重新搜索，不要直接移植发现的运行框架。
+9. **跨阶段挑选有利分数**：报告阶段能看到一组中间分数时，可能会选出最有利的一个，而不是实际交付产物对应的分数。通过确定性流程将报告分数绑定到提交的候选。
 
-## Integration
+## 集成
 
-This skill connects to:
+本技能与以下技能协作：
 
-- harness-engineering - Owns the control surfaces (locked, editable, append-only, human) that this skill's loops operate within; every self-improvement loop presupposes that boundary design
-- evaluation - Owns the deterministic evaluators, regression suites, and quality gates that serve as the locked fitness signal
-- advanced-evaluation - Owns judge design and bias mitigation when candidate scoring requires model judgment
-- filesystem-context - Owns the durable file layout patterns the experience archive builds on
-- multi-agent-patterns - Parallel candidate evaluation and proposer-verifier separation are multi-agent topologies
-- hosted-agents - Owns the sandboxed execution infrastructure that enforces the runtime boundary
-- context-optimization - Owns one-shot context efficiency; this skill owns the loop that evolves context mechanisms over time
-- self-managed-context - Owns the self-editing behavior and its cost signal when the evolved artifact is a model's context-management skill or policy
+- harness-engineering - 负责本技能循环所用的控制界面（锁定、可编辑、仅追加、人工）；每个自我改进循环都以此边界设计为前提。
+- evaluation - 负责充当锁定适应度信号的确定性评估器、回归套件和质量门禁。
+- advanced-evaluation - 当候选评分需要模型判断时，负责判官设计和偏差缓解。
+- filesystem-context - 负责经验档案所依托的持久化文件布局模式。
+- multi-agent-patterns - 并行候选评估以及提案者与验证者分离都属于多智能体拓扑。
+- hosted-agents - 负责强制执行运行时边界的沙箱基础设施。
+- context-optimization - 负责一次性的上下文效率；本技能负责随时间演化上下文机制的循环。
+- self-managed-context - 当演化产物是模型的上下文管理技能或策略时，负责自编辑行为及其成本信号。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Loop design evidence](./references/loop-design-evidence.md) - Dated per-system results, acceptance-rule details, ablation findings, and documented reward-hacking incidents backing this skill
+内部参考：
+- [循环设计证据](./references/loop-design-evidence.md) - 按系统整理的有日期结果、验收规则细节、消融发现以及有记录的奖励投机事件，为本技能提供依据。
 
-Related skills in this collection:
-- harness-engineering - Single-loop governance and control surfaces
-- evaluation - Evaluator and quality-gate construction
+本合集中的相关技能：
+- harness-engineering - 单循环治理和控制界面
+- evaluation - 评估器和质量门禁构建
 
-External resources:
-- Weng, "Harness Engineering for Self-Improvement" (Lil'Log, 2026) - Survey and framing of the optimization ladder and RSI challenges
-- Zhang et al., "Self-Harness: Harnesses That Improve Themselves" (arXiv 2606.09498) - Failure-driven bounded self-edits with two-split acceptance
-- Lee et al., "Meta-Harness: End-to-End Optimization of Model Harnesses" (arXiv 2603.28052) - Filesystem experience store and coding-agent proposer
-- Ye et al., "Meta Context Engineering via Agentic Skill Evolution" (arXiv 2601.21557) - Mechanism-versus-artifact separation in context evolution
-- Zhang et al., "Agentic Context Engineering" (arXiv 2510.04618) - Itemized deltas, deterministic merge, context collapse
-- Zhang et al., "Darwin Godel Machine" (arXiv 2505.22954) - Archive-based harness evolution and documented objective hacking
-- Zelikman et al., "Self-Taught Optimizer" (arXiv 2310.02304) - Recursive improver and the capability-threshold negative result
-- Novikov et al., "AlphaEvolve" (arXiv 2506.13131) - Bounded mutation markers and evaluation cascades
-- Lange et al., "ShinkaEvolve" (arXiv 2509.19349) - Novelty rejection and sample-efficient parent sampling
-- METR, "Recent Frontier Models Are Reward Hacking" (2025) - Documented evaluator-gaming incidents in agentic tasks
+外部资源：
+- Weng，《用于自我改进的运行框架工程》（Lil'Log，2026）- 优化阶梯和递归自我改进挑战的综述与框架
+- Zhang 等，《Self-Harness: Harnesses That Improve Themselves》（arXiv 2606.09498）- 由失败驱动的有边界自编辑和双数据划分验收
+- Lee 等，《Meta-Harness: End-to-End Optimization of Model Harnesses》（arXiv 2603.28052）- 文件系统经验存储和编码智能体提案者
+- Ye 等，《Meta Context Engineering via Agentic Skill Evolution》（arXiv 2601.21557）- 上下文机制与产物分离
+- Zhang 等，《Agentic Context Engineering》（arXiv 2510.04618）- 条目式增量、确定性合并、上下文坍塌
+- Zhang 等，《Darwin Godel Machine》（arXiv 2505.22954）- 基于档案的运行框架演化以及有记录的目标投机
+- Zelikman 等，《Self-Taught Optimizer》（arXiv 2310.02304）- 递归改进器和能力门槛的负面结果
+- Novikov 等，《AlphaEvolve》（arXiv 2506.13131）- 有边界的变异标记和评估级联
+- Lange 等，《ShinkaEvolve》（arXiv 2509.19349）- 新颖性拒绝和节省样本的父代抽样
+- METR，《近期前沿模型会进行奖励投机》（2025）- 智能体任务中有记录的评估器投机事件
 
-Numeric, benchmark, volatile, or vendor-performance claims in this skill carry inline `claim-*` IDs backed by `researcher/claims/index.jsonl`. Detailed numbers live in the dated reference file.
+本技能中的数值、基准、易变或供应商表现声明，都带有由 `researcher/claims/index.jsonl` 支持的行内 `claim-*` ID。详细数字见带日期的参考文件。
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2026-07-08
-**Last Updated**: 2026-07-08
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 1.0.0
+**创建时间**：2026-07-08
+**最后更新**：2026-07-08
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：1.0.0

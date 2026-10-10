@@ -1,13 +1,13 @@
-# Private artifact storage
+# 私有产物存储
 
-`researcher/artifacts/private/` is an ignored local default for SPEC-003 content-addressed bodies, reference records, storage bindings, freeze receipts, and locks. Deployments should configure a private root outside the public checkout.
+`researcher/artifacts/private/` 是 SPEC-003 的本地默认私有目录，用于内容寻址存储（CAS）正文、引用记录、存储绑定、冻结回执和锁文件。部署环境应配置位于公开检出目录之外的私有根路径。
 
-`ArtifactRef` is portable and contains no storage locator. It records the target's native or legacy ID origin, and validation resolves the target kind and version before enforcing that schema's typed-ID prefix. `StorageBinding` is private metadata. Neither is authority. Callers supply an `ArtifactAuthority` for every read, and authorization occurs before object existence is checked. Every read loads and validates both records and proves that the binding locator matches the reference digest.
+可移植的 `ArtifactRef` 不含存储位置。它记录目标标识属于原生对象还是旧格式导入；验证时先解析目标类型和版本，再核对对应数据结构的类型标识前缀。`StorageBinding` 是私有元数据，两者都不代表权限。每次读取时调用方都必须提供 `ArtifactAuthority`，并且授权检查发生在判断对象是否存在之前。每次读取都加载并验证两条记录，并证明绑定位置与引用摘要一致。
 
-`LocalArtifactStore.put()` is for registered JSON records, not arbitrary bytes. It validates the body, kind, version, typed ID, and classification before writing. Candidate file bodies use the lower-level CAS only after a candidate record and editable-surface policy have passed freeze validation.
+`LocalArtifactStore.put()` 用于已登记的 JSON 记录，不接受任意字节。写入前会验证正文、类型、版本、带类型标识和分类。候选文件正文只能在候选记录和可编辑区域规则通过冻结检查后，才写入更底层的 CAS。
 
-`head()` may inspect a validated `tombstoned` or `unavailable` reference for audit purposes. `put()`, `get()`, `verify()`, and `materialize()` deny that state even if bytes remain in CAS; a writer cannot silently resurrect an immutable reference.
+`head()` 可为审计查看已经验证的 `tombstoned` 或 `unavailable` 引用；即使 CAS 中仍有字节，`put()`、`get()`、`verify()` 和 `materialize()` 也会拒绝这些状态。写入者不能静默复活不可变引用。
 
-The local CAS layout is `sha256/<first-two-hex>/<full-hex>`. Exact bytes are written with mode `0600`, fsynced, atomically linked into place, and verified. A digest has one conservative classification high-water mark. Output files and candidate directories publish with no-clobber primitives and do not chmod caller-owned parents. The implementation targets Unix filesystems with `fcntl`, directory fsync, and native exclusive directory rename. Windows support is deferred until its locking and atomic-publish contract has equivalent tests.
+本地 CAS 目录结构为 `sha256/<前两位十六进制>/<完整十六进制>`。精确字节以权限模式 `0600` 写入，执行 `fsync` 后通过原子链接发布并验证。每个摘要只允许一个保守的分类上限。输出文件和候选目录使用禁止覆盖的发布操作，不会修改调用方拥有的父目录权限。当前实现面向支持 `fcntl`、目录 `fsync` 和原生排他目录重命名的 Unix 文件系统。Windows 支持待后续实现，需先补齐等价的锁和原子发布契约及检查。
 
-SPEC-004 and SPEC-010 must use this body store through an adapter rather than creating competing CAS implementations.
+SPEC-004 与 SPEC-010 必须通过适配器使用此正文存储，不要另建互相竞争的 CAS 实现。

@@ -1,62 +1,62 @@
-# Attention Matching (AM) and Task-Guided Scoring
+# 注意力匹配与任务引导评分
 
-This note expands the compact treatment in the main skill: the AM objective, what changes under Latent Briefing, and which assumptions matter in practice.
+本文补充主技能中的简要说明，介绍注意力匹配目标、潜在简报带来的变化，以及实践中的关键假设。
 
-## AM Compaction Objective
+## 注意力匹配的压缩目标
 
-Given a full KV cache of size `S`, Attention Matching seeks a smaller cache of size `t < S` whose attention outputs stay close to the original. Per attention head, compacted components `(C1, beta, C2)` satisfy:
+给定大小为 `S` 的完整键值缓存（KV cache），注意力匹配希望生成大小 `t < S` 的较小缓存，使其注意力输出尽量接近原缓存。对每个注意力头，压缩后的组件 `(C1, beta, C2)` 满足：
 
 ```text
 softmax(Q * C1^T + beta) * C2 ~= softmax(Q * K^T) * V
 ```
 
-- **C1**: compacted keys, usually a subset of original key vectors selected for high attention mass
-- **beta**: bias corrections so the softmax distribution over kept keys approximates the distribution over all keys
-- **C2**: compacted values reconstructed so the attention output matches the original as closely as possible
+- **C1**：压缩后的键，通常是从原键向量中挑选的高注意力权重位置。
+- **beta**：偏置修正，用于让保留键上的 softmax 分布近似全部键上的原始分布。
+- **C2**：重建后的压缩值，使注意力输出尽量接近原结果。
 
-The original AM procedure solves each `(layer, head)` independently:
+原始注意力匹配会分别处理每个 `(layer, head)`：
 
-1. Select tokens to keep
-2. Solve `beta`
-3. Reconstruct `C2`
+1. 选择要保留的令牌。
+2. 求解 `beta`。
+3. 重建 `C2`。
 
-This per-head independence helps quality but makes batching difficult because different heads keep different token subsets.
+逐头独立处理有利于质量，但不同注意力头保留的位置各不相同，因此难以批量计算。
 
-## What Latent Briefing Changes
+## 潜在简报带来的变化
 
-Latent Briefing adapts AM for orchestrator-worker handoff:
+潜在简报将注意力匹配改用于编排者向工作者移交上下文：
 
-1. **Query source changes.** Standard AM may score keys using queries sampled from the context itself. Latent Briefing instead uses queries derived from the **current worker task prompt**.
-2. **Scoring becomes task-conditioned.** The trajectory is forward-passed through the worker model, and attention from task queries to trajectory keys defines which positions matter for this worker call.
-3. **Selection becomes shared.** Scores are aggregated across layers and heads into one per-position score so the system can use a single keep/drop mask.
+1. **改变查询来源**：普通注意力匹配可能从上下文本身抽取查询；潜在简报则使用当前工作者任务提示生成查询。
+2. **按任务调整评分**：先用工作者模型执行前向计算，再根据任务查询对轨迹键的注意力，判断本次调用关心哪些位置。
+3. **多个注意力头共享选择结果**：将各层和各头的分数合并为每个位置一个分数，供系统使用统一的保留掩码。
 
-Conceptually:
-
-```text
-trajectory -> K, V
-task prompt -> Q_task
-score(position) = aggregate_attn(Q_task, K[position])
-keep if score(position) exceeds threshold
-```
-
-## Why the Shared Mask Matters
-
-Per-head masks maximize flexibility but force many incompatible small solves. A **shared global mask** makes the retained sequence layout identical across heads, which enables batched tensor operations and much lower latency.
-
-That batching benefit is one of the main reasons Latent Briefing is interesting for inference systems rather than only for offline compression research.
-
-## Thresholding vs Fixed Top-k
-
-Instead of keeping a fixed number of tokens per head, Latent Briefing can threshold the aggregated per-position score distribution:
+概念流程：
 
 ```text
-keep position i if score[i] > median(score) + k * MAD(score)
+轨迹 -> K、V
+任务提示 -> Q_task
+分数(位置) = 汇总注意力(Q_task, K[位置])
+当分数超过阈值时保留该位置
 ```
 
-This makes retention rate adaptive to the shape of the scores for the current task. Higher `k` means more aggressive compaction.
+## 共享掩码为何重要
 
-## Practical Assumptions
+每个注意力头使用独立掩码虽然更灵活，但会产生大量互不兼容的小型计算。**全局共享掩码**让所有注意力头保留相同序列布局，从而可以批量执行张量运算，显著降低延迟。
 
-- The runtime can inspect and modify worker KV state
-- The worker architecture is stable enough that attention-space retention is meaningful across calls
-- The evaluation tracks both quality and cost, because lower token count alone is not sufficient
+这种批处理收益，是潜在简报适用于推理系统而不只是离线压缩研究的重要原因之一。
+
+## 阈值筛选与固定数量筛选
+
+潜在简报可以根据合并后的每位置分数分布确定阈值，而不是给每个注意力头保留固定数量的令牌：
+
+```text
+当 score[i] > median(score) + k * MAD(score) 时保留位置 i
+```
+
+这会根据当前任务的分数分布自适应调整保留比例。`k` 越大，压缩越激进。
+
+## 实践假设
+
+- 运行环境能够读取并修改工作者的 KV 状态。
+- 工作者模型架构足够稳定，使跨调用的注意力空间筛选仍有意义。
+- 评估同时衡量质量和成本；单独减少令牌数并不足以证明优化有效。

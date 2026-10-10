@@ -1,10 +1,10 @@
-# Researcher SDK Runner
+# 研究 SDK 运行器
 
-TypeScript runner for the router (Stage 2) and effectiveness (Stage 3) benchmarks. Uses the [Cursor SDK](https://cursor.com/docs/sdk/typescript) to run real agents against the skill corpus.
+使用 TypeScript 编写的路由（第二阶段）和有效性（第三阶段）基准运行器，通过 [Cursor SDK](https://cursor.com/docs/sdk/typescript) 使用真实智能体评估技能语料。
 
-See `researcher/benchmarks/PLAN.md` for methodology, hypothesis, statistical design, and reproducibility rules.
+研究方法、假设、统计设计和可复现规则见 `researcher/benchmarks/PLAN.md`。
 
-## Setup
+## 设置
 
 ```bash
 cd researcher/benchmarks/sdk-runner
@@ -12,62 +12,62 @@ npm install
 export CURSOR_API_KEY="cursor_..."
 ```
 
-API keys come from [Cursor Dashboard > Integrations](https://cursor.com/dashboard/integrations). The runner never reads `CURSOR_API_KEY` from anywhere except the explicit env var; it is passed through to every SDK call so cross-tenant mistakes are impossible.
+API 密钥可从 [Cursor 控制台 > 集成](https://cursor.com/dashboard/integrations) 获取。运行器只从显式环境变量读取 `CURSOR_API_KEY`，并将它传给每次 SDK 调用，避免跨账户误用。
 
-Enable [Privacy Mode](https://cursor.com/help/security-and-privacy/privacy) on the account before any benchmark run so eval traffic stays out of training data.
+执行基准前，应在账户中启用 [隐私模式](https://cursor.com/help/security-and-privacy/privacy)，确保评估流量不用于训练。
 
-## Commands
+## 命令
 
 ```bash
 npm run typecheck
 
-npm run router:dry-run       # print plan and cost forecast, no agent calls
-npm run router:run           # execute Stage 2 router benchmark
+npm run router:dry-run       # 打印计划和成本预测，不调用智能体
+npm run router:run           # 执行第二阶段路由基准
 
 npm run effectiveness:dry-run
-npm run effectiveness:run    # execute Stage 3 effectiveness benchmark
+npm run effectiveness:run    # 执行第三阶段有效性基准
 ```
 
-Flags shared by both runners:
+两个运行器共用以下参数：
 
-- `--models <id,id,...>`: subset to specific models (default: `composer-2`).
-- `--reps <N>`: replications per condition (default: 3).
-- `--max-runs <N>`: hard cap on agent invocations.
-- `--max-budget-usd <N>`: estimated cost cap; runner refuses to start if forecast exceeds.
-- `--seed <N>`: deterministic shuffling of skill order and tie-breaking.
-- `--fixture <path>`: alternate fixture JSONL.
-- `--dry-run`: print plan, do not call the SDK.
-- `--concurrency <N>`: bounded parallel SDK calls (default 1). 4 to 8 is reasonable; respect Cursor rate limits.
-- `--no-resume`: ignore existing per-run results in the destination directory and re-execute everything. Default is to resume by skipping any plan item that already has a result file.
+- `--models <编号,编号,...>`：指定模型子集，默认 `composer-2`。
+- `--reps <次数>`：每种条件的重复次数，默认 3。
+- `--max-runs <次数>`：智能体调用次数硬上限。
+- `--max-budget-usd <金额>`：估算费用上限；预测超过时拒绝启动。
+- `--seed <数字>`：确定性打乱技能顺序和打破平局。
+- `--fixture <路径>`：替代 JSONL 样例文件。
+- `--dry-run`：只打印计划，不调用 SDK。
+- `--concurrency <次数>`：限制并行 SDK 调用数量，默认 1。通常可用 4—8，但要遵守 Cursor 速率限制。
+- `--no-resume`：忽略目标目录中的已有结果并重新执行。默认会跳过已有结果文件的计划项，从断点继续。
 
-## Output
+## 输出
 
-Runs append a single-line summary to:
+每次运行会向以下文件追加一行摘要：
 
-- `researcher/reports/router-history.jsonl` (Stage 2)
-- `researcher/reports/effectiveness-history.jsonl` (Stage 3)
+- `researcher/reports/router-history.jsonl`：第二阶段。
+- `researcher/reports/effectiveness-history.jsonl`：第三阶段。
 
-Per-run raw outputs land under:
+每次运行的原始输出位于：
 
-- `researcher/benchmarks/router/results/<timestamp>-<seed>/`
-- `researcher/benchmarks/effectiveness/results/<timestamp>-<seed>/`
+- `researcher/benchmarks/router/results/<时间戳>-<种子>/`
+- `researcher/benchmarks/effectiveness/results/<时间戳>-<种子>/`
 
-Both `results/` directories are gitignored. Curated released results live in release notes or a published-results file.
+两个 `results/` 目录均已加入 Git 忽略规则。经过整理发布的结果放在发布说明或已发布结果文件中。
 
-## Cost gates
+## 成本门槛
 
-The runner refuses to call the SDK unless either `--max-runs` or `--max-budget-usd` is set (or `--unsafe-no-cost-cap` is explicitly passed). Default budgets are intentionally conservative.
+除非显式设置 `--max-runs` 或 `--max-budget-usd`，或明确传入 `--unsafe-no-cost-cap`，运行器不会调用 SDK。默认预算刻意设置得较保守。
 
-## Reproducibility
+## 可复现性
 
-Every run records:
+每次运行都会记录：
 
-- Runner package version
-- `CURSOR_API_KEY` fingerprint (last 4 chars only)
-- Repo commit SHA at runtime
-- Model ids resolved at start
-- Fixture revision SHA
-- Seed
-- Full config snapshot
+- 运行器包版本。
+- `CURSOR_API_KEY` 指纹（只保留末四位）。
+- 运行时仓库提交 SHA。
+- 启动时解析出的模型编号。
+- 样例版本摘要。
+- 随机种子。
+- 完整配置快照。
 
-Third parties can reproduce a run with `node src/runRouter.ts --config <captured-config.json>`.
+第三方可以使用 `node src/runRouter.ts --config <捕获的配置文件.json>` 重现运行。

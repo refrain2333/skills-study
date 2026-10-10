@@ -1,43 +1,43 @@
-# Evaluation Pipeline Diagram
+# 评估流程图
 
-Visual layout of a production evaluation pipeline.
+生产环境中的评估流程示意。
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                 Evaluation Pipeline              │
+│                    评估流程                      │
 ├─────────────────────────────────────────────────┤
 │                                                   │
-│  Input: Response + Prompt + Context               │
+│  输入：回复 + 提示词 + 上下文                      │
 │           │                                       │
 │           ▼                                       │
 │  ┌─────────────────────┐                         │
-│  │   Criteria Loader   │ ◄── Rubrics, weights    │
+│  │   评分标准加载器    │ ◄── 评分规则、权重       │
 │  └──────────┬──────────┘                         │
 │             │                                     │
 │             ▼                                     │
 │  ┌─────────────────────┐                         │
-│  │   Primary Scorer    │ ◄── Direct or Pairwise  │
+│  │     主评分器        │ ◄── 直接评分或成对比较   │
 │  └──────────┬──────────┘                         │
 │             │                                     │
 │             ▼                                     │
 │  ┌─────────────────────┐                         │
-│  │   Bias Mitigation   │ ◄── Position swap, etc. │
+│  │     偏差缓解        │ ◄── 调换位置等           │
 │  └──────────┬──────────┘                         │
 │             │                                     │
 │             ▼                                     │
 │  ┌─────────────────────┐                         │
-│  │ Confidence Scoring  │ ◄── Calibration         │
+│  │     置信度评分      │ ◄── 校准                 │
 │  └──────────┬──────────┘                         │
 │             │                                     │
 │             ▼                                     │
-│  Output: Scores + Justifications + Confidence     │
+│  输出：分数 + 理由 + 置信度                        │
 │                                                   │
 └─────────────────────────────────────────────────┘
 ```
 
-## Pipeline Stages
+## 流程阶段
 
-1. **Criteria Loader**: Loads rubrics and criterion weights from configuration
-2. **Primary Scorer**: Applies direct scoring or pairwise comparison
-3. **Bias Mitigation**: Runs position swaps, length normalization, and other debiasing
-4. **Confidence Scoring**: Calibrates confidence based on position consistency and evidence strength
+1. **加载评分标准**：从配置中读取评分规则和各项权重。
+2. **主要评分**：执行直接评分或成对比较。
+3. **缓解偏差**：调换答案位置、按长度归一化，并执行其他去偏处理。
+4. **评估置信度**：根据位置一致性和证据强度校准置信度。

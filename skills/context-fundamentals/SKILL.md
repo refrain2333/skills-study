@@ -1,121 +1,121 @@
 ---
 name: context-fundamentals
-description: "This skill should be used to explain or reason about the foundational concepts of context engineering: what context is, the anatomy of a context window, how attention mechanics work, the U-shaped attention curve, why context quality matters more than quantity, and the mental models needed to interpret every other context-engineering decision. Use this for conceptual explanation, onboarding, and background reading. Route operational work to the specialized skills: debugging attention failures goes to context-degradation, token-efficiency work goes to context-optimization, conversation summarization goes to context-compression, and project-shape decisions go to project-development."
+description: "用于讲解上下文工程基础、上下文窗口组成、注意力机制和上下文质量。"
 ---
 
-# Context Engineering Fundamentals
+# 上下文工程基础
 
-Context is the complete state available to a language model at inference time: system instructions, tool definitions, retrieved documents, message history, and tool outputs. Context engineering is the discipline of curating the smallest high-signal token set that maximizes the likelihood of desired outcomes.
+上下文是语言模型在推理时可用的完整状态：系统指令、工具定义、检索到的文档、消息历史和工具输出。上下文工程是一门整理上下文的学科，目标是筛选出最精简、信号最强的一组 token，以最大限度地提高期望结果出现的可能性。
 
-This skill is the conceptual foundation that every other skill in the collection builds on. It explains what context is, how attention mechanics work, why context quality matters more than quantity, and the mental models needed to interpret every other context-engineering decision. It does not own operational work: debugging attention failures belongs to `context-degradation`, token-efficiency tactics belong to `context-optimization`, conversation summarization belongs to `context-compression`, file-based offloading belongs to `filesystem-context`, and project-shape decisions belong to `project-development`.
+本技能是本系列其他技能的概念基础。它会解释什么是上下文、注意力机制如何工作、为什么上下文质量比数量更重要，以及理解其他上下文工程决策所需的思维模型。本技能不负责具体操作：注意力失效的诊断归 `context-degradation`，token 效率技巧归 `context-optimization`，对话摘要归 `context-compression`，基于文件的卸载归 `filesystem-context`，项目形态决策归 `project-development`。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when the work is conceptual:
+在处理概念性工作时启用本技能：
 
-- Explaining what context is and how attention mechanics constrain agent behavior.
-- Onboarding new contributors who need the mental models before diving into operational skills.
-- Reasoning about a context-related design decision from first principles (what does this constraint mean, why does this trade-off exist) before picking a specific tactic.
-- Writing or reviewing documentation that needs to ground operational guidance in the underlying mechanics.
+- 解释上下文是什么，以及注意力机制如何限制智能体行为。
+- 帮助新贡献者先掌握思维模型，再学习操作型技能。
+- 从第一性原理分析上下文相关的设计决策：某个限制意味着什么，某种权衡为何存在，然后再选择具体做法。
+- 编写或审阅文档，让操作指南有底层机制作为依据。
 
-Do not activate this skill for operational work. The specialized skills handle the doing:
+操作性工作不要启用本技能，具体做法由专门技能负责：
 
-- Diagnosing lost-in-middle, context poisoning, or attention failures: `context-degradation`.
-- Reducing token cost via masking, partitioning, prefix caching, budgets: `context-optimization`.
-- Compressing a long session into a handoff summary: `context-compression`.
-- Offloading large tool outputs or maintaining a durable scratchpad: `filesystem-context`.
-- Deciding the shape of an LLM project or pipeline: `project-development`.
+- 诊断信息在中间位置丢失、上下文污染或注意力失效：`context-degradation`。
+- 通过屏蔽、分区、前缀缓存和预算来降低 token 成本：`context-optimization`。
+- 将长会话压缩成交接摘要：`context-compression`。
+- 将大型工具输出移到文件中，或维护持久草稿区：`filesystem-context`。
+- 决定 LLM 项目或流水线的形态：`project-development`。
 
-## Core Concepts
+## 核心概念
 
-Treat context as a finite attention budget, not a storage bin. Every token added competes for the model's attention and depletes a budget that cannot be refilled mid-inference. The engineering problem is maximizing utility per token against three constraints: the hard token limit, the softer effective-capacity ceiling, and the U-shaped attention curve that penalizes information placed in the middle of context (claim-context-degradation-lost-middle-ruler).
+把上下文看作有限的注意力预算，而不是储物箱。每增加一个 token，都会和其他内容争夺模型的注意力，并消耗一个在当前推理过程中无法补充的预算。工程目标是在三个限制下尽量提高每个 token 的效用：硬性 token 上限、较软的有效容量上限，以及会惩罚放在上下文中段的信息的 U 形注意力曲线（claim-context-degradation-lost-middle-ruler）。
 
-Apply four principles when assembling context:
+组织上下文时应用以下四条原则：
 
-1. **Informativity over exhaustiveness** — include only what matters for the current decision; design systems that can retrieve additional information on demand.
-2. **Position-aware placement** — place critical constraints at the beginning and end of context because long-context evaluations show middle-position information is less reliably recovered than edge-position information (claim-context-degradation-lost-middle-ruler).
-3. **Progressive disclosure** — load skill names and summaries at startup; load full content only when a skill activates for a specific task.
-4. **Iterative curation** — context engineering is not a one-time prompt-writing exercise but an ongoing discipline applied every time content is passed to the model.
+1. **重信息量，轻求全**——只纳入当前决策真正需要的内容；设计系统，让模型需要时再检索更多信息。
+2. **按位置安排内容**——把关键约束放在上下文开头和末尾，因为长上下文评测显示，中间位置的信息比边缘位置的信息更难稳定找回（claim-context-degradation-lost-middle-ruler）。
+3. **渐进式披露**——启动时只加载技能名称和摘要；只有具体任务触发某项技能时，才加载完整内容。
+4. **持续整理**——上下文工程不是一次性的提示词编写工作，而是每次向模型传递内容时都要持续进行的实践。
 
-## Detailed Topics
+## 详细主题
 
-### The Anatomy of Context
+### 上下文的构成
 
-**System Prompts**
-Organize system prompts into distinct sections using XML tags or Markdown headers (background, instructions, tool guidance, output format). System prompts persist throughout the conversation, so place the most critical constraints at the beginning and end where attention is strongest.
+**系统提示词**
+使用 XML 标签或 Markdown 标题将系统提示词分成不同部分，例如背景、指令、工具说明和输出格式。系统提示词会贯穿整个对话，因此应把最重要的约束放在开头和末尾，这两个位置的注意力通常更强。
 
-Calibrate instruction altitude to balance two failure modes. Too-low altitude hardcodes brittle logic that breaks when conditions shift. Too-high altitude provides vague guidance that fails to give concrete signals for desired behavior. Aim for heuristic-driven instructions: specific enough to guide behavior, flexible enough to generalize — for example, numbered steps with room for judgment at each step.
+调整指令的抽象层级，以平衡两类失效。抽象层级过低会把脆弱的逻辑写死，条件一变就失效；抽象层级过高则会给出含糊的指导，无法为期望行为提供明确线索。应采用启发式指令：足够具体，能指导行为；同时足够灵活，能推广应用。例如，可以列出编号步骤，并允许每一步根据情况作判断。
 
-Start minimal, then add instructions reactively based on observed failure modes rather than preemptively stuffing edge cases. Curate diverse, canonical few-shot examples that portray expected behavior instead of listing every possible scenario.
+从最精简的提示词开始，再根据观察到的失效模式逐步添加指令，不要预先塞入所有边缘情况。整理多样且具代表性的少样本示例，让它们呈现期望行为，而不是罗列每一种可能情形。
 
-**Tool Definitions**
-Write tool descriptions that answer three questions: what the tool does, when to use it, and what it returns. Include usage context, parameter defaults, and error cases — agents cannot disambiguate tools that a human engineer cannot disambiguate either.
+**工具定义**
+工具说明应回答三个问题：工具做什么、何时使用、会返回什么。说明使用场景、参数默认值和错误情况；如果人类工程师都无法判断该如何区分这些工具，智能体也无法做到。
 
-Keep the tool set minimal. Consolidate overlapping tools because bloated tool sets create ambiguous decision points and consume disproportionate context after JSON serialization (tool schemas typically inflate 2-3x compared to equivalent plain-text descriptions).
+保持工具集精简。合并功能重叠的工具，因为臃肿的工具集会制造含糊的决策点；而且经过 JSON 序列化后会占用不成比例的上下文（工具 schema 通常会膨胀到等效纯文本描述的 2 到 3 倍）。
 
-**Retrieved Documents**
-Maintain lightweight identifiers (file paths, stored queries, web links) and load data into context dynamically using just-in-time retrieval. This mirrors human cognition — maintain an index, not a copy. Strong identifiers (e.g., `customer_pricing_rates.json`) let agents locate relevant files even without search tools; weak identifiers (e.g., `data/file1.json`) force unnecessary loads.
+**检索到的文档**
+保留轻量级标识符（文件路径、已保存的查询、网页链接），并通过即时检索动态加载数据。这类似人类认知：维护索引，而不是保存副本。明确的标识符（例如 `customer_pricing_rates.json`）能让智能体即使没有搜索工具也找到相关文件；含糊的标识符（例如 `data/file1.json`）则会迫使智能体做不必要的加载。
 
-When chunking large documents, split at natural semantic boundaries (section headers, paragraph breaks) rather than arbitrary character limits that sever mid-concept.
+拆分大型文档时，应按自然的语义边界（章节标题、段落分隔）切分，而不是按任意字符数限制切分，以免把一个概念从中间截断。
 
-**Message History**
-Message history serves as the agent's scratchpad memory for tracking progress, maintaining task state, and preserving reasoning across turns. For long-running tasks, it can grow to dominate context usage — monitor and apply compaction before it crowds out active instructions.
+**消息历史**
+消息历史是智能体的草稿记忆，用于跟踪进展、维护任务状态，并在多轮中保留推理过程。长时间运行的任务中，历史可能逐渐占据大部分上下文；应监控并及时压缩，避免挤掉当前指令。
 
-Cyclically refine history: once a tool has been called deep in the conversation, the raw result rarely needs to remain verbatim. Replace stale tool outputs with compact summaries or references to reduce low-signal bulk.
+定期整理历史：当某个工具调用已经出现在较早的对话中，通常不必逐字保留原始结果。把过时的工具输出替换为简短摘要或引用，以减少低信号内容。
 
-**Tool Outputs**
-Tool outputs often dominate context in agent trajectories (claim-context-optimization-tool-output-dominance). Apply observation masking: replace verbose outputs with compact references once the agent has processed the result. Retain only the most recently relevant file contents; compress or evict older ones.
+**工具输出**
+在智能体执行轨迹中，工具输出经常占据大部分上下文（claim-context-optimization-tool-output-dominance）。应用观察屏蔽：智能体处理完冗长输出后，用简短引用替代它。只完整保留最近且仍相关的文件内容；对更早的内容进行压缩或移除。
 
-### Context Windows and Attention Mechanics
+### 上下文窗口与注意力机制
 
-**The Attention Budget**
-For n tokens, the attention mechanism computes n-squared pairwise relationships. As context grows, the model's ability to maintain these relationships degrades — not as a hard cliff but as a performance gradient. Models trained predominantly on shorter sequences have fewer specialized parameters for context-wide dependencies, creating an effective ceiling well below the nominal window size.
+**注意力预算**
+对于 n 个 token，注意力机制会计算 n 平方个成对关系。上下文变长时，模型维持这些关系的能力会逐渐下降；这不是突然越过某条硬性边界，而是性能逐步下滑。主要在较短序列上训练的模型，学习到的、用于处理全局依赖关系的专用参数更少，因此其有效容量会远低于标称窗口大小。
 
-Design for this gradient: assume effective capacity is materially below the advertised window until measured on the target workload. Large nominal context windows do not remove the need for task-specific degradation tests (claim-context-degradation-lost-middle-ruler).
+针对这种逐渐下滑来设计：在目标工作负载上完成测量之前，应假设有效容量显著低于标称容量。较大的标称上下文窗口并不能免除针对具体任务进行退化测试的必要性（claim-context-degradation-lost-middle-ruler）。
 
-**Position Encoding Limits**
-Position encoding interpolation extends sequence handling beyond training lengths but introduces degradation in positional precision. Expect reduced accuracy for information retrieval and long-range reasoning at extended contexts compared to performance on shorter inputs.
+**位置编码的限制**
+位置编码插值可以把序列处理能力扩展到训练长度之外，但会降低位置精度。与较短输入相比，信息检索和长距离推理在扩展上下文中可能不够准确。
 
-**Progressive Disclosure in Practice**
-Implement progressive disclosure at three levels:
+**渐进式披露的实践方法**
+在三个层面实现渐进式披露：
 
-1. **Skill selection** — load only names and descriptions at startup; activate full skill content on demand.
-2. **Document loading** — load summaries first; fetch detail sections only when the task requires them.
-3. **Tool result retention** — keep recent results in full; compress or evict older results.
+1. **选择技能**——启动时只加载技能名称和描述；需要时再启用完整技能内容。
+2. **加载文档**——先加载摘要；只有任务需要时才读取详细章节。
+3. **保留工具结果**——近期结果保持完整；更早的结果进行压缩或移除。
 
-Keep the boundary crisp: if a skill or document is activated, load it fully rather than partially — partial loads create confusing gaps that degrade reasoning quality.
+保持边界明确：一旦启用了某项技能或文档，就应完整加载，而不是只加载一部分；不完整加载会产生令人困惑的缺口，损害推理质量。
 
-### Context Quality Versus Quantity
+### 上下文质量与数量
 
-Reject the assumption that larger context windows solve memory problems. Processing cost grows disproportionately with context length — not just linear cost scaling, but degraded model performance beyond effective capacity thresholds. Long inputs remain expensive even with prefix caching.
+不要以为更大的上下文窗口就能解决记忆问题。上下文变长时，处理成本会不成比例地增加；这不只是线性成本增长，超过有效容量阈值后，模型表现也会下降。即使使用前缀缓存，长输入仍然成本高昂。
 
-Apply the signal-density test: for each piece of context, ask whether removing it would change the model's output. If not, remove it. Redundant content does not merely waste tokens — it actively dilutes attention from high-signal content.
+使用信号密度检查：对每一段上下文，都问问删掉它会不会改变模型输出。如果不会，就删掉。冗余内容不只是浪费 token，还会主动分散模型对高信号内容的注意力。
 
-## Practical Guidance
+## 实践指南
 
-This section provides conceptual application advice. Pointers to operational skills are explicit.
+本节介绍概念如何用于实践，并明确指出具体操作应参考哪项技能。
 
-### Reasoning About a Context Decision
+### 分析上下文决策
 
-When a context-related design decision needs to be made, separate the conceptual question from the operational one. The conceptual question is "what does this mean and why does it matter"; the operational question is "what specific technique do we apply." Use this skill to answer the first; route to the specialized skill that owns the second.
+需要做上下文相关的设计决策时，应把概念问题和操作问题分开。概念问题是“这意味着什么，为什么重要”；操作问题是“具体应用哪种技术”。用本技能回答前者，再把后者交给负责该操作的专门技能。
 
-For example, deciding whether to summarize a long agent session has two parts: (1) why summarization is needed at all (attention budget is finite, U-shaped curve degrades middle content, signal density matters more than volume - this skill) and (2) what compression strategy preserves the right state and at what utilization threshold to trigger it (`context-compression`).
+例如，决定是否要总结一段很长的智能体会话，包含两个问题：(1) 为什么需要总结（注意力预算有限，U 形曲线会削弱中间内容，信号密度比信息量更重要，由本技能解释）；(2) 应使用什么压缩策略保留所需状态，以及在上下文利用率达到什么阈值时触发（参见 `context-compression`）。
 
-### Reading Order For New Contributors
+### 新贡献者的阅读顺序
 
-A contributor coming to context engineering for the first time should read:
+刚接触上下文工程的贡献者应按以下顺序阅读：
 
-1. This skill, to internalize the attention-budget framing and the U-shaped curve.
-2. `context-degradation`, to see what context failures look like in practice and how to diagnose them.
-3. Two or three of `context-optimization`, `context-compression`, `filesystem-context`, `memory-systems` depending on which operational concern is most relevant to their project.
+1. 本技能：理解注意力预算框架和 U 形曲线。
+2. `context-degradation`：了解上下文失效在实践中的表现和诊断方法。
+3. 根据项目最相关的操作需求，再选读 `context-optimization`、`context-compression`、`filesystem-context`、`memory-systems` 中的两到三项。
 
-Skipping step 1 produces operators who apply techniques without understanding why; skipping the operational skills produces theorists who do not know which technique fits which failure mode.
+跳过第 1 步，会让操作者只会套用技术，却不知道原因；跳过操作型技能，则会让读者只懂理论，不知道哪种技术适用于哪类失效。
 
-## Examples
+## 示例
 
-**Example 1: Organizing System Prompts**
+**示例 1：组织系统提示词**
 
-Illustrates the conceptual point that critical constraints belong at attention-favored positions (beginning and end), and that explicit section boundaries help the model parse the prompt:
+此例说明关键约束应放在注意力更集中的位置（开头和末尾），而明确的章节边界能帮助模型解析提示词：
 
 ```markdown
 <BACKGROUND_INFORMATION>
@@ -136,75 +136,75 @@ Explain non-obvious decisions in comments.
 </OUTPUT_DESCRIPTION>
 ```
 
-**Example 2: The Attention Budget As A Mental Model**
+**示例 2：把注意力预算作为思维模型**
 
-A large-context model does not have an equally attended context. Effective capacity is workload-specific, and the U-shaped curve penalizes information placed in the middle. When deciding how much of an upstream knowledge base to load, this is the mental model: do not ask "will it fit," ask "will the model still attend to the parts that matter."
+上下文窗口很大的模型，也不会同等关注上下文中的每个位置。有效容量取决于具体工作负载，U 形曲线会削弱中间位置的信息。在决定要从上游知识库加载多少内容时，可以使用这个思维模型：不要问“能不能放得下”，而要问“模型还能不能关注重要部分”。
 
-The corresponding operational question (which technique should reduce the load) belongs to `context-optimization`.
+相应的操作问题（用哪种技术降低负载）属于 `context-optimization`。
 
-## Guidelines
+## 指南
 
-1. Treat context as a finite resource with diminishing returns
-2. Place critical information at attention-favored positions (beginning and end)
-3. Use progressive disclosure to defer loading until needed
-4. Organize system prompts with clear section boundaries
-5. Monitor context usage during development
-6. Implement compaction triggers at 70-80% utilization
-7. Design for context degradation rather than hoping to avoid it
-8. Prefer smaller high-signal context over larger low-signal context
+1. 把上下文视为有限资源，并考虑其收益会逐渐递减。
+2. 将关键信息放在注意力更集中的位置（开头和末尾）。
+3. 使用渐进式披露，按需加载内容。
+4. 用明确的章节边界组织系统提示词。
+5. 在开发过程中监控上下文使用量。
+6. 在利用率达到 70% 到 80% 时触发压缩。
+7. 按上下文会退化来设计，而不要寄望于避免退化。
+8. 优先使用小而高信号的上下文，而不是大而低信号的上下文。
 
-## Gotchas
+## 易错点
 
-1. **Nominal window is not effective capacity**: A model advertising a large context window may degrade well before that limit on complex retrieval or reasoning tasks. Budget below the nominal window until your own degradation tests prove otherwise.
+1. **标称窗口不等于有效容量**：即使模型宣称支持很大的上下文窗口，在复杂检索或推理任务中，也可能远未达到上限就开始退化。在自己的测试证明情况不同之前，应按低于标称窗口的容量规划预算。
 
-2. **Character-based token estimates silently drift**: The ~4 characters/token heuristic for English prose breaks down for code (2-3 chars/token), URLs and file paths (each slash, dot, and colon is a separate token), and non-English text (often 1-2 chars/token). Use the provider's actual tokenizer (e.g., tiktoken for OpenAI models, Anthropic's token counting API) for any budget-critical calculation.
+2. **按字符数估算 token 会悄悄产生偏差**：英语散文中约 4 个字符对应 1 个 token 的经验值，不适用于代码（每个 token 约 2 到 3 个字符）、URL 和文件路径（每个斜杠、句点、冒号都可能是单独的 token），也不适用于非英语文本（通常每个 token 约 1 到 2 个字符）。任何对预算至关重要的计算都应使用服务提供方的实际分词器（例如 OpenAI 模型的 tiktoken、Anthropic 的 token 计数 API）。
 
-3. **Tool schemas inflate 2-3x after JSON serialization**: A tool definition that looks compact in source code expands significantly when serialized — brackets, quotes, colons, and commas each consume tokens. Ten tools with moderate schemas can consume 5,000-8,000 tokens before a single message is sent. Audit serialized tool token counts, not source-code line counts.
+3. **工具 schema 经 JSON 序列化后会膨胀 2 到 3 倍**：源代码中看起来精简的工具定义，序列化后会显著变大，因为括号、引号、冒号和逗号都会消耗 token。十个 schema 中等的工具，在发送第一条消息前就可能占用 5,000 到 8,000 个 token。应审查序列化后的工具 token 数，而不是源代码行数。
 
-4. **Message history balloons silently in agentic loops**: Each tool call adds both the request and the full response to history. After 20-30 iterations, history can consume 70-80% of the window while the agent shows no visible symptoms until reasoning quality collapses. Set a hard token ceiling on history and trigger compaction proactively.
+4. **智能体循环会让消息历史悄悄膨胀**：每次工具调用都会把请求和完整响应都加进历史。经过 20 到 30 次迭代后，历史可能已占窗口的 70% 到 80%；表面上却没有明显症状，直到推理质量突然崩溃。应为历史设置硬性 token 上限，并主动触发压缩。
 
-5. **Critical instructions in the middle get lost**: The U-shaped attention curve means the middle of context receives 10-40% less recall accuracy than the beginning and end. Never place safety constraints, output format requirements, or behavioral guardrails in the middle of a long system prompt — anchor them at the top or bottom.
+5. **中间位置的关键指令容易丢失**：U 形注意力曲线意味着，与开头和末尾相比，模型从上下文中间位置回忆信息的准确率会低 10% 到 40%。不要把安全约束、输出格式要求或行为边界放在长系统提示词的中间；应将它们固定在开头或末尾。
 
-6. **Progressive disclosure that loads too eagerly defeats its purpose**: Loading every "potentially relevant" skill or document at the first hint of relevance recreates the context-stuffing problem. Set strict activation thresholds — a skill should load only when the task explicitly matches its trigger conditions, not when the topic is merely adjacent.
+6. **过早加载会让渐进式披露失去意义**：只要刚出现一点相关迹象，就加载所有“可能有用”的技能或文档，会重新造成上下文塞满的问题。应设置明确的触发门槛：只有任务明确符合触发条件时才加载技能，而不只是主题相近时就加载。
 
-7. **Mixing instruction altitudes causes inconsistent behavior**: Combining hyper-specific rules ("always use exactly 3 bullet points") with vague directives ("be helpful") in the same prompt creates conflicting signals. Group instructions by altitude level and keep each section internally consistent — either heuristic-driven or prescriptive, not both interleaved.
+7. **混用不同抽象层级会让行为不一致**：在同一提示词中混合极其具体的规则（“始终恰好使用 3 个项目符号”）和含糊的指令（“提供帮助”），会造成相互冲突的信号。应按抽象层级分组指令，并保持每个部分内部一致：采用启发式指导，或采用明确规定，不要交错混用。
 
-## Integration
+## 集成
 
-This skill is the conceptual foundation. It does not own operational work; it provides the mental models the operational skills assume.
+本技能提供概念基础，不负责具体操作；操作型技能依赖这里的思维模型。
 
-Routing map for operational work:
+操作任务分流：
 
-- `context-degradation`: diagnosing attention failures, lost-in-middle, poisoning, distraction.
-- `context-optimization`: token-efficiency tactics (masking, partitioning, caching, budgets).
-- `context-compression`: compacting long sessions while preserving decisions, files, risks.
-- `filesystem-context`: offloading large outputs and using files as a durable scratchpad.
-- `memory-systems`: cross-session memory architectures with entity tracking.
-- `multi-agent-patterns`: when to split work across agents for context isolation.
-- `tool-design`: writing tool descriptions and schemas that route correctly.
-- `project-development`: deciding LLM fit and shaping multi-stage pipelines.
+- `context-degradation`：诊断注意力失效、信息在中间位置丢失、污染和干扰。
+- `context-optimization`：token 效率技巧（屏蔽、分区、缓存、预算）。
+- `context-compression`：压缩长会话，同时保留决策、文件和风险。
+- `filesystem-context`：卸载大型输出，并把文件用作持久草稿区。
+- `memory-systems`：包含实体追踪的跨会话记忆架构。
+- `multi-agent-patterns`：为实现上下文隔离而拆分工作。
+- `tool-design`：编写能正确分流任务的工具描述和 schema。
+- `project-development`：判断 LLM 是否适用，以及如何设计多阶段流水线。
 
-Read this skill first to build the mental models; read the operational skill that fits the task when actually doing the work.
+先阅读本技能建立思维模型；开始实际操作时，再阅读适用于该任务的操作型技能。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Context Components Reference](./references/context-components.md) - Read when: debugging a specific context component (system prompts, tool definitions, message history, tool outputs) or implementing chunking, observation masking, or budget allocation tables
+内部参考资料：
+- [Context Components Reference](./references/context-components.md) - 阅读时机：诊断具体上下文组件（系统提示词、工具定义、消息历史、工具输出），或实现分块、观察屏蔽、预算分配表时
 
-Related skills in this collection:
-- context-degradation - Read when: agent performance drops as conversations grow or context fills beyond 60% capacity
-- context-optimization - Read when: token costs are too high or compaction/compression strategies are needed
+本系列的相关技能：
+- context-degradation - 阅读时机：智能体表现随对话增长或上下文超过 60% 容量后开始下降时
+- context-optimization - 阅读时机：token 成本过高，或需要压缩、缩减策略时
 
-External resources:
-- Anthropic's "Effective Context Engineering for AI Agents" — production patterns for compaction, sub-agents, and hybrid retrieval
-- Research on transformer attention mechanisms and the lost-in-the-middle effect
-- Tokenomics research on agentic software engineering token distribution
+外部资源：
+- Anthropic 的《Effective Context Engineering for AI Agents》——涵盖压缩、子智能体和混合检索的生产实践
+- 关于 Transformer 注意力机制和“信息在中间位置丢失”现象的研究
+- 关于智能体软件工程 token 分布的 Tokenomics 研究
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 2.2.0
+**创建时间**：2025-12-20
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：2.2.0

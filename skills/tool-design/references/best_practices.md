@@ -1,90 +1,90 @@
-# Tool Design Best Practices
+# 工具设计最佳实践
 
-This document provides additional best practices and guidelines for designing tools for agent systems.
+本文档为智能体系统设计工具提供了额外的最佳实践和指南。
 
-## Tool Philosophy
+## 工具哲学
 
-Tools are the primary interface between agents and the world. Unlike traditional APIs designed for developers who understand underlying systems, tools must be designed for language models that infer intent from descriptions and generate calls from natural language requests. This fundamental difference requires rethinking how we design and document tool interfaces.
+工具是智能体与世界之间的主要接口。与专为理解底层系统的开发人员设计的传统 API 不同，工具必须为根据描述推断意图并从自然语言请求生成调用的语言模型而设计。这种根本差异要求我们重新思考如何设计和记录工具接口。
 
-The goal is to create tools that agents can discover, understand, and use correctly without extensive trial and error. Every ambiguity in tool definitions becomes a potential failure mode. Every unclear parameter name forces the agent to guess. Every missing example leaves the agent without guidance for edge cases.
+目标是创建让智能体无需大量试错即可发现、理解并正确使用的工具。工具定义中的每一个歧义都会成为潜在的故障模式。每一个不清晰的参数名称都会迫使智能体去猜测。每一个缺失的示例都会让智能体在处理边缘情况时失去引导。
 
-## Description Engineering Principles
+## 描述工程原则
 
-### Principle 1: Answer the Fundamental Questions
+### 原则 1：回答基本问题
 
-Every tool description should clearly answer four questions. What does the tool do? State exactly what the tool accomplishes in specific terms, avoiding vague language like "helps with" or "can be used for." When should it be used? Provide specific triggers and contexts, including both direct triggers and indirect signals that indicate the tool's applicability. What inputs does it accept? Document parameters with types, constraints, and defaults, explaining what each parameter controls. What does it return? Describe output format and structure, including examples of successful responses and error conditions.
+每个工具描述都应清晰地回答四个问题。**该工具做什么？** 用具体的词汇准确说明工具完成了什么，避免使用“有助于”或“可用于”之类的模糊语言。**何时应该使用？** 提供具体的触发因素和上下文，包括指示工具适用性的直接触发因素和间接信号。**它接受什么输入？** 记录带有类型、约束和默认值的参数，解释每个参数控制什么。**它返回什么？** 描述输出格式和结构，包括成功响应和错误条件的示例。
 
-### Principle 2: Use Consistent Structure
+### 原则 2：使用一致的结构
 
-Maintain consistent structure across all tool descriptions in your codebase. When agents encounter a new tool, they should be able to predict where to find specific information based on patterns learned from other tools. This reduces cognitive overhead and prevents errors caused by inconsistent formatting.
+在代码库的所有工具描述中保持一致的结构。当智能体遇到一个新工具时，它们应该能够根据从其他工具中学到的模式，预测在哪里可以找到特定信息。这减少了认知开销，并防止了由格式不一致引起的错误。
 
-A recommended structure includes a brief description in the first sentence, a detailed explanation with usage context, a parameters section with clear type information, a returns section describing output structure, and an errors section listing possible failure modes with recovery guidance.
+推荐的结构包括：第一句简短描述，包含使用上下文的详细说明，带有清晰类型信息的参数部分，描述输出结构的返回部分，以及列出可能故障模式及恢复指导的错误部分。
 
-### Principle 3: Include Concrete Examples
+### 原则 3：包含具体示例
 
-Examples bridge the gap between abstract description and actual usage. Include examples of typical calls showing common parameter combinations, examples of edge cases and how to handle them, and examples of error responses and appropriate recovery actions.
+示例弥合了抽象描述与实际用法之间的鸿沟。包含展示常见参数组合的典型调用示例、边缘情况及其处理方式的示例，以及错误响应和适当恢复操作的示例。
 
-Good examples are specific rather than generic. Instead of "Use an ID like '123'", use "Use format: 'CUST-######' (e.g., 'CUST-000001')". Instead of "Provide a date", use "Format: 'YYYY-MM-DD' (e.g., '2024-01-15')".
+好的示例是具体的而不是通用的。与其说“使用类似 '123' 的 ID”，不如说“使用格式：'CUST-######'（例如 'CUST-000001'）”。与其说“提供日期”，不如说“格式：'YYYY-MM-DD'（例如 '2024-01-15'）”。
 
-## Naming Conventions
+## 命名规范
 
-### Parameter Naming
+### 参数命名
 
-Parameter names should be self-documenting. Use names that clearly indicate purpose without requiring additional explanation. Prefer full words over abbreviations except for widely understood acronyms like "id" or "url". Use consistent naming across tools for similar concepts.
+参数名称应该是自解释的。使用能够清晰指示用途的名称，无需额外解释。倾向于使用完整的单词而不是缩写，除非是广泛理解的缩写（如 "id" 或 "url"）。在不同工具中对相似概念使用一致的命名。
 
-Good parameter names include customer_id, search_query, output_format, max_results, and include_details. Poor parameter names include x, val, param1, and info.
+好的参数名称包括 `customer_id`、`search_query`、`output_format`、`max_results` 和 `include_details`。糟糕的参数名称包括 `x`、`val`、`param1` 和 `info`。
 
-### Enumeration Values
+### 枚举值
 
-When parameters accept enumerated values, use consistent naming across all tools. For boolean-style options, use prefix patterns like "include_" for affirmative options (include_history, include_metadata) and "exclude_" for negative options (exclude_archived, exclude_inactive). For categorical values, use consistent terminology like "format": "concise" | "detailed" rather than mixing "format": "short" | "long" in some tools and "format": "brief" | "complete" in others.
+当参数接受枚举值时，在所有工具中使用一致的命名。对于布尔类型的选项，对肯定选项使用前缀模式，如 `include_`（`include_history`, `include_metadata`），对否定选项使用 `exclude_`（`exclude_archived`, `exclude_inactive`）。对于分类值，使用一致的术语，如 `"format": "concise" | "detailed"`，而不是在某些工具中混合使用 `"format": "short" | "long"`，在另一些工具中使用 `"format": "brief" | "complete"`。
 
-## Error Message Design
+## 错误消息设计
 
-### The Dual Audience
+### 双重受众
 
-Error messages serve two audiences with different needs. Developers debugging issues need detailed technical information including stack traces and internal state. Agents recovering from failures need actionable guidance that tells them what went wrong and how to correct it.
+错误消息服务于具有不同需求的两个受众。调试问题的开发人员需要详细的技术信息，包括堆栈跟踪和内部状态。从故障中恢复的智能体需要**可操作的指导**，告诉它们出了什么问题以及如何纠正。
 
-Design error messages with agent recovery as the primary consideration. Include what specifically went wrong in clear language. Provide resolution guidance describing what the agent should do next. Include corrected format for input errors. Add examples of valid input.
+设计错误消息时应将智能体恢复作为首要考虑因素。用清晰的语言说明具体出了什么问题。提供描述智能体接下来应该做什么的解决指导。对于输入错误，包含纠正后的格式。添加有效输入的示例。
 
-### Error Message Structure
+### 错误消息结构
 
 ```json
 {
     "error": {
         "code": "INVALID_CUSTOMER_ID",
         "category": "validation",
-        "message": "Customer ID 'CUST-123' does not match required format",
+        "message": "客户 ID 'CUST-123' 不符合要求的格式",
         "expected_format": {
-            "description": "Customer ID must be 9 characters",
+            "description": "客户 ID 必须为 9 个字符",
             "pattern": "CUST-######",
             "example": "CUST-000001"
         },
-        "resolution": "Provide a customer ID matching pattern CUST-######",
+        "resolution": "请提供符合 CUST-###### 模式的客户 ID",
         "retryable": true
     }
 }
 ```
 
-### Common Error Patterns
+### 常见错误模式
 
-Validation errors should specify what was received, what format was expected, and how to correct it. Rate limit errors should specify wait time and retry guidance. Not found errors should suggest alternative approaches or verification steps. System errors should indicate whether retry is appropriate and suggest alternatives.
+验证错误应指定接收到的内容、预期的格式以及如何纠正。频率限制（Rate limit）错误应指定等待时间和重试指导。未找到（Not found）错误应建议替代方法或验证步骤。系统错误应指示重试是否合适并建议替代方案。
 
-## Response Format Optimization
+## 响应格式优化
 
-### The Token-Accuracy Trade-off
+### Token 与准确性的权衡
 
-Verbose responses provide comprehensive information but consume significant context tokens. Concise responses minimize token usage but may lack necessary detail. The optimal approach provides format options that allow agents to request appropriate verbosity for their needs.
+详尽的响应提供了全面的信息，但会消耗大量的上下文 Token。简明的响应最小化了 Token 使用，但可能缺乏必要的细节。最佳方法是提供格式选项，允许智能体根据需求请求适当的详细程度。
 
-### Format Options Pattern
+### 格式选项模式
 
 ```python
 def get_customer_response(format: str = "concise"):
     """
-    Retrieve customer information.
-    
-    Args:
-        format: Response format - 'concise' for key fields only,
-                'detailed' for complete customer record
+    检索客户信息。
+
+    参数:
+        format: 响应格式 - 'concise' 仅返回关键字段，
+                'detailed' 返回完整的客户记录
     """
     if format == "concise":
         return {
@@ -106,71 +106,70 @@ def get_customer_response(format: str = "concise"):
         }
 ```
 
-### When to Use Each Format
+### 何时使用每种格式
 
-Use concise format for quick verification or simple lookups, when only confirmation is needed, and in subsequent tool calls after initial retrieval. Use detailed format when making decisions based on customer data, when output becomes input for other processing, and when complete context is necessary for correctness.
+在进行快速验证或简单查找、仅需要确认时，以及在初始检索后的后续工具调用中使用**简明格式**。在根据客户数据做出决策、输出作为其他处理的输入，以及为了正确性必须具备完整上下文时使用**详细格式**。
 
-## Tool Collection Design
+## 工具集设计
 
-### Managing Tool Proliferation
+### 管理工具扩散
 
-As agent systems grow, tool collections tend to proliferate. More tools can enable more capabilities but create selection challenges. Research shows that tool description overlap causes model confusion. The key insight is that if a human engineer cannot definitively say which tool should be used in a given situation, an agent cannot be expected to do better.
+随着智能体系统的发展，工具集往往会扩散。更多的工具可以实现更多的能力，但也会带来选择挑战。研究表明，工具描述重叠会导致模型混淆。关键见解是：如果人类工程师无法明确说明在特定情况下应该使用哪个工具，那么就不能指望智能体做得更好。
 
-### Consolidation Guidelines
+### 合并指南
 
-Consolidate tools that represent sequential steps in a single workflow into a single tool that handles the entire workflow. For example, instead of list_users, list_events, and create_event, implement schedule_event that finds availability and schedules in one call.
+将代表单个工作流中顺序步骤的工具合并为一个处理整个工作流的工具。例如，与其实现 `list_users`、`list_events` 和 `create_event`，不如实现一个 `schedule_event`，在一次调用中完成查找可用性和调度。
 
-Keep separate tools that have fundamentally different behaviors even if they share some functionality. Tools used in different contexts should maintain separation to prevent confusion.
+对于行为有根本差异的工具，即使它们共享某些功能，也应保持独立。在不同上下文中使用的工具应保持分离以防止混淆。
 
-Maintain clear boundaries between tools even when they operate in similar domains. Overlapping functionality should be minimized through careful design.
+即使工具在相似领域运行，也要保持它们之间的清晰边界。应通过仔细设计最小化功能重叠。
 
-### Tool Selection Guidance
+### 工具选择指导
 
-When designing tool collections, consider what information an agent needs to make correct selections. If multiple tools could apply to a situation, clarify the distinction in descriptions. Use namespacing to create logical groupings that help agents navigate the tool space.
+在设计工具集时，考虑智能体为了做出正确选择需要哪些信息。如果多种工具都适用于某种情况，请在描述中澄清区别。使用命名空间创建逻辑分组，帮助智能体导航工具空间。
 
-## Testing Tool Design
+## 测试工具设计
 
-### Evaluation Criteria
+### 评估标准
 
-Evaluate tool designs against clarity, completeness, recoverability, efficiency, and consistency criteria. Clarity measures whether agents can determine when to use the tool. Completeness measures whether descriptions include all necessary information. Recoverability measures whether agents can recover from errors. Efficiency measures whether tools support appropriate response formats. Consistency measures whether tools follow naming and schema conventions.
+根据清晰度（Clarity）、完整性（Completeness）、可恢复性（Recoverability）、效率（Efficiency）和一致性（Consistency）标准评估工具设计。清晰度衡量智能体是否能确定何时使用该工具。完整性衡量描述是否包含所有必要信息。可恢复性衡量智能体是否能从错误中恢复。效率衡量工具是否支持适当的响应格式。一致性衡量工具是否遵循命名和模式（Schema）规范。
 
-### Agent Testing Pattern
+### 智能体测试模式
 
-Test tools by presenting representative agent requests and evaluating the resulting tool calls:
+通过展示代表性的智能体请求并评估生成的工具调用来测试工具：
 
-1. Prepare test cases with diverse agent requests
-2. Have an agent formulate tool calls for each request
-3. Evaluate call correctness against expected patterns
-4. Identify common failure modes
-5. Refine tool definitions based on findings
+1. 准备具有多种智能体请求的测试用例
+2. 让智能体为每个请求构思工具调用
+3. 根据预期模式评估调用的正确性
+4. 识别常见的故障模式
+5. 根据发现结果改进工具定义
 
-## Anti-Patterns to Avoid
+## 要避免的反模式
 
-### Vague Descriptions
+### 模糊描述
 
-Bad: "Search the database for customer information." This leaves too many questions unanswered. What database? What information is available? What format should queries take?
+糟糕：“搜索数据库以获取客户信息。”这留下了太多未回答的问题。什么数据库？有哪些可用信息？查询应该采用什么格式？
 
-Good: "Retrieve customer information by ID or email. Use when user asks about specific customer details, history, or status. Returns customer object with id, name, email, account_status, and optional order history."
+良好：“通过 ID 或电子邮件检索客户信息。当用户询问特定客户详情、历史记录或状态时使用。返回包含 id, name, email, account_status 以及可选订单历史记录的客户对象。”
 
-### Cryptic Parameter Names
+### 晦涩的参数名称
 
-Bad: Parameters named x, val, or param1 force agents to guess meaning.
+糟糕：名为 `x`、`val` 或 `param1` 的参数会迫使智能体猜测含义。
 
-Good: Parameters named customer_id, max_results, or include_history are self-documenting.
+良好：名为 `customer_id`、`max_results` 或 `include_history` 的参数是自解释的。
 
-### Missing Error Handling
+### 缺失错误处理
 
-Bad: Tools that fail with generic errors or no error handling.
+糟糕：因通用错误而失败或没有错误处理的工具。
 
-Good: Tools that provide specific error types, messages, and resolution guidance.
+良好：提供特定错误类型、消息和解决指导的工具。
 
-### Inconsistent Naming
+### 命名不一致
 
-Bad: Using id in some tools, identifier in others, customer_id in some and user_id in others for similar concepts.
+糟糕：在某些工具中使用 `id`，在其他工具中使用 `identifier`，在针对相似概念的某些工具中使用 `customer_id` 而在其他工具中使用 `user_id`。
 
-Good: Maintaining consistent naming patterns across all tools for similar concepts.
+良好：在所有工具中对相似概念保持一致的命名模式。
 
-## Checklist for Tool Design
+## 工具设计自检清单
 
-Before deploying a new tool, verify that the description clearly states what the tool does and when to use it. Verify that all parameters have descriptive names and clear type information. Verify that return values are documented with structure and examples. Verify that error cases are covered with actionable messages. Verify that the tool follows naming conventions used elsewhere. Verify that examples demonstrate common usage patterns. Verify that format options are available if response size varies significantly.
-
+在部署新工具之前，验证：描述是否清晰说明了工具的作用及何时使用。验证：所有参数是否都有描述性名称和清晰的类型信息。验证：返回值是否记录了结构和示例。验证：错误情况是否涵盖了可操作的消息。验证：工具是否遵循了其他地方使用的命名规范。验证：示例是否展示了常见的使用模式。验证：如果响应大小差异很大，格式选项是否可用。

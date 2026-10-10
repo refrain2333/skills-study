@@ -1,23 +1,23 @@
-## Constitutional change
+## 章程变更
 
-### Authority delta
+### 权限差异
 
-Describe actors, actions, resources, conditions, and reason codes that change.
+说明发生变化的参与者、操作、资源、条件和原因代码。
 
-### Invariants
+### 不变量
 
-- [ ] No automated identity can merge or activate production.
-- [ ] The author cannot be the sole verifier or release attestor.
-- [ ] Protected surfaces remain human-governed.
-- [ ] Unknown authority remains denied.
+- [ ] 自动化身份不能合并变更或启用生产环境。
+- [ ] 作者不能成为唯一验证者或发布证明者。
+- [ ] 受保护区域仍由人工负责审批。
+- [ ] 未知权限仍默认拒绝。
 
-### Evidence
+### 证据
 
-- [ ] Generated authority table updated.
-- [ ] Decision fixtures and exhaustive cross-product tests pass.
-- [ ] Effective and rollback policy digests recorded.
-- [ ] Current `AGENTS.md` rules reconciled or classified as non-constitutional guidance.
+- [ ] 已更新生成的权限规则表。
+- [ ] 决策样例和完整组合检查已通过。
+- [ ] 已记录生效规则摘要和回滚目标摘要。
+- [ ] 已核对当前 `AGENTS.md` 规则，或明确其属于非章程指导。
 
-### Migration and rollback
+### 迁移与回滚
 
-State how active work is handled, which digest becomes effective after merge, and which prior digest is the rollback target.
+说明如何处理进行中的工作、合并后生效的摘要，以及回滚时使用的旧摘要。

@@ -1,76 +1,80 @@
 ---
 name: content-module
-description: Content creation hub - ideas, drafts, calendar, and published posts. Use for content planning, writing, and tracking.
+description: 内容创作中心，管理创意、草稿、日历和已发布帖子；用于规划、撰写和跟踪内容。
 ---
 
-# Content Hub
+# 内容中心
 
-Your content creation and management system.
+用于创作和管理个人内容。
 
-## Files in This Module
+## 模块文件
 
-| File | Format | Purpose |
-|------|--------|---------|
-| `ideas.jsonl` | JSONL | Raw content ideas (append-only) |
-| `posts.jsonl` | JSONL | Published content log |
-| `calendar.md` | Markdown | Content schedule |
-| `drafts/` | Folder | Work-in-progress content |
-| `templates/` | Folder | Reusable content formats |
-| `engagement.jsonl` | JSONL | Saved posts/threads for inspiration |
+| 文件 | 格式 | 用途 |
+| --- | --- | --- |
+| `ideas.jsonl` | JSONL | 原始创意，只追加 |
+| `posts.jsonl` | JSONL | 已发布内容日志 |
+| `calendar.md` | Markdown | 内容日程 |
+| `drafts/` | 目录 | 尚在修改的内容 |
+| `templates/` | 目录 | 可复用格式 |
+| `engagement.jsonl` | JSONL | 收藏的帖子和串文灵感 |
 
-## Workflows
+## 工作流
 
-### Capture an Idea
-```bash
-# Append to ideas.jsonl with timestamp
+### 记录创意
+
+将以下结构追加到 `ideas.jsonl`，并填写当前时间和内容：
+
+```json
 {
   "id": "idea_YYYYMMDD_HHMMSS",
   "created": "ISO8601",
-  "idea": "content",
-  "source": "where it came from",
-  "pillar": "content pillar",
+  "idea": "创意内容",
+  "source": "来源",
+  "pillar": "内容支柱",
   "status": "raw|developing|ready",
   "priority": "high|medium|low"
 }
 ```
 
-### Content Creation Pipeline
-```
-1. ideas.jsonl (capture)
-      ↓
-2. drafts/draft_[topic].md (develop)
-      ↓
-3. Review against voice.md
-      ↓
-4. Publish
-      ↓
-5. posts.jsonl (archive with metrics)
+### 内容创作流程
+
+```text
+1. ideas.jsonl：记录创意
+   ↓
+2. drafts/draft_[主题].md：完善草稿
+   ↓
+3. 对照 voice.md 检查表达方式
+   ↓
+4. 发布
+   ↓
+5. 将内容和指标存入 posts.jsonl
 ```
 
-### Weekly Content Review
-1. Review `ideas.jsonl` - promote or archive stale ideas
-2. Check `calendar.md` - plan next week
-3. Review `posts.jsonl` - analyze what worked
-4. Update `engagement.jsonl` - save inspiring content
+### 每周内容回顾
 
-## Agent Instructions
+1. 检查 `ideas.jsonl`，完善或归档过期创意。
+2. 检查 `calendar.md`，规划下周内容。
+3. 回顾 `posts.jsonl`，分析哪些内容有效。
+4. 将有启发的内容保存到 `engagement.jsonl`。
+
+## 智能体指引
 
 <instructions>
-When working with content:
+处理内容时：
 
-1. **Capturing ideas**: Always append to ideas.jsonl, never overwrite
-2. **Creating drafts**: Use templates from templates/ as starting points
-3. **Writing content**: MUST read identity/voice.md first
-4. **Publishing**: Log to posts.jsonl with all metadata
-5. **Analysis**: Reference posts.jsonl for performance patterns
+1. **记录创意**：只追加到 ideas.jsonl，不覆盖旧记录。
+2. **创建草稿**：从 templates/ 中选模板开始。
+3. **撰写内容**：必须先读取 identity/voice.md。
+4. **发布内容**：将完整元数据写入 posts.jsonl。
+5. **分析效果**：参考 posts.jsonl 中的历史表现模式。
 
-Priority scoring:
-- High: Timely, high-value, aligns with current goals
-- Medium: Good idea, no urgency
-- Low: Worth capturing, develop later
+优先级：
+- 高：时效性强、价值高、符合当前目标。
+- 中：创意不错，但不紧急。
+- 低：值得记录，稍后完善。
 </instructions>
 
-## Content Metrics to Track
+## 内容指标
 
 ```yaml
 engagement_metrics:
@@ -82,7 +86,7 @@ engagement_metrics:
   - link_clicks
 
 quality_indicators:
-  - comment_quality: "meaningful discussions vs. emoji reactions"
-  - share_context: "what people say when sharing"
-  - follower_conversion: "followers gained from post"
+  - comment_quality: "有意义的讨论而非表情回应"
+  - share_context: "分享时人们附带的说明"
+  - follower_conversion: "帖子带来的新增关注"
 ```

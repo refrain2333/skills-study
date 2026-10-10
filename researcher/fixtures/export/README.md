@@ -1,5 +1,5 @@
-# Export boundary fixtures
+# 导出边界样例
 
-`private-root/` contains synthetic test inputs, not actual private data. The restricted-source fixture intentionally includes a raw body that policy permits the citation projector to read but forbids it to emit. This proves the transform structurally rather than relying on broad text redaction.
+`private-root/` 中是合成测试输入，不是真实私有数据。受限来源样例故意包含原始正文；规则允许引用投影器读取该正文，却禁止输出。这证明转换在结构层面起作用，而不是依赖宽泛的文本脱敏。
 
-Real private roots, export plans, receipts, notification destinations, licensed source bodies, and credentials remain outside Git or under ignored local paths.
+真实私有根目录、导出计划、回执、通知目标、受许可保护的来源正文和凭据都应保存在 Git 以外，或放在被忽略的本地路径中。

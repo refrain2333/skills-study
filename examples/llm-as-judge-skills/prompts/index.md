@@ -1,138 +1,55 @@
-# Prompts Index
+# 提示词索引
 
-Prompts are reusable templates that define how agents and tools interact with LLMs.
+提示词是可复用模板，用于定义智能体和工具如何与大语言模型交互。
 
-## Prompt Categories
+## 提示词类别
 
-### Evaluation Prompts
-**Path**: `prompts/evaluation/`
+### 评估提示词
 
-Templates for quality assessment tasks.
+路径：`prompts/evaluation/`，用于质量评估。
 
-| Prompt | Purpose | Used By |
-|--------|---------|---------|
-| `direct-scoring-prompt` | Evaluate single response | Evaluator Agent, directScore tool |
-| `pairwise-comparison-prompt` | Compare two responses | Evaluator Agent, pairwiseCompare tool |
+| 提示词 | 用途 | 使用方 |
+| --- | --- | --- |
+| `direct-scoring-prompt` | 评估单个回复 | Evaluator 智能体、`directScore` 工具 |
+| `pairwise-comparison-prompt` | 比较两份回复 | Evaluator 智能体、`pairwiseCompare` 工具 |
 
----
+### 研究提示词
 
-### Research Prompts
-**Path**: `prompts/research/`
+路径：`prompts/research/`，用于收集和综合信息；`research-synthesis-prompt` 供 Research 智能体使用。
 
-Templates for information gathering and synthesis.
+### 智能体系统提示词
 
-| Prompt | Purpose | Used By |
-|--------|---------|---------|
-| `research-synthesis-prompt` | Synthesize findings | Research Agent |
+路径：`prompts/agent-system/`；`orchestrator-prompt` 用于多智能体协调。
 
----
+## 提示词模板格式
 
-### Agent System Prompts
-**Path**: `prompts/agent-system/`
-
-System prompts for agent definitions.
-
-| Prompt | Purpose | Used By |
-|--------|---------|---------|
-| `orchestrator-prompt` | Multi-agent coordination | Orchestrator Agent |
-
-## Prompt Template Format
-
-### Standard Structure
+标准文档包括用途、含变量的模板、变量说明、使用示例和实践建议。变量采用 Handlebars 风格语法：
 
 ```markdown
-# Prompt Name
-
-## Purpose
-Brief description of what this prompt accomplishes.
-
-## Prompt Template
-```markdown
-[The actual prompt with {{variables}}]
+{{variable}}                   # 简单替换
+{{#if condition}}...{{/if}}   # 条件章节
+{{#each array}}...{{/each}}   # 遍历集合
 ```
 
-## Variables
-| Variable | Description | Required |
-|----------|-------------|----------|
-| var_name | What it contains | Yes/No |
+## 提示词设计原则
 
-## Example Usage
-Concrete example showing inputs and expected outputs.
+1. **角色明确**：告诉模型它扮演什么角色、负责什么工作。
+2. **指令明确**：逐步说明需要哪些证据、评分和反馈，不要依赖模型猜测。
+3. **输出结构明确**：规定可解析的准确格式。
+4. **设置防护规则**：说明不要偏好更长回复或某个答案位置，应聚焦指定标准。
 
-## Best Practices
-Guidelines for using this prompt effectively.
-```
+## 新增提示词
 
-### Variable Syntax
+1. 选择或创建 `prompts/<类别>/`。
+2. 创建提示词文件。
+3. 包含用途、带变量的模板、变量说明、使用示例和最佳实践。
+4. 更新本索引。
 
-Use Handlebars-style templating:
+## 提示词检查清单
 
-```markdown
-{{variable}}                 # Simple substitution
-{{#if condition}}...{{/if}} # Conditional section
-{{#each array}}...{{/each}} # Iteration
-```
-
-## Prompt Design Principles
-
-### 1. Clear Role Definition
-Tell the model exactly what it is and what it's doing.
-
-```markdown
-You are an expert evaluator assessing the quality of AI-generated responses.
-```
-
-### 2. Explicit Instructions
-Don't assume the model will infer requirements.
-
-```markdown
-For each criterion:
-1. First, identify specific evidence from the response
-2. Then, determine the appropriate score based on the rubric
-3. Finally, provide actionable feedback
-```
-
-### 3. Structured Output
-Specify the exact format you need.
-
-```markdown
-Format your response as structured JSON:
-```json
-{
-  "scores": [...],
-  "summary": {...}
-}
-```
-```
-
-### 4. Guard Rails
-Include constraints and warnings.
-
-```markdown
-Important Guidelines:
-- Do NOT prefer responses simply because they are longer
-- Do NOT prefer responses based on their position (A vs B)
-- Focus on the specified criteria
-```
-
-## Adding New Prompts
-
-1. Determine category or create new: `prompts/<category>/`
-2. Create prompt file: `prompts/<category>/<prompt-name>.md`
-3. Include:
-   - Purpose
-   - Template with variables
-   - Variable documentation
-   - Example usage
-   - Best practices
-4. Update this index
-
-## Prompt Testing Checklist
-
-- [ ] Variables render correctly
-- [ ] Output format is parseable
-- [ ] Edge cases are handled
-- [ ] Instructions are unambiguous
-- [ ] Examples match expected output
-- [ ] Constraints are clear
-
+- [ ] 变量能正确替换。
+- [ ] 输出格式可解析。
+- [ ] 边界情况有处理。
+- [ ] 指令没有歧义。
+- [ ] 示例与预期输出一致。
+- [ ] 约束清楚。

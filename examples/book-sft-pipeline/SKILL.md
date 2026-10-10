@@ -1,71 +1,71 @@
 ---
 name: book-sft-pipeline
-description: "This skill should be used for book-to-SFT pipelines: ePub extraction, literary segmentation, author-voice dataset construction, style-transfer training, LoRA workflows, and model evaluation for voice replication."
+description: 从书籍创建有监督微调数据集和训练风格迁移模型的端到端系统。涵盖文本提取、智能分段、合成指令生成、Tinker 兼容输出、LoRA 训练和验证。
 version: 2.0.0
 ---
 
-# Book SFT Pipeline
+# 书籍 SFT 管道
 
-A complete system for converting books into SFT datasets and training style-transfer models. This skill teaches the pipeline from raw ePub to a model that writes in any author's voice.
+一个完整的系统，用于将书籍转换为 SFT 数据集并训练风格迁移模型。本技能教导从原始 ePub 到以任何作者声音写作的模型的完整管道。
 
-## When to Activate
+## 何时激活
 
-Activate this skill when:
-- Building fine-tuning datasets from literary works
-- Creating author-voice or style-transfer models
-- Preparing training data for Tinker or similar SFT platforms
-- Designing text segmentation pipelines for long-form content
-- Training small models (8B or less) on limited data
+激活本技能当：
+- 从文学作品构建微调数据集
+- 创建作者声音或风格迁移模型
+- 为 Tinker 或类似 SFT 平台准备训练数据
+- 为长文本内容设计文本分段管道
+- 在有限数据上训练小模型（8B 或更小）
 
-## Core Concepts
+## 核心概念
 
-### The Three Pillars of Book SFT
+### 书籍 SFT 的三大支柱
 
-**1. Intelligent Segmentation**
-Text chunks must be semantically coherent. Breaking mid-sentence teaches the model to produce fragmented output. Target: 150-400 words per chunk, always at natural boundaries.
+**1. 智能分段**
+文本块必须在语义上连贯。在句子中间断开会教导模型产生碎片化输出。目标：每个块 150-400 字，始终在自然边界处。
 
-**2. Diverse Instruction Generation**
-Use multiple prompt templates and system prompts to prevent overfitting. A single prompt style leads to memorization. Use 15+ prompt templates with 5+ system prompts.
+**2. 多样化指令生成**
+使用多个提示模板和系统提示来防止过度拟合。单一提示风格会导致记忆化。使用 15+ 个提示模板和 5+ 个系统提示。
 
-**3. Style Over Content**
-The goal is learning the author's rhythm and vocabulary patterns, not memorizing plots. Synthetic instructions describe what happens without quoting the text.
+**3. 风格优于内容**
+目标是学习作者的节奏和词汇模式，而不是记忆情节。合成指令描述发生了什么，而不引用文本。
 
-## Pipeline Architecture
+## 管道架构
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    ORCHESTRATOR AGENT                           │
-│  Coordinates pipeline phases, manages state, handles failures   │
+│                    协调器代理                                   │
+│  协调管道阶段、管理状态、处理失败                               │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
        ┌───────────────┼───────────────┬───────────────┐
        ▼               ▼               ▼               ▼
 ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  EXTRACTION  │ │ SEGMENTATION │ │  INSTRUCTION │ │   DATASET    │
-│    AGENT     │ │    AGENT     │ │    AGENT     │ │   BUILDER    │
-│ ePub → Text  │ │ Text → Chunks│ │ Chunks →     │ │ Pairs →      │
-│              │ │ 150-400 words│ │ Prompts      │ │ JSONL        │
+│   提取       │ │   分段       │ │   指令       │ │   数据集     │
+│    代理      │ │    代理      │ │    代理      │ │    构建器     │
+│ ePub → 文本  │ │ 文本 → 块    │ │ 块 →         │ │ 对 →         │
+│              │ │ 150-400 字   │ │ 提示         │ │ JSONL        │
 └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
                        │
        ┌───────────────┴───────────────┐
        ▼                               ▼
 ┌──────────────┐               ┌──────────────┐
-│   TRAINING   │               │  VALIDATION  │
-│    AGENT     │               │    AGENT     │
-│ LoRA on      │               │ AI detector  │
-│ Tinker       │               │ Originality  │
+│   训练       │               │   验证       │
+│    代理      │               │    代理      │
+│ Tinker 上    │               │ AI 检测器    │
+│ 的 LoRA      │               │ 原创性       │
 └──────────────┘               └──────────────┘
 ```
 
-## Phase 1: Text Extraction
+## 阶段 1：文本提取
 
-### Critical Rules
-1. **Always source ePub over PDF** - OCR errors become learned patterns
-2. **Use paragraph-level extraction** - Extract from `<p>` tags to preserve breaks
-3. **Remove front/back matter** - Copyright and TOC pollute the dataset
+### 关键规则
+1. **始终选择 ePub 而非 PDF** - OCR 错误会成为学习的模式
+2. **使用段落级提取** - 从 `<p>` 标签提取以保留换行
+3. **删除前后物料** - 版权和目录会污染数据集
 
 ```python
-# Extract text from ePub paragraphs
+# 从 ePub 段落提取文本
 from epub2 import EPub
 from bs4 import BeautifulSoup
 
@@ -80,99 +80,99 @@ def extract_epub(path):
     return '\n\n'.join(chapters)
 ```
 
-## Phase 2: Intelligent Segmentation
+## 阶段 2：智能分段
 
-### Smaller Chunks + Overlap
+### 更小的块 + 重叠
 
-Smaller chunks (150-400 words) produce more training examples and better style transfer than larger chunks (250-650).
+更小的块（150-400 字）比更大的块（250-650 字）产生更多训练例子和更好的风格迁移。
 
 ```python
 def segment(text, min_words=150, max_words=400):
     paragraphs = text.split('\n\n')
     chunks, buffer, buffer_words = [], [], 0
-    
+
     for para in paragraphs:
         words = len(para.split())
         if buffer_words + words > max_words and buffer_words >= min_words:
             chunks.append('\n\n'.join(buffer))
-            # Keep last paragraph for overlap
+            # 保留最后一个段落以保持重叠
             buffer = [buffer[-1], para] if buffer else [para]
             buffer_words = sum(len(p.split()) for p in buffer)
         else:
             buffer.append(para)
             buffer_words += words
-    
+
     if buffer:
         chunks.append('\n\n'.join(buffer))
     return chunks
 ```
 
-### Expected Results
+### 预期结果
 
-For an 86,000-word book:
-- Old method (250-650 words): ~150 chunks
-- New method (150-400 + overlap): ~300 chunks
-- With 2 variants per chunk: 600+ training examples
+对于 86,000 字的书籍：
+- 旧方法（250-650 字）：约 150 个块
+- 新方法（150-400 + 重叠）：约 300 个块
+- 每个块 2 个变体：600+ 个训练示例
 
-## Phase 3: Diverse Instruction Generation
+## 阶段 3：多样化指令生成
 
-### The Key Insight
+### 关键见解
 
-Using a single prompt template causes memorization. Diverse templates teach the underlying style.
+使用单一提示模板会导致记忆化。多样化的模板教导基础风格。
 
 ```python
 SYSTEM_PROMPTS = [
-    "You are an expert creative writer capable of emulating specific literary styles.",
-    "You are a literary writer with deep knowledge of classic prose styles.",
-    "You are a creative writer skilled at emulating distinctive authorial voices.",
-    "You write prose that captures the essence of modernist literature.",
-    "You are a talented writer who can channel classic American authors.",
+    "你是一位能够模仿特定文学风格的专家创意作家。",
+    "你是一位深谙经典散文风格的文学作家。",
+    "你是一位善于模仿独特作者声音的创意作家。",
+    "你写的散文捕捉现代主义文学的精髓。",
+    "你是一位能够驾驭经典美国作家风格的才华横溢的作家。",
 ]
 
 PROMPT_TEMPLATES = [
-    "Write a passage in the style of {author}: {desc}",
-    "Channel {author}'s voice to write about: {desc}",
-    "In {author}'s distinctive prose style, describe: {desc}",
-    "Write this scene as {author} would have: {desc}",
-    "Using {author}'s repetitive technique, describe: {desc}",
-    "Capture the rhythm of {author} in this passage: {desc}",
-    "Write like {author}: {desc}",
-    "In the voice of {author}, write: {desc}",
-    "This is a literary exercise. Write like {author}: {desc}",
-    "Can you write in {author}'s style? {desc}",
+    "以{author}的风格写一段：{desc}",
+    "用{author}的声音写关于：{desc}",
+    "以{author}独特的散文风格，描述：{desc}",
+    "像{author}会做的那样写这个场景：{desc}",
+    "用{author}的重复技巧，描述：{desc}",
+    "捕捉{author}在这段的节奏：{desc}",
+    "像{author}一样写：{desc}",
+    "用{author}的声音，写：{desc}",
+    "这是一个文学练习。像{author}一样写：{desc}",
+    "你能用{author}的风格写吗？{desc}",
 ]
 ```
 
-### Instruction Generation
+### 指令生成
 
 ```python
-INSTRUCTION_PROMPT = """Describe what is happening in this excerpt in 2-3 sentences.
-Focus on: characters present, actions, emotions, setting.
-Do NOT quote the text directly.
+INSTRUCTION_PROMPT = """用 2-3 句话描述这段摘录中发生的事情。
+关注：出现的人物、行动、情感、背景。
+不要直接引用文本。
 
-Excerpt:
+摘录：
 {text}
 """
 
-# Use a fast, cheap LLM (e.g., Gemini Flash)
+# 使用快速、便宜的 LLM（例如，Gemini Flash）
 instruction = llm_call(INSTRUCTION_PROMPT.format(text=chunk))
 ```
 
-## Phase 4: Dataset Construction
+## 阶段 4：数据集构建
 
-### Message Format
+### 消息格式
 
 ```json
 {
     "messages": [
-        {"role": "system", "content": "You are an expert creative writer..."},
-        {"role": "user", "content": "Write in the style of Author: Scene description..."},
-        {"role": "assistant", "content": "The actual book text from chunk..."}
+        {"role": "system", "content": "你是一位专家创意作家..."},
+        {"role": "user", "content": "以作者风格写：场景描述..."},
+        {"role": "assistant", "content": "块中的实际书籍文本..."}
     ]
 }
 ```
 
-### Multiple Variants Per Chunk
+### 每个块的多个变体
 
 ```python
 def build_examples(chunk, instruction, author, variants=2):
@@ -189,28 +189,28 @@ def build_examples(chunk, instruction, author, variants=2):
     return examples
 ```
 
-## Phase 5: LoRA Training on Tinker
+## 阶段 5：Tinker 上的 LoRA 训练
 
-### Configuration
+### 配置
 
 ```python
 CONFIG = {
-    "model_name": "Qwen/Qwen3-8B-Base",  # Base, not instruct
-    "lora_rank": 32,                      # 352MB adapter
-    "learning_rate": 5e-4,                # Higher for LoRA
+    "model_name": "Qwen/Qwen3-8B-Base",  # 基础模型，不是指令调优版
+    "lora_rank": 32,                      # 352MB 适配器
+    "learning_rate": 5e-4,                # LoRA 的更高学习率
     "batch_size": 4,
     "epochs": 3,
 }
 ```
 
-### Why Base Model?
+### 为什么使用基础模型？
 
-Use **base** (pretrained) models, not instruction-tuned versions:
-- Base models are more malleable for new styles
-- Instruct models have patterns that resist overwriting
-- Style is a low-level pattern that base models capture better
+使用**基础**（预训练）模型，而不是指令调优版本：
+- 基础模型对新风格更具可塑性
+- 指令模型的模式会抵抗覆盖
+- 风格是低级模式，基础模型捕捉得更好
 
-### Training Loop
+### 训练循环
 
 ```python
 import tinker
@@ -229,152 +229,152 @@ for epoch in range(3):
 result = await training_client.save_weights_for_sampler_async(name="final")
 ```
 
-## Phase 6: Validation
+## 阶段 6：验证
 
-### Modern Scenario Test
+### 现代场景测试
 
-Test with scenarios that couldn't exist in the original book:
+使用原始书籍中不存在的场景进行测试：
 
 ```python
 TEST_PROMPTS = [
-    "Write about a barista making lattes",
-    "Describe lovers communicating through text messages",
-    "Write about someone anxious about climate change",
+    "写关于一个咖啡师制作拿铁的故事",
+    "描述情侣通过短信交流",
+    "写关于某人对气候变化的焦虑",
 ]
 ```
 
-If the model applies style markers to modern scenarios, it learned **style**, not **content**.
+如果模型将风格标记应用于现代场景，它学到了**风格**，而不是**内容**。
 
-### Originality Verification
+### 原创性验证
 
 ```bash
-# Search training data for output phrases
-grep "specific phrase from output" dataset.jsonl
-# Should return: No matches
+# 在训练数据中搜索输出短语
+grep "输出中的特定短语" dataset.jsonl
+# 应该返回：无匹配
 ```
 
-### AI Detector Testing
+### AI 检测器测试
 
-Test outputs with GPTZero, Pangram, or ZeroGPT.
+使用 GPTZero、Pangram 或 ZeroGPT 测试输出。
 
-## Known Issues and Solutions
+## 已知问题和解决方案
 
-### Character Name Leakage
+### 角色名称泄露
 
-**Symptom**: Model uses original character names in new scenarios.
-**Cause**: Limited name diversity from one book.
-**Solution**: Train on multiple books or add synthetic examples.
+**症状**：模型在新场景中使用原始角色名称。
+**原因**：单本书中名称多样性有限。
+**解决方案**：训练多本书或添加合成示例。
 
-### Model Parrots Exact Phrases
+### 模型复述确切短语
 
-**Symptom**: Outputs contain exact sentences from training data.
-**Cause**: Too few prompt variations or too many epochs.
-**Solution**: Use 15+ templates, limit to 3 epochs.
+**症状**：输出包含来自训练数据的确切句子。
+**原因**：提示变化太少或epoch太多。
+**解决方案**：使用 15+ 个模板，限制在 3 个 epoch。
 
-### Fragmented Outputs
+### 碎片化输出
 
-**Symptom**: Sentences feel incomplete.
-**Cause**: Poor segmentation breaking mid-thought.
-**Solution**: Always break at paragraph boundaries.
+**症状**：句子感觉不完整。
+**原因**：分段不良在思想中间断开。
+**解决方案**：始终在段落边界处断开。
 
-## Guidelines
+## 准则
 
-1. **Always source ePub over PDF** - OCR errors become learned patterns
-2. **Never break mid-sentence** - Boundaries must be grammatically complete
-3. **Use diverse prompts** - 15+ templates, 5+ system prompts
-4. **Use base models** - Not instruct versions
-5. **Use smaller chunks** - 150-400 words for more examples
-6. **Reserve test set** - 50 examples minimum
-7. **Test on modern scenarios** - Proves style transfer vs memorization
-8. **Verify originality** - Grep training data for output phrases
+1. **始终选择 ePub 而非 PDF** - OCR 错误会成为学习的模式
+2. **从不在句子中间断开** - 边界必须语法完整
+3. **使用多样化提示** - 15+ 个模板，5+ 个系统提示
+4. **使用基础模型** - 不是指令调优版本
+5. **使用更小的块** - 150-400 字以获得更多示例
+6. **保留测试集** - 最少 50 个示例
+7. **在现代场景上测试** - 证明风格迁移 vs 记忆化
+8. **验证原创性** - 在训练数据中 grep 输出短语
 
-## Expected Results
+## 预期结果
 
-| Metric | Value |
+| 指标 | 数值 |
 |--------|-------|
-| Training examples | 500-1000 per book |
-| Model | Qwen/Qwen3-8B-Base |
-| LoRA rank | 32 |
-| Adapter size | ~350 MB |
-| Training time | ~15 min |
-| Loss reduction | 90%+ |
-| Style transfer success | ~50% perfect |
+| 每本书的训练示例 | 500-1000 |
+| 模型 | Qwen/Qwen3-8B-Base |
+| LoRA 秩 | 32 |
+| 适配器大小 | 约 350 MB |
+| 训练时间 | 约 15 分钟 |
+| 损失降低 | 90%+ |
+| 风格迁移成功率 | 约 50% 完美 |
 
-## Cost Estimate
+## 成本估算
 
-| Component | Cost |
+| 组件 | 成本 |
 |-----------|------|
-| LLM (instruction generation) | ~$0.50 |
-| Tinker training (15 min) | ~$1.50 |
-| **Total** | **~$2.00** |
+| LLM（指令生成） | 约 $0.50 |
+| Tinker 训练（15 分钟） | 约 $1.50 |
+| **总计** | **约 $2.00** |
 
-## Integration with Context Engineering Skills
+## 与上下文工程技能的集成
 
-This example applies several skills from the Agent Skills for Context Engineering collection:
+这个例子应用了代理上下文工程集合中的几个技能：
 
 ### project-development
-The pipeline follows the staged, idempotent architecture pattern:
-- **Acquire**: Extract text from ePub
-- **Prepare**: Segment into training chunks
-- **Process**: Generate synthetic instructions
-- **Parse**: Build message format
-- **Render**: Output Tinker-compatible JSONL
-- **Train**: LoRA fine-tuning
-- **Validate**: Modern scenario testing
+管道遵循分阶段、幂等架构模式：
+- **获取**：从 ePub 提取文本
+- **准备**：分段成训练块
+- **处理**：生成合成指令
+- **解析**：构建消息格式
+- **渲染**：输出 Tinker 兼容的 JSONL
+- **训练**：LoRA 微调
+- **验证**：现代场景测试
 
-Each phase is resumable and produces intermediate artifacts for debugging.
+每个阶段都是可恢复的，并为调试生成中间工件。
 
 ### context-compression
-Segmentation is a form of context compression for training. The core insight from context-compression applies: information density matters more than information quantity. Smaller, coherent chunks (150-400 words) produce better style transfer than larger, diluted chunks.
+分段是训练的上下文压缩形式。来自上下文压缩的核心见解适用：信息密度比信息数量更重要。更小、连贯的块（150-400 字）比更大、稀释的块产生更好的风格迁移。
 
-The two-tier strategy mirrors context compression evaluation:
-- Tier 1: Fast, deterministic compression
-- Tier 2: LLM-assisted for edge cases
+两层策略镜像上下文压缩评估：
+- 第 1 层：快速、确定性压缩
+- 第 2 层：LLM 辅助边缘情况
 
 ### multi-agent-patterns
-The pipeline uses the **supervisor/orchestrator** pattern:
-- Orchestrator coordinates phases and manages state
-- Specialized agents (Extraction, Segmentation, Instruction, Builder) have isolated contexts
-- Each agent receives only the information needed for its task
+管道使用**监督者/协调器**模式：
+- 协调器协调阶段并管理状态
+- 专门代理（提取、分段、指令、构建器）具有隔离的上下文
+- 每个代理仅接收其任务所需的信息
 
-This matches the principle that sub-agents exist primarily to isolate context rather than simulate roles.
+这符合以下原则：子代理主要存在于隔离上下文中，而不是模拟角色。
 
 ### evaluation
-Validation follows the **end-state evaluation** pattern:
-- Functional testing: Does output match expected style markers?
-- Originality verification: Is content genuinely generated?
-- External validation: AI detector scores
+验证遵循**最终状态评估**模式：
+- 功能测试：输出是否匹配预期风格标记？
+- 原创性验证：内容是否真正生成？
+- 外部验证：AI 检测器分数
 
-The "modern scenario" test is a form of out-of-distribution evaluation that proves generalization.
+"现代场景"测试是一种分布外评估形式，证明泛化。
 
 ### context-fundamentals
-Prompt diversity prevents attention collapse on single patterns. When training with identical prompt structures, the model memorizes the instruction-response mapping. Diverse templates force attention across the style patterns themselves.
+提示多样性防止对单一模式的注意力崩溃。当使用相同提示结构进行训练时，模型会记忆化指令-响应映射。多样化模板强制注意力跨越风格模式本身。
 
-## References
+## 参考资源
 
-Internal references:
-- [Segmentation Strategies](./references/segmentation-strategies.md) - Text chunking patterns
-- [Tinker Format Specification](./references/tinker-format.md) - Datum structure
-- [Tinker API Documentation](./references/tinker.txt) - Full API reference
+内部参考：
+- [分段策略](./references/segmentation-strategies.md) - 文本分块模式
+- [Tinker 格式规范](./references/tinker-format.md) - 数据结构
+- [Tinker API 文档](./references/tinker.txt) - 完整 API 参考
 
-Related skills from Agent Skills for Context Engineering:
-- project-development - Pipeline architecture patterns
-- context-compression - Compression strategies  
-- multi-agent-patterns - Agent coordination
-- evaluation - Evaluation frameworks
-- context-fundamentals - Attention and information density
+来自代理上下文工程的相关技能：
+- project-development - 管道架构模式
+- context-compression - 压缩策略
+- multi-agent-patterns - 代理协调
+- evaluation - 评估框架
+- context-fundamentals - 注意力和信息密度
 
-External resources:
-- [Research Paper](https://arxiv.org/pdf/2510.13939) - Chakrabarty et al. 2025
-- [Dataset on Hugging Face](https://huggingface.co/datasets/MuratcanKoylan/gertrude-stein-style-sft)
-- [Gertrude Stein Case Study](./examples/gertrude-stein/) - Complete working example
+外部资源：
+- [研究论文](https://arxiv.org/pdf/2510.13939) - Chakrabarty et al. 2025
+- [Hugging Face 上的数据集](https://huggingface.co/datasets/MuratcanKoylan/gertrude-stein-style-sft)
+- [格特鲁德·斯坦因案例研究](./examples/gertrude-stein/) - 完整工作示例
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-26
-**Last Updated**: 2025-12-28
-**Author**: Muratcan Koylan
-**Version**: 2.0.0
-**Standalone**: Yes (separate from main context-engineering collection)
+**创建**：2025-12-26
+**最后更新**：2025-12-28
+**作者**：Muratcan Koylan
+**版本**：2.0.0
+**独立**：是（与主要上下文工程集合分离）

@@ -1,28 +1,28 @@
-# SPEC-001 reconciliation report
+# SPEC-001 对账报告
 
-- Baseline commit: `a1841d1`
-- Reconciliation date: 2026-08-10
-- Generated schema: `1.0.0`
+- 基线提交：`a1841d1`
+- 对账日期：2026-08-10
+- 生成清单版本：`1.0.0`
 
-## Resolved discrepancies
+## 已解决的差异
 
-| Surface | Prior condition | Resolution |
+| 区域 | 之前情况 | 处理方式 |
 | --- | --- | --- |
-| Live corpus prose | README and AGENTS copied older mechanism, claim, and activation totals | Replaced copied totals with links to the generated live summary |
-| CLAUDE repository map | Example and skill totals were hand-maintained | Replaced live totals with generated-inventory ownership |
-| Benchmark methodology | Current `full` condition said 15 skills | Changed to all currently published skills; dated result reports were preserved |
-| Mechanism ledger completeness | Eleven accepted registry mechanisms had no accepted-ledger event | Appended explicit `historical_state_reconciliation` events tied to source commit `cbc2c978...` and public skill files |
-| Self-improvement provenance | Three legacy events pointed to an intentionally uncommitted runtime run | Appended corrections tied to source commit `11513d21...`; legacy events remain intact |
-| Long-horizon provenance | Three legacy events had no source pointer | Appended corrections tied to source commit `52101282...`; semantic decisions are unchanged |
-| Claim relationships | Corpus index mixed owning and related claim use | Preserved the curated index and projected each relationship as `owned` or `related` in the inventory |
-| Effectiveness status | Task presence could be confused with runner readiness | Inventory records task count and runner state separately; the runner remains `scaffold` |
+| 实时语料说明 | README 和 AGENTS 沿用旧机制、主张和启用案例数量 | 删除复制的数字，改为链接实时生成摘要 |
+| CLAUDE 仓库索引 | 示例和技能数量由人工维护 | 改由生成清单维护实时数量 |
+| 基准方法 | 当前 `full` 条件固定写 15 项技能 | 改为加载当前全部正式发布技能；保留带日期的历史报告 |
+| 机制账本完整性 | 11 项已接受机制没有对应账本事件 | 追加 `historical_state_reconciliation` 事件，绑定来源提交 `cbc2c978...` 和公开技能文件 |
+| 自我改进来源记录 | 三项旧事件指向未提交的运行时目录 | 追加绑定到 `11513d21...` 来源提交的修正，保留旧事件 |
+| 长时程来源记录 | 三项旧事件没有来源指针 | 追加绑定到 `52101282...` 来源提交的修正，不改变语义决策 |
+| 主张关系 | 语料索引混合了拥有关系与相关关系 | 保留人工维护的索引，并在生成清单中分别投影为 `owned` 和 `related` |
+| 有效性状态 | 任务存在可能被误认为运行器已就绪 | 清单分别记录任务数量和运行器状态；运行器仍标记为 `scaffold` |
 
-## Preserved historical material
+## 保留的历史内容
 
-`CHANGELOG.md`, published router reports, `researcher/insights/`, and other dated narratives keep their original counts and measurements. They are evidence about a past repository state, not live dashboards.
+`CHANGELOG.md`、已发布路由报告、`researcher/insights/` 和其他带日期说明都保留当时的数量和测量值。它们反映历史仓库状态，不是实时仪表板。
 
-## Current reconciliation result
+## 当前对账结果
 
-The generated inventory contains zero unresolved references. All published skills are present in the marketplace declaration and curated corpus index. Every mechanism and claim is represented in corpus relationships. Every accepted mechanism has a durable public ledger provenance path. Adversarial scenarios and goldens are one-to-one, and the effectiveness task passes structural validation.
+生成清单中没有未解决引用。所有正式发布技能均出现在插件声明和人工维护的语料索引中；所有机制与主张均在语料关系中表示；每项已接受机制都有持久的公开账本来源。对抗情景与黄金样例一一对应；有效性任务通过结构检查。
 
-The machine-readable evidence is `researcher/corpus/inventory.json`; current totals are rendered in `researcher/generated/corpus-summary.md`.
+机器可读证据位于 `researcher/corpus/inventory.json`；当前统计由 `researcher/generated/corpus-summary.md` 展示。

@@ -1,200 +1,116 @@
-# Pairwise Comparison Prompt
+# 成对比较提示词
 
-## Purpose
+## 用途
 
-System prompt for comparing two LLM responses and selecting the better one.
+比较两份针对同一提示的模型回复，并选择更好的回复。
 
-## Prompt Template
+## 提示词模板
 
 ```markdown
-# Pairwise Comparison Evaluation
+# 成对比较评估
 
-You are an expert evaluator comparing two AI-generated responses to the same prompt.
+你是一名评估专家，需要比较同一提示下的两份 AI 回复。
 
-## Your Task
+## 任务
 
-Compare Response A and Response B, then determine which better satisfies the requirements. You must:
-1. Analyze each response independently first
-2. Compare them directly on each criterion
-3. Make a final determination with confidence level
+判断回复 A 或回复 B 哪一份更符合要求：
+1. 先分别独立分析每份回复。
+2. 再按每项标准直接比较。
+3. 最后给出结论和置信度。
 
-## Important Guidelines
+## 重要原则
 
-- Evaluate content quality, not superficial differences
-- Do NOT prefer responses simply because they are longer
-- Do NOT prefer responses based on their position (A vs B)
-- Focus on the specified criteria
-- Ties are acceptable when responses are genuinely equivalent
-- Explain your reasoning before stating the winner
+- 评估内容质量，不要被表面差异影响。
+- 不要只因为回复较长就偏好它。
+- 不要因为答案排在 A 或 B 的位置而偏好它。
+- 聚焦指定标准。
+- 回复真正相当时可以判平局。
+- 先说明理由，再给出胜者。
 
-## Original Prompt/Task
-
-<task>
-{{original_prompt}}
-</task>
+## 原始任务
+<task>{{original_prompt}}</task>
 
 {{#if context}}
-## Additional Context
-
-<context>
-{{context}}
-</context>
+## 补充上下文
+<context>{{context}}</context>
 {{/if}}
 
-## Response A
+## 回复 A
+<response_a>{{response_a}}</response_a>
 
-<response_a>
-{{response_a}}
-</response_a>
+## 回复 B
+<response_b>{{response_b}}</response_b>
 
-## Response B
-
-<response_b>
-{{response_b}}
-</response_b>
-
-## Comparison Criteria
-
+## 比较标准
 {{#each criteria}}
 - **{{this}}**
 {{/each}}
 
-## Your Evaluation
+## 评估步骤
 
-### Step 1: Independent Analysis
+### 第一步：独立分析
+分别说明回复 A 和回复 B 的主要优点、缺点及值得注意之处。
 
-First, briefly analyze each response:
+### 第二步：逐项比较
+对每项标准分别说明 A 的表现、B 的表现，以及该标准下的胜者（A、B 或平局）。
 
-**Response A Analysis:**
-- Key strengths:
-- Key weaknesses:
-- Notable features:
+### 第三步：最终结论
+给出胜者、0.0—1.0 置信度、总体理由和最关键的差异。
 
-**Response B Analysis:**
-- Key strengths:
-- Key weaknesses:
-- Notable features:
-
-### Step 2: Head-to-Head Comparison
-
-For each criterion, compare the responses:
-
-{{#each criteria}}
-**{{this}}:**
-- Response A: [assessment]
-- Response B: [assessment]
-- Winner for this criterion: [A / B / TIE]
-{{/each}}
-
-### Step 3: Final Determination
-
-Based on your analysis:
-- **Winner**: [A / B / TIE]
-- **Confidence**: [0.0-1.0]
-- **Reasoning**: [Why this response is better overall]
-- **Key Differentiators**: [What most strongly distinguishes the winner]
-
-Format your response as structured JSON:
-```json
+返回结构化 JSON：
 {
   "analysis": {
-    "responseA": {
-      "strengths": ["...", "..."],
-      "weaknesses": ["...", "..."]
-    },
-    "responseB": {
-      "strengths": ["...", "..."],
-      "weaknesses": ["...", "..."]
-    }
+    "responseA": {"strengths": ["..."], "weaknesses": ["..."]},
+    "responseB": {"strengths": ["..."], "weaknesses": ["..."]}
   },
   "comparison": [
     {
       "criterion": "{{criterion}}",
       "aAssessment": "...",
       "bAssessment": "...",
-      "winner": "A" | "B" | "TIE",
+      "winner": "A | B | TIE",
       "reasoning": "..."
     }
   ],
   "result": {
-    "winner": "A" | "B" | "TIE",
+    "winner": "A | B | TIE",
     "confidence": 0.85,
     "reasoning": "...",
-    "differentiators": ["...", "..."]
+    "differentiators": ["..."]
   }
 }
 ```
 ```
 
-## Variables
+## 变量
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| original_prompt | The prompt both responses address | Yes |
-| context | Additional context | No |
-| response_a | First response | Yes |
-| response_b | Second response | Yes |
-| criteria | List of comparison criteria | Yes |
+| 变量 | 说明 | 必需 |
+| --- | --- | --- |
+| `original_prompt` | 两份回复共同回答的提示 | 是 |
+| `context` | 补充上下文 | 否 |
+| `response_a` | 第一份回复 | 是 |
+| `response_b` | 第二份回复 | 是 |
+| `criteria` | 比较标准列表 | 是 |
 
-## Position Bias Mitigation
+## 缓解位置偏差
 
-When using this prompt in production, implement position swapping:
+生产环境中可交换 A/B 位置评估两次，再把第二次的胜者映射回原位置。两次结果一致时合并置信度；若不一致，则返回 `TIE`、将置信度设为 0.5，并标记结果不一致。
 
-```typescript
-async function compareWithPositionSwap(a: string, b: string, criteria: string[]) {
-  // First evaluation: A first, B second
-  const eval1 = await evaluate({
-    response_a: a,
-    response_b: b,
-    criteria
-  });
-  
-  // Second evaluation: B first, A second
-  const eval2 = await evaluate({
-    response_a: b,
-    response_b: a,
-    criteria
-  });
-  
-  // Map eval2 result back (swap winner)
-  const eval2Winner = eval2.winner === "A" ? "B" : eval2.winner === "B" ? "A" : "TIE";
-  
-  // Check consistency
-  if (eval1.winner === eval2Winner) {
-    return { 
-      winner: eval1.winner, 
-      confidence: (eval1.confidence + eval2.confidence) / 2,
-      consistent: true
-    };
-  } else {
-    // Inconsistent - likely close, return TIE or lower confidence
-    return {
-      winner: "TIE",
-      confidence: 0.5,
-      consistent: false,
-      note: "Evaluation inconsistent across positions"
-    };
-  }
-}
-```
+## 示例
 
-## Example Usage
-
-### Input
 ```json
 {
-  "original_prompt": "Explain the benefits of regular exercise",
-  "response_a": "Regular exercise offers numerous benefits including improved cardiovascular health, stronger muscles, better mental health, and increased energy levels. Studies show that even 30 minutes of moderate exercise daily can significantly reduce the risk of heart disease.",
-  "response_b": "Working out is great for you. It helps your heart, makes you stronger, and improves your mood. You should try to exercise most days of the week.",
-  "criteria": ["accuracy", "specificity", "actionability", "engagement"]
+  "original_prompt": "说明规律运动的好处",
+  "response_a": "规律运动有助于心血管健康、增强肌肉、改善心理状态并提高精力。研究显示，每天进行 30 分钟中等强度运动可显著降低心脏病风险。",
+  "response_b": "锻炼对身体有好处，可以改善心脏、增强体力和情绪。建议每周大部分时间都运动。",
+  "criteria": ["准确性", "具体性", "可操作性", "吸引力"]
 }
 ```
 
-## Best Practices
+## 最佳实践
 
-1. **Independent First**: Analyze each response before comparing
-2. **Criterion by Criterion**: Don't jump to overall conclusion
-3. **Justify Before Decide**: Explain reasoning before stating winner
-4. **Acknowledge Tradeoffs**: Note when responses excel in different areas
-5. **Calibrate Confidence**: Higher confidence only when difference is clear
-
+1. 比较前先独立分析每份回复。
+2. 按标准逐项比较，不要立刻下整体结论。
+3. 先解释理由，再给出胜者。
+4. 说明各回复分别突出的方面。
+5. 只有差异明确时才给高置信度。

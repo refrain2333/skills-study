@@ -1,85 +1,84 @@
 ---
 name: knowledge-module
-description: Personal knowledge base - research, bookmarks, learning resources, and notes. Use for information retrieval, research organization, and learning tracking.
+description: 个人知识库，管理研究、收藏资料、学习资源和笔记；用于信息检索、研究整理和学习追踪。
 ---
 
-# Knowledge Base
+# 知识库
 
-Your second brain for research, learning, and information organization.
+用于研究、学习和信息整理的第二大脑。
 
-## Files in This Module
+## 模块文件
 
-| File | Format | Purpose |
-|------|--------|---------|
-| `bookmarks.jsonl` | JSONL | Saved links and resources |
-| `learning.yaml` | YAML | Skills and learning goals |
-| `competitors.md` | Markdown | Competitive landscape |
-| `research/` | Folder | Deep-dive research notes |
-| `notes/` | Folder | Quick capture notes |
+| 文件 | 格式 | 用途 |
+| --- | --- | --- |
+| `bookmarks.jsonl` | JSONL | 已保存的网址和资料 |
+| `learning.yaml` | YAML | 技能和学习目标 |
+| `competitors.md` | Markdown | 竞争格局 |
+| `research/` | 目录 | 深入研究笔记 |
+| `notes/` | 目录 | 快速记录 |
 
-## Data Schemas
+## 数据结构
 
-### Bookmark Entry
+### 收藏记录
+
 ```json
 {
   "id": "bm_YYYYMMDD_HHMMSS",
   "saved_at": "ISO8601",
   "url": "https://...",
-  "title": "Page title",
+  "title": "页面标题",
   "source": "article|video|podcast|tool|tweet|paper",
   "category": "category_name",
-  "summary": "1-2 sentence summary",
-  "key_insights": ["insight1", "insight2"],
+  "summary": "一到两句摘要",
+  "key_insights": ["见解一", "见解二"],
   "status": "unread|read|reviewed|archived",
-  "rating": 1-5,
-  "tags": ["tag1", "tag2"]
+  "rating": 1,
+  "tags": ["标签一", "标签二"]
 }
 ```
 
-## Workflows
+## 工作流
 
-### Saving a Resource
-1. Append to `bookmarks.jsonl` with status "unread"
-2. Add category and initial tags
-3. Later: read, summarize, update status
+### 保存资料
 
-### Research Projects
-1. Create `research/[topic].md` for deep dives
-2. Link relevant bookmarks
-3. Synthesize insights
-4. Extract content ideas
+1. 以 `unread` 状态追加到 `bookmarks.jsonl`。
+2. 添加类别和初始标签。
+3. 后续阅读、摘要并更新状态。
 
-### Learning Tracking
-1. Define skills in `learning.yaml`
-2. Link resources to skills
-3. Track progress and milestones
-4. Review quarterly
+### 研究项目
 
-## Agent Instructions
+1. 在 `research/[主题].md` 创建深入笔记。
+2. 链接相关收藏资料。
+3. 综合形成见解。
+4. 提炼可创作的内容创意。
+
+### 学习跟踪
+
+1. 在 `learning.yaml` 中定义技能。
+2. 将学习资源关联到技能。
+3. 跟踪进度和里程碑。
+4. 每季度回顾。
+
+## 智能体指引
 
 <instructions>
-When managing knowledge:
+管理知识时：
+1. **保存链接**：记录网址、标题和初始类别。
+2. **整理资料**：使用一致的类别和标签。
+3. **检索**：按类别、标签或关键词搜索 bookmarks.jsonl。
+4. **综合研究**：用户询问某主题时，先检查 research/。
+5. **更新学习记录**：完成资源后更新 learning.yaml。
 
-1. **Saving links**: Always capture URL, title, and initial category
-2. **Organizing**: Use consistent categories and tags
-3. **Retrieving**: Search bookmarks.jsonl by category, tags, or keywords
-4. **Synthesizing**: When asked about a topic, check research/ folder first
-5. **Learning updates**: Update learning.yaml when completing resources
-
-Categories to use:
-- ai_agents: AI, agents, automation
-- building: Startups, product, engineering
-- growth: Marketing, audience, content
-- productivity: Systems, tools, workflows
-- leadership: Management, teams, culture
-- industry: Market trends, competitors
-- personal: Health, relationships, life
+类别建议：
+- ai_agents：AI、智能体、自动化。
+- building：创业、产品、工程。
+- growth：营销、受众、内容。
+- productivity：系统、工具、工作流。
+- leadership：管理、团队、文化。
+- industry：市场趋势、竞争者。
+- personal：健康、关系、生活。
 </instructions>
 
-## Knowledge Graph Hints
+## 知识关联提示
 
-When retrieving information, consider connections:
-- Bookmarks → Content ideas
-- Research → Authority pieces
-- Learning → Skills to highlight in brand
-- Competitors → Differentiation angles
+检索时也要考虑关联：收藏可转成内容创意；研究可形成权威文章；学习经历可用于品牌表达；竞争格局可用于差异化定位。

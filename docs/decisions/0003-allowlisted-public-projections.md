@@ -1,44 +1,44 @@
-# ADR-0003: Publish allowlisted projections, not redacted private records
+# 架构决策记录 0003：发布经过许可筛选的投影，不发布脱敏后的私有记录
 
-- Status: accepted for proposal
-- Date: 2026-08-10
-- Spec: SPEC-002
+- 状态：提案已接受
+- 日期：2026-08-10
+- 关联规范：SPEC-002
 
-## Context
+## 背景
 
-Future research feeds, human feedback, notification destinations, licensed source bodies, and operational traces cannot all be stored in the public repository. A generic redaction pass would be difficult to reason about and could publish private locators, low-entropy source hashes, or nested fields while appearing sanitized.
+未来的研究订阅、人工反馈、通知目标、受许可保护的来源正文和运行轨迹不能全部存入公开仓库。通用脱敏流程难以审查，可能泄露私有位置、低熵来源摘要或嵌套字段，却看起来像是已完成清理。
 
-## Decision
+## 决策
 
-Movement to the public repository creates a new projection artifact through a registered transform. The source remains private or restricted. Rendering accepts exact request fields, source classifications, artifact kinds, transforms, and output prefixes. Unknown routes deny.
+内容进入公开仓库时，应通过已登记的转换生成新的投影产物；来源继续保留在私有或受限区域。渲染过程只接受精确列出的请求字段、来源分类、产物类型、转换器和输出前缀；未登记的路径一律拒绝。
 
-Export state is split into immutable records:
+导出状态拆分为不可变记录：
 
-- a private `ExportPlan` binds source paths and exact source digests;
-- a public `ExportManifest` binds only new projection IDs, transformation digests, output paths, and output digests;
-- a private render receipt retains source-to-projection audit data;
-- public validation, later approval, merge receipt, correction, and tombstone records point backward rather than mutating earlier records.
+- 私有 `ExportPlan` 绑定来源路径和精确来源摘要。
+- 公开 `ExportManifest` 只绑定新投影编号、转换摘要、输出路径和输出摘要。
+- 私有渲染回执保留来源到投影的审计关系。
+- 公开检查、后续审批、合并回执、更正和删除标记都向前引用，不修改旧记录。
 
-Private source digests are deliberately absent from public manifests. Even a cryptographic hash can reveal the presence of a low-entropy private value through guessing. The public projection receives a new opaque ID.
+公开清单有意省略私有来源摘要。即使是密码学摘要，也可能通过猜测泄露低熵私有值是否存在。公开投影会获得新的不透明编号。
 
-Rendering occurs in a fresh sibling directory and becomes visible through atomic rename only after the complete tree validates. Structural field allowlists and complete-tree closure are the primary boundary. Seeded canaries and high-confidence pattern detectors are supplementary checks, not a universal data-loss-prevention claim.
+渲染先写入全新的同级目录；只有整棵目录通过检查后，才通过原子重命名公开。字段白名单和完整目录闭包是主要保护措施。随机哨兵和高置信度模式检测只是辅助检查，不代表可以彻底防止数据泄漏。
 
-## Alternatives considered
+## 考虑过的替代方案
 
-- Copy and redact arbitrary records. Rejected because unknown and nested fields fail open.
-- Publish source hashes for auditability. Rejected because hashes can be existence oracles.
-- Put private data on a private Git branch. Rejected because branch visibility is not a durable data classification boundary.
-- Make scanning the only control. Rejected because encodings and semantic disclosures cannot be exhaustively detected.
-- Mutate one manifest through planned, rendered, and merged states. Rejected because durable artifacts should be immutable and replayable.
+- 复制任意记录再脱敏：拒绝，因为未知字段和嵌套字段可能默认放行。
+- 发布来源摘要以便审计：拒绝，因为摘要可能成为判断私有值是否存在的探针。
+- 把私有数据放进私有 Git 分支：拒绝，因为分支可见性不能成为持久的数据分类边界。
+- 只依靠扫描：拒绝，因为无法穷尽编码变化和语义泄漏。
+- 在一个清单中反复修改计划、渲染和合并状态：拒绝，因为持久产物应不可变并可重放。
 
-## Consequences
+## 后果
 
-- Adding an exportable artifact kind requires a reviewed policy and transform change.
-- Public lineage is useful but intentionally does not let a public consumer resolve the private source.
-- Real private plans and receipts stay outside Git or under ignored private paths.
-- Publishing remains irreversible in practice. Corrections and tombstones supersede public artifacts but cannot undo disclosure.
-- SPEC-003 registers these bootstrap records in the common schema and identity system; SPEC-024 later owns production credential and private-storage resolution.
+- 新增可导出的产物类型时，必须审查对应规则和转换器。
+- 公开来源链路有用，但公开使用者不能据此解析私有来源。
+- 真实私有计划与回执应保存在 Git 以外或被忽略的私有路径中。
+- 发布在实践中不可撤回；更正和删除标记只能取代公开产物，无法消除已经发生的披露。
+- SPEC-003 将这些初始记录纳入公共数据结构和身份系统；SPEC-024 负责后续生产凭据和私有存储解析。
 
-## Verification
+## 验证
 
-Tests cover unknown fields, classification denial, traversal, Unicode/case collisions, symlinks, source mutation, atomic staging, extra files, digest tampering, private manifest fields, plain/hex/base64 canaries, high-confidence credential structures, duplicate JSON keys, policy drift, unsupported output fields, and the restricted citation projection.
+检查覆盖未知字段、分类拒绝、路径穿越、Unicode 与大小写冲突、符号链接、来源变更、原子暂存、额外文件、摘要篡改、私有清单字段、普通文本及多种编码哨兵、高置信度凭据结构、重复 JSON 键、规则漂移、不支持的输出字段和受限引用投影。

@@ -1,399 +1,182 @@
-# Reasoning Trace Optimizer
+# 推理轨迹优化器
 
 <p align="center">
-  <strong>Debug and optimize AI agents by analyzing reasoning traces with MiniMax M2.1's interleaved thinking</strong>
+  <strong>使用 MiniMax M2.1 交错思考分析推理轨迹，调试并优化 AI 智能体</strong>
 </p>
 
 <p align="center">
-  <a href="#key-features">Features</a> |
-  <a href="#quick-start">Quick Start</a> |
-  <a href="#how-it-works">How It Works</a> |
-  <a href="#examples">Examples</a> |
-  <a href="#api-reference">API Reference</a>
+  <a href="#核心能力">核心能力</a> |
+  <a href="#快速开始">快速开始</a> |
+  <a href="#工作原理">工作原理</a> |
+  <a href="#示例">示例</a> |
+  <a href="#接口参考">接口参考</a>
 </p>
 
----
+## 问题
 
-## The Problem
+传统 AI 智能体的失败过程往往不透明：我们能看到最终结果，却看不到决策原因。智能体调用错误工具、忘记目标或编造信息时，开发者只能猜测问题出在哪里。
 
-Traditional AI agents fail in opaque ways. You see the final output, but not **why** decisions were made. When an agent:
-- Calls the wrong tool
-- Loses track of the goal
-- Makes up information
+## 解决方案
 
-...you're left guessing where things went wrong.
+**推理轨迹优化器**利用 MiniMax M2.1 的**交错思考**能力，在每次工具调用之间记录智能体的推理过程，从而支持：
 
-## The Solution
+1. **深入调试**：定位推理从何处偏离预期。
+2. **模式检测**：自动识别上下文退化、工具混淆等失败模式。
+3. **自动优化**：根据检测结果生成改进后的提示词。
+4. **共享技能**：将经验整理为可复用的 Agent Skills，供团队分享。
 
-**Reasoning Trace Optimizer** uses MiniMax M2.1's unique **interleaved thinking** capability to expose the agent's reasoning process between every tool call. This enables:
+## 为什么使用 MiniMax M2.1？
 
-1. **Deep Debugging** - See exactly where reasoning diverged from expected behavior
-2. **Pattern Detection** - Automatically identify failure modes (context degradation, tool confusion, etc.)
-3. **Automated Optimization** - Generate improved prompts based on detected issues
-4. **Shareable Skills** - Convert learnings into reusable Agent Skills for team sharing
+传统模式是在开始时推理一次，然后连续执行动作；M2.1 则可以在工具调用之间持续推理：
 
-## Why MiniMax M2.1?
-
-M2.1's **interleaved thinking** is fundamentally different from traditional reasoning models:
-
-```
-Traditional:  Think → Act → Act → Act → Done
-              ↑
-              (reasoning only at start)
-
-M2.1:         Think → Act → Think → Act → Think → Act → Done
-              ↑            ↑              ↑
-              (continuous reasoning between each tool call)
+```text
+传统：推理 → 执行 → 执行 → 执行 → 完成
+M2.1：推理 → 执行 → 推理 → 执行 → 推理 → 执行 → 完成
 ```
 
-This matters for agents because:
-- **Long tasks** require maintaining focus across many turns
-- **Tool outputs** introduce unexpected information requiring adaptation
-- **Debugging** needs visibility into decision-making, not just outputs
+这对智能体很重要，因为长任务需要跨多轮保持专注；工具输出会带来意外信息，需要及时调整；调试需要观察决策过程，而不只是最终结果。
 
-The `thinking` block (Anthropic SDK) or `reasoning_details` field (OpenAI SDK) exposes this reasoning for analysis.
+Anthropic SDK 中的 `thinking` 内容块和 OpenAI SDK 中的 `reasoning_details` 字段可用于读取推理轨迹。
 
----
+## 核心能力
 
-## Key Features
+| 组件 | 用途 |
+| --- | --- |
+| `TraceCapture` | 包装 M2.1 API，记录完整上下文中的所有思考内容 |
+| `TraceAnalyzer` | 检测上下文退化、工具混淆、指令漂移等模式 |
+| `PromptOptimizer` | 使用 M2.1 根据分析结果生成改进提示词 |
+| `OptimizationLoop` | 自动执行“捕获 → 分析 → 改进 → 重跑”循环 |
+| `SkillGenerator` | 将经验整理为可分享的 Agent Skills |
 
-| Component | Description |
-|-----------|-------------|
-| **TraceCapture** | Wrap M2.1 API to capture all thinking blocks with full context |
-| **TraceAnalyzer** | Detect patterns like context degradation, tool confusion, instruction drift |
-| **PromptOptimizer** | Generate improved prompts based on analysis using M2.1 |
-| **OptimizationLoop** | Automated capture → analyze → improve → re-run cycle |
-| **SkillGenerator** | Convert learnings into shareable Agent Skills |
+分析器可检测：
 
-### Pattern Detection
+| 模式 | 含义 | 严重程度 |
+| --- | --- | --- |
+| `context_degradation` | 模型在长上下文中遗失信息 | 高 |
+| `tool_confusion` | 模型误解工具能力 | 高 |
+| `instruction_drift` | 模型偏离原始指令 | 中 |
+| `hallucination` | 模型生成无依据的信息 | 严重 |
+| `goal_abandonment` | 模型停止追求原目标 | 高 |
+| `circular_reasoning` | 模型重复相似动作而没有进展 | 中 |
+| `premature_conclusion` | 任务未完成就提前下结论 | 中 |
+| `missing_validation` | 模型没有验证结果 | 高 |
 
-The analyzer automatically identifies these failure patterns:
+每个模式包含思考轨迹证据、严重程度、提示词改进建议和检测置信度。
 
-| Pattern | Description | Severity |
-|---------|-------------|----------|
-| `context_degradation` | Model loses information over long contexts | High |
-| `tool_confusion` | Model misunderstands tool capabilities | High |
-| `instruction_drift` | Model deviates from original instructions | Medium |
-| `hallucination` | Model generates unsupported information | Critical |
-| `goal_abandonment` | Model stops pursuing the original goal | High |
-| `circular_reasoning` | Model repeats similar actions without progress | Medium |
-| `premature_conclusion` | Model concludes before completing task | Medium |
-| `missing_validation` | Model doesn't verify results | High |
+## 快速开始
 
-Each detected pattern includes:
-- **Evidence** - Specific excerpts from thinking blocks
-- **Severity** - Critical/High/Medium/Low
-- **Suggestion** - Concrete improvement for the prompt
-- **Confidence** - How certain the detection is
-
----
-
-## Quick Start
-
-### Installation
+### 安装
 
 ```bash
 cd examples/interleaved-thinking
 pip install -e .
 ```
 
-### Configuration
-
-Set your MiniMax API key:
+### 配置
 
 ```bash
 export ANTHROPIC_API_KEY=your_minimax_api_key
 export ANTHROPIC_BASE_URL=https://api.minimax.io/anthropic
 ```
 
-Or create a `.env` file:
+也可以写入 `.env`：
 
 ```env
 ANTHROPIC_API_KEY=your_minimax_api_key
 ANTHROPIC_BASE_URL=https://api.minimax.io/anthropic
 ```
 
-### Basic Usage
+### 基本用法
 
 ```python
 from reasoning_trace_optimizer import TraceCapture, TraceAnalyzer
 
-# Capture reasoning trace
 capture = TraceCapture()
 trace = capture.run(
-    task="Explain quantum computing",
-    system_prompt="You are a science educator."
+    task="解释量子计算",
+    system_prompt="你是一名科学教育者。"
 )
 
 print(f"Captured {len(trace.thinking_blocks)} thinking blocks")
 
-# Analyze the reasoning
 analyzer = TraceAnalyzer()
 analysis = analyzer.analyze(trace)
-
 print(f"Overall Score: {analysis.overall_score}/100")
-for pattern in analysis.patterns:
-    print(f"  [{pattern.severity.value}] {pattern.type.value}")
-    print(f"    Suggestion: {pattern.suggestion}")
 ```
 
----
+## 工作原理
 
-## How It Works
+### 优化循环
 
-### The Optimization Loop
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       OPTIMIZATION LOOP                                 │
-│                                                                         │
-│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐          │
-│   │  Agent   │───▶│ Capture  │───▶│ Analyze  │───▶│ Optimize │          │
-│   │ Execute  │    │ Traces   │    │ Patterns │    │  Prompt  │          │
-│   └──────────┘    └──────────┘    └──────────┘    └──────────┘          │
-│        ▲                                               │                │
-│        └───────────────────────────────────────────────┘                │
-│                       (loop until converged or max iterations)          │
-│                                                                         │
-│   Convergence: Score improvement < threshold OR score > target          │
-└─────────────────────────────────────────────────────────────────────────┘
+```text
+执行智能体 → 捕获轨迹 → 分析模式 → 优化提示词
+      ↑                                  │
+      └──────────────────────────────────┘
+       直到收敛或达到最大迭代次数
 ```
 
-### What Gets Captured
+当分数提升低于阈值，或达到目标分数时停止。
 
-For each agent execution, we capture:
+### 捕获内容
 
-1. **Thinking Blocks** - M2.1's reasoning before each action
-2. **Tool Calls** - What tools were called with what inputs
-3. **Tool Results** - What each tool returned
-4. **Final Response** - The agent's output
-5. **Metadata** - Tokens used, turns taken, success/failure
+每次执行会记录：思考内容块、工具调用及参数、工具返回结果、最终回复，以及令牌数、轮数和成功/失败状态等元数据。
 
-### What Gets Analyzed
+### 分析内容
 
-The analyzer examines thinking blocks to understand:
+分析器检查智能体当前对任务的理解、如何解释工具结果、考虑过哪些方案，以及是否仍在追求原始目标。
 
-- **Current Understanding** - What does the agent believe about the task?
-- **Tool Interpretation** - How did it interpret each tool result?
-- **Alternatives Considered** - What options did it evaluate?
-- **Goal Awareness** - Is it still pursuing the original objective?
+## 示例
 
----
-
-## Examples
-
-### Example 1: Basic Trace Capture
+### 简单轨迹捕获
 
 ```python
-# examples/01_basic_capture.py
 from reasoning_trace_optimizer import TraceCapture
 
 capture = TraceCapture()
 trace = capture.run(
-    task="Explain what interleaved thinking is and why it matters for AI agents.",
-    system_prompt="You are an AI researcher explaining concepts clearly."
+    task="解释交错思考是什么，以及它对 AI 智能体为何重要。",
+    system_prompt="你是一名善于清楚解释概念的 AI 研究者。"
 )
-
-# Output:
-# Captured 1 thinking block
-# Turn 0: "The user is asking me to explain 'interleaved thinking'..."
 ```
 
-### Example 2: Tool Usage with Analysis
+### 使用工具并分析
 
-```python
-# examples/02_tool_usage.py
-from reasoning_trace_optimizer import TraceCapture, TraceAnalyzer
+定义工具后，将工具和执行函数传给 `TraceCapture`，再使用 `TraceAnalyzer.analyze(trace)` 分析。分析结果包含总分、思考块数量、工具调用数量和检测到的模式。
 
-# Define tools
-tools = [
-    {
-        "name": "get_weather",
-        "description": "Get current weather for a city",
-        "input_schema": {...}
-    }
-]
+### 完整优化循环
 
-capture = TraceCapture()
-trace = capture.run(
-    task="Compare the weather in San Francisco and New York",
-    tools=tools,
-    tool_executor=execute_tool
-)
+复杂研究任务可以使用 `OptimizationLoop`，设置最大迭代数、最低目标分数和是否保存产物。结束后可用 `SkillGenerator` 生成可分享技能。
 
-# Analyze
-analyzer = TraceAnalyzer()
-analysis = analyzer.analyze(trace)
+典型输出会展示每轮分数、任务完成情况、思考块和工具调用数量、检测模式以及分数退化提示。系统会追踪最佳分数，避免后续迭代退化时丢弃更好的提示词。
 
-# Output:
-# Score: 85/100
-# Thinking Blocks: 3
-# Tool Calls: 4 (get_weather x2, get_forecast x2)
-# Patterns: None detected
-```
+## 生成的产物
 
-### Example 3: Full Optimization Loop
+每次优化运行可保存 `optimization_artifacts/`，包含总摘要、最终提示词，以及每轮的完整轨迹、模式分析和提示词改动。
 
-This example demonstrates a complex research task with 7 tools (web search, file operations, note-taking):
+`SkillGenerator` 可生成包含 `SKILL.md` 和参考资料的技能目录。生成技能示例会记录缺少验证、引用未读取来源和忽略矛盾等失败模式，以及相应实践建议。
 
-```python
-# examples/03_full_optimization.py
-from reasoning_trace_optimizer import OptimizationLoop, LoopConfig, SkillGenerator
+## 接口参考
 
-config = LoopConfig(
-    max_iterations=3,
-    min_score_threshold=85.0,
-    convergence_threshold=5.0,
-    save_artifacts=True,
-)
-
-loop = OptimizationLoop(config=config)
-result = loop.run(
-    task="""Research "context engineering for AI agents" and create a summary...""",
-    initial_prompt="You are a research assistant.",
-    tools=TOOLS,
-    tool_executor=execute_tool,
-)
-
-# Generate shareable skill
-generator = SkillGenerator()
-skill_path = generator.generate(result, skill_name="research-agent")
-```
-
-**Actual Output from Example 3:**
-
-```
-======================================================================
-OPTIMIZATION RESULTS
-======================================================================
-
-Total Iterations: 3
-Converged: Yes
-
-ITERATION 1 (Score: 69/100)
-├── Task Completed: Yes
-├── Thinking Blocks: 6
-├── Tool Calls: 16
-├── Patterns Found: 2
-│   ├── [LOW] missing_validation
-│   └── [LOW] incomplete_reasoning
-├── Strengths: Excellent goal adherence, thorough source diversity
-└── Warning: Prompt grew too large (2979 chars), limiting growth
-
-ITERATION 2 (Score: 60/100)  ← Regression detected!
-├── Task Completed: Yes
-├── Thinking Blocks: 8
-├── Tool Calls: 16
-├── Patterns Found: 3
-│   ├── [MEDIUM] incomplete_reasoning
-│   ├── [MEDIUM] missing_validation
-│   └── [LOW] tool_misuse
-
-ITERATION 3 (Score: 66/100)
-├── Task Completed: Yes
-├── Thinking Blocks: 8
-├── Tool Calls: 16
-└── Patterns Found: 3
-
-→ Using best prompt from iteration 1 (score: 67.6)
-
-TOOL USAGE ACROSS ALL ITERATIONS:
-├── read_url: 20 calls
-├── web_search: 12 calls
-├── list_directory: 7 calls
-├── save_note: 6 calls
-└── write_file: 3 calls
-
-NOTES SAVED: 6 research notes with tagged findings
-FILES WRITTEN: ./output/research_summary.md (11,357 chars)
-
-GENERATED SKILL: ./generated_skills/comprehensive-research-agent/SKILL.md
-```
-
-**Key Features Demonstrated:**
-
-1. **Prompt Growth Limiting** - Prevents prompt bloat by limiting expansion to 3x original size
-2. **Best Score Tracking** - Automatically uses the best-performing prompt, even if later iterations regress
-3. **Regression Detection** - Warns when scores drop and can stop after consecutive regressions
-
----
-
-## Generated Artifacts
-
-### Optimization Artifacts
-
-Each optimization run creates artifacts for inspection:
-
-```
-optimization_artifacts/
-├── summary.json              # Overall results
-├── final_prompt.txt          # The optimized prompt
-├── iteration_1/
-│   ├── trace.json            # Full reasoning trace
-│   ├── analysis.json         # Pattern detection results
-│   └── optimization.json     # Prompt changes made
-├── iteration_2/
-│   └── ...
-└── iteration_3/
-    └── ...
-```
-
-### Generated Skills
-
-The SkillGenerator converts optimization learnings into shareable Agent Skills:
-
-```
-generated_skills/
-└── comprehensive-research-agent/
-    ├── SKILL.md              # The shareable skill
-    └── references/
-        ├── optimization_summary.json
-        ├── optimized_prompt.txt
-        └── patterns_found.json
-```
-
-**Example Generated Skill Content:**
-
-```markdown
-## Patterns to Avoid
-
-- **Missing Validation**: Accepting tool responses at face value without
-  verifying the actual state change occurred.
-- **Hallucinating Sources**: Citing sources that failed to load.
-- **Ignoring Contradictions**: Proceeding when tool results conflict.
-
-## Recommended Practices
-
-- After every tool call, state the outcome explicitly
-- Track sources separately: 'attempted' vs 'successful'
-- Implement error recovery with alternative approaches
-- Cross-reference key claims against multiple sources
-```
-
----
-
-## API Reference
-
-### TraceCapture
+### `TraceCapture`
 
 ```python
 capture = TraceCapture(
-    api_key="...",                              # MiniMax API key
-    base_url="https://api.minimax.io/anthropic", # API endpoint
-    model="MiniMax-M2.1"                        # Model to use
+    api_key="...",
+    base_url="https://api.minimax.io/anthropic",
+    model="MiniMax-M2.1"
 )
 
 trace = capture.run(
-    task="...",                    # The task to execute
-    system_prompt="...",           # System prompt
-    tools=[...],                   # Tool definitions (Anthropic format)
-    tool_executor=fn,              # Function to execute tools
-    max_turns=10,                  # Maximum conversation turns
-    max_tokens=4096                # Max tokens per response
+    task="...",
+    system_prompt="...",
+    tools=[...],
+    tool_executor=fn,
+    max_turns=10,
+    max_tokens=4096
 )
 ```
 
-### TraceAnalyzer
+### `TraceAnalyzer`
 
 ```python
 analyzer = TraceAnalyzer(
@@ -401,183 +184,90 @@ analyzer = TraceAnalyzer(
     base_url="https://api.minimax.io/anthropic",
     model="MiniMax-M2.1"
 )
-
 analysis = analyzer.analyze(trace)
-# Returns: AnalysisResult with patterns, scores, recommendations
-
 quick_score = analyzer.quick_score(trace)
-# Returns: float (0-100) for fast feedback
 ```
 
-### OptimizationLoop
+### `OptimizationLoop`
 
 ```python
 config = LoopConfig(
-    # Iteration control
-    max_iterations=5,           # Maximum optimization iterations
-    convergence_threshold=3.0,  # Stop if improvement < this %
-    min_score_threshold=75.0,   # Stop if score exceeds this
-    regression_threshold=8.0,   # Warn if score drops by this much
-
-    # Optimization behavior
-    use_best_prompt=True,       # Use best-performing prompt, not final
-    max_prompt_growth=5.0,      # Limit prompt expansion to 5x original
-
-    # Output options
-    save_artifacts=True,        # Save traces and analyses
-    artifacts_dir="./artifacts" # Where to save
+    max_iterations=5,
+    convergence_threshold=3.0,
+    min_score_threshold=75.0,
+    regression_threshold=8.0,
+    use_best_prompt=True,
+    max_prompt_growth=5.0,
+    save_artifacts=True,
+    artifacts_dir="./artifacts"
 )
 
 loop = OptimizationLoop(config=config)
 result = loop.run(task, initial_prompt, tools, tool_executor)
-# Returns: LoopResult with iterations, final_prompt, scores
 ```
 
-**Optimization Safeguards:**
+保护措施包括保留最高分提示词、限制提示词增长、防止提示词膨胀，并在分数下降时告警或停止。
 
-- **Best Prompt Tracking**: Keeps the prompt that produced the highest score
-- **Prompt Growth Limiting**: Prevents prompt bloat by limiting size expansion
-- **Regression Detection**: Warns on score drops, stops after consecutive regressions
+复杂任务分数通常低于简单任务：单工具简单任务约 80—95 分，3—5 个工具的中等任务约 70—85 分，6 个以上工具的复杂长链任务约 60—75 分。分数受工具输出差异、有效解法多样性和长任务随机性影响，优化重点应放在相对提升和消除失败模式，而非追求绝对分数。
 
-**Score Expectations:**
-
-| Task Complexity | Typical Score Range | Notes |
-|-----------------|---------------------|-------|
-| Simple (1-2 tools) | 80-95 | Straightforward tasks converge quickly |
-| Medium (3-5 tools) | 70-85 | Multiple tool coordination adds variability |
-| Complex (6+ tools, multi-step) | 60-75 | Inherent variance in long reasoning chains |
-
-Complex research tasks with many tools and steps typically plateau around **65-75** due to:
-- Tool output variability affecting reasoning paths
-- Multiple valid approaches leading to different scoring
-- The stochastic nature of multi-step agent execution
-
-The optimizer focuses on **relative improvement** and **pattern elimination** rather than achieving a specific absolute score.
-
-### SkillGenerator
+### `SkillGenerator`
 
 ```python
 generator = SkillGenerator()
 skill_path = generator.generate(
-    result=loop_result,           # From OptimizationLoop
-    skill_name="my-skill",        # Lowercase with hyphens
+    result=loop_result,
+    skill_name="my-skill",
     output_dir="./generated_skills",
-    title="Human Readable Title"
+    title="便于阅读的标题"
 )
 ```
 
----
-
-## CLI Usage
+## 命令行用法
 
 ```bash
-# Capture a reasoning trace
-rto capture "Explain interleaved thinking" -s "You are an AI researcher."
-
-# Analyze a task and output results
-rto analyze "Debug this code snippet" -o analysis.txt
-
-# Run full optimization loop
-rto optimize "Research AI papers" --max-iterations 5 --generate-skill
-
-# Generate skill from previous optimization
+rto capture "解释交错思考" -s "你是一名 AI 研究者。"
+rto analyze "调试这段代码" -o analysis.txt
+rto optimize "研究 AI 论文" --max-iterations 5 --generate-skill
 rto generate-skill my-skill-name --artifacts-dir ./optimization_artifacts
 ```
 
----
+## 示例使用的真实资料
 
-## Real-World Sources Used
+示例三使用真实文档网址模拟研究流程，包括 Anthropic 文档与研究文章、OpenAI 文档、MiniMax M2.1 文档、DAIR.AI 提示词指南、LangChain 调试文档以及 arXiv 的“中间位置丢失”论文（`2307.03172`）。
 
-Example 3 uses real documentation URLs for realistic simulation:
+## 稳健性
 
-| Source | URL |
-|--------|-----|
-| Anthropic Docs | `docs.anthropic.com/en/docs/build-with-claude/*` |
-| Anthropic Research | `anthropic.com/research/building-effective-agents` |
-| OpenAI Docs | `platform.openai.com/docs/guides/*` |
-| MiniMax M2.1 | `minimax.io/platform/docs/M2.1` |
-| DAIR.AI | `promptingguide.ai/techniques` |
-| LangChain | `python.langchain.com/docs/how_to/debugging` |
-| arXiv Papers | `arxiv.org/abs/2307.03172` (Lost in the Middle) |
+### 解析容错
 
----
+模型有时无法生成有效 JSON，系统会采取回退处理：
 
-## Robustness Features
+| 组件 | 回退方式 |
+| --- | --- |
+| 分析器 | JSON 解析失败时使用正则抽取分数，默认 50/100，而不是 0 |
+| 优化器 | 依次尝试 JSON、正则、标记和代码块提取提示词 |
+| 循环 | 提示词未变化时发出警告，并追踪最佳迭代 |
 
-The optimizer includes several safeguards to handle real-world variability:
+十轮测试显示，随机模型行为可能使分数上下波动约 15 分；最佳分数可能出现在中途；启用 `use_best_prompt=True` 可保留中途最佳结果。解析失败时也会使用容错路径，而非将分数直接设为 0。
 
-### Parsing Resilience
+## 项目结构
 
-LLM responses don't always produce valid JSON. The system handles this gracefully:
-
-| Component | Fallback Behavior |
-|-----------|-------------------|
-| **Analyzer** | Extracts scores via regex patterns when JSON fails; defaults to 50/100 (not 0) |
-| **Optimizer** | Multi-strategy prompt extraction: JSON → regex → marker detection → code blocks |
-| **Loop** | Warns when final prompt is unchanged; tracks best-performing iteration |
-
-### Extended Test Results (10 iterations)
-
-Real-world testing revealed important insights:
-
-```
-Iteration  Score   Patterns  Tool Calls  Notes
-────────────────────────────────────────────────
-1          69/100    4         22        Baseline
-2          66/100    3         14        -
-3          61/100    3         17        -
-4          72/100    3         20        ← Best score
-5          59/100    4         16        -
-6          50/100*   0         15        *Parser fallback activated
-7          70/100    3         12        Recovery
-8          64/100    3         14        -
-9          64/100    3         18        -
-10         70/100    3         19        Final
-
-* Iteration 6: JSON parsing failed, fallback returned neutral score
-```
-
-**Key Learnings:**
-- Scores fluctuate ±15 points between iterations due to stochastic model behavior
-- Best score (72) was achieved mid-run, not at the end
-- `use_best_prompt=True` correctly selected iteration 4's prompt
-- Parsing failures now handled gracefully instead of returning 0 scores
-
----
-
-## Architecture
-
-```
+```text
 reasoning_trace_optimizer/
-├── __init__.py          # Public API exports
-├── models.py            # Data models (Pydantic)
-│   ├── ThinkingBlock    # Single reasoning segment
-│   ├── ToolCall         # Tool invocation record
-│   ├── ReasoningTrace   # Complete execution trace
-│   ├── Pattern          # Detected failure pattern
-│   ├── AnalysisResult   # Full analysis output
-│   └── LoopResult       # Optimization loop result
-├── capture.py           # TraceCapture - M2.1 API wrapper
-├── analyzer.py          # TraceAnalyzer - Pattern detection (with fallback parsing)
-├── optimizer.py         # PromptOptimizer - Prompt improvement (with fallback extraction)
-├── loop.py              # OptimizationLoop - Full cycle (with best-score tracking)
-├── skill_generator.py   # SkillGenerator - Create skills
-└── cli.py               # Command-line interface
+├── __init__.py          # 公共接口
+├── models.py            # Pydantic 数据模型
+├── capture.py           # M2.1 API 轨迹捕获
+├── analyzer.py          # 模式检测与解析回退
+├── optimizer.py         # 提示词改进与提取回退
+├── loop.py              # 优化循环和最佳分数追踪
+├── skill_generator.py   # 技能生成
+└── cli.py               # 命令行接口
 ```
 
----
+## 集成方式
 
-## Integration
+此项目包含 Claude Code 技能，可在任务失败时自动分析、按需分析当前会话，并提供技能改进建议。
 
-### Claude Code Skill
-
-This project includes a Claude Code skill (`SKILL.md`) enabling:
-
-- **Auto-trigger on failure** - Analyze when agent tasks fail
-- **On-demand analysis** - Use `/reasoning-trace-optimizer` command
-- **Session analysis** - Analyze thinking from current conversation
-
-### Python Library
+也可作为 Python 库导入：
 
 ```python
 from reasoning_trace_optimizer import (
@@ -590,31 +280,14 @@ from reasoning_trace_optimizer import (
 )
 ```
 
----
+## 许可证与参考资料
 
-## Contributing
+MIT 许可证。本项目属于[智能体上下文工程技能集](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)。
 
-This project is part of the [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering) collection.
+- [MiniMax M2.1 文档](https://www.minimax.io/platform/docs)
+- [MiniMax API 参考](https://www.minimax.io/platform/docs/M2.1)
+- [交错思考指南](./docs/interleavedthinking.md)
+- [智能体泛化研究](./docs/agentthinking.md)
+- [Anthropic API 兼容说明](./docs/m2-1.md)
 
----
-
-## License
-
-MIT License
-
----
-
-## References
-
-- [MiniMax M2.1 Documentation](https://www.minimax.io/platform/docs)
-- [MiniMax API Reference](https://www.minimax.io/platform/docs/M2.1)
-- [Interleaved Thinking Guide](./docs/interleavedthinking.md)
-- [Agent Generalization Research](./docs/agentthinking.md)
-- [Anthropic API Compatibility](./docs/m2-1.md)
-
----
-
-<p align="center">
-  <strong>Built in partnership with MiniMax AI</strong><br>
-  Showcasing the power of interleaved thinking for agent debugging
-</p>
+<p align="center"><strong>与 MiniMax AI 合作构建，展示交错思考如何帮助调试智能体</strong></p>

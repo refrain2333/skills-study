@@ -1,43 +1,43 @@
-# PRD: X-to-Book Multi-Agent System
+# PRD：X-to-Book 多代理系统
 
-## Overview
+## 概述
 
-A multi-agent system that monitors target X (Twitter) accounts daily, synthesizes their content, and generates structured books from accumulated insights. The system uses context engineering principles to handle high-volume social data while maintaining coherent long-form output.
+一个多代理系统，每天监控目标 X（Twitter）账户，综合其内容，并从累积的见解生成结构化的书籍。该系统使用上下文工程原则来处理高数据量的社交数据，同时保持连贯的长篇幅输出。
 
-## Problem Statement
+## 问题陈述
 
-Manual curation of insights from X accounts is time-consuming and inconsistent. Existing tools dump raw data without synthesis. We need a system that:
-- Continuously monitors specified X accounts
-- Extracts meaningful patterns and insights across time
-- Produces structured, coherent daily book outputs
-- Maintains temporal awareness of how narratives evolve
+手动从 X 账户整理见解很耗时且不一致。现有工具只是转储原始数据而不进行综合。我们需要一个系统，该系统：
+- 持续监控指定的 X 账户
+- 跨时间提取有意义的模式和见解
+- 生成结构化、连贯的每日书籍输出
+- 保持对叙述如何演变的时间意识
 
-## Architecture
+## 架构
 
-### Multi-Agent Pattern Selection: Supervisor/Orchestrator
+### 多代理模式选择：监督者/协调器
 
-Based on the context engineering patterns, we use a **supervisor architecture** because:
-1. Book production has clear sequential phases (scrape, analyze, synthesize, write, edit)
-2. Quality gates require central coordination
-3. Human oversight points are well-defined
-4. Context isolation per phase prevents attention saturation
+基于上下文工程模式，我们使用**监督者架构**，因为：
+1. 书籍生产有明确的顺序阶段（爬虫、分析、合成、写作、编辑）
+2. 质量门控需要中央协调
+3. 人工监督点定义明确
+4. 按阶段的上下文隔离防止注意力饱和
 
 ```
-User Config -> Orchestrator -> [Scraper, Analyzer, Synthesizer, Writer, Editor] -> Daily Book
+用户配置 -> 协调器 -> [爬虫、分析器、合成器、写手、编辑] -> 每日书籍
 ```
 
-### Agent Definitions
+### 代理定义
 
-#### 1. Orchestrator Agent
-**Purpose**: Central coordinator that manages workflow, maintains state, routes to specialists.
+#### 1. 协调器代理
+**目的**：中央协调器，管理工作流、维护状态、路由到专家。
 
-**Context Budget**: Reserved for task decomposition, quality gates, and synthesis coordination. Does not carry raw tweet data.
+**上下文预算**：为任务分解、质量门控和综合协调保留。不携带原始推文数据。
 
-**Responsibilities**:
-- Decompose daily book task into subtasks
-- Route to appropriate specialist agents
-- Implement checkpoint/resume for long-running operations
-- Aggregate results without paraphrasing (avoid telephone game problem)
+**职责**：
+- 将每日书籍任务分解为子任务
+- 路由到适当的专家代理
+- 为长时间运行的操作实现检查点/恢复
+- 聚合结果而不进行改述（避免电话游戏问题）
 
 ```python
 class OrchestratorState(TypedDict):
@@ -49,93 +49,93 @@ class OrchestratorState(TypedDict):
     checkpoints: List[Dict]
 ```
 
-#### 2. Scraper Agent
-**Purpose**: Fetch and normalize content from target X accounts.
+#### 2. 爬虫代理
+**目的**：从目标 X 账户获取和规范化内容。
 
-**Context Budget**: Minimal. Operates on one account at a time, outputs to file system.
+**上下文预算**：最小。一次操作一个账户，输出到文件系统。
 
-**Tools**:
-- `fetch_timeline(account_id, since_date, until_date)` - Retrieve tweets in date range
-- `fetch_thread(tweet_id)` - Expand full thread context
-- `fetch_engagement_metrics(tweet_ids)` - Get likes/retweets/replies
-- `write_to_store(account_id, data)` - Persist to file system
+**工具**：
+- `fetch_timeline(account_id, since_date, until_date)` - 检索日期范围内的推文
+- `fetch_thread(tweet_id)` - 扩展完整的线程上下文
+- `fetch_engagement_metrics(tweet_ids)` - 获取点赞/转推/回复
+- `write_to_store(account_id, data)` - 持久化到文件系统
 
-**Output**: Structured JSON per account, written to file system (not passed through context).
+**输出**：每个账户的结构化 JSON，写入文件系统（不通过上下文传递）。
 
-#### 3. Analyzer Agent
-**Purpose**: Extract patterns, themes, and insights from raw content.
+#### 3. 分析器代理
+**目的**：从原始内容中提取模式、主题和见解。
 
-**Context Budget**: Moderate. Processes one account's data at a time via file system reads.
+**上下文预算**：中等。通过文件系统读取一次处理一个账户的数据。
 
-**Responsibilities**:
-- Topic extraction and clustering
-- Sentiment analysis over time
-- Key insight identification
-- Thread narrative extraction
-- Controversy/debate identification
+**职责**：
+- 主题提取和聚类
+- 随时间的情感分析
+- 关键见解识别
+- 线程叙述提取
+- 争议/辩论识别
 
-**Output**: Structured analysis per account with:
-- Top themes (ranked by frequency and engagement)
-- Notable quotes (with context)
-- Narrative arcs (multi-tweet threads)
-- Temporal patterns (time-of-day, response patterns)
+**输出**：每个账户的结构化分析，包含：
+- 顶级主题（按频率和参与度排名）
+- 显著引用（带上下文）
+- 叙述弧（多推文线程）
+- 时间模式（一天中的时间、响应模式）
 
-#### 4. Synthesizer Agent
-**Purpose**: Cross-account pattern recognition and theme consolidation.
+#### 4. 合成器代理
+**目的**：跨账户模式识别和主题合并。
 
-**Context Budget**: High. Receives summaries from all analyzed accounts.
+**上下文预算**：高。从所有分析的账户接收摘要。
 
-**Responsibilities**:
-- Identify cross-account themes
-- Detect agreement/disagreement patterns
-- Build narrative connections
-- Generate book outline with chapter structure
+**职责**：
+- 识别跨账户主题
+- 检测同意/不同意模式
+- 构建叙述连接
+- 生成带有章节结构的书籍大纲
 
-**Output**: Book outline with:
-- Chapter structure
-- Theme assignments per chapter
-- Source attribution map
-- Suggested narrative flow
+**输出**：带有以下内容的书籍大纲：
+- 章节结构
+- 每章主题分配
+- 源属性映射
+- 建议的叙述流
 
-#### 5. Writer Agent
-**Purpose**: Generate book content from outline and source material.
+#### 5. 写手代理
+**目的**：从大纲和源材料生成书籍内容。
 
-**Context Budget**: Per-chapter allocation. Works on one chapter at a time.
+**上下文预算**：按章节分配。一次处理一章。
 
-**Responsibilities**:
-- Draft chapter content following outline
-- Integrate quotes with proper attribution
-- Maintain consistent voice and style
-- Handle transitions between themes
+**职责**：
+- 遵循大纲起草章节内容
+- 集成带有适当属性的引用
+- 保持一致的声音和风格
+- 处理主题之间的过渡
 
-**Output**: Draft chapters in markdown format.
+**输出**：markdown 格式的草稿章节。
 
-#### 6. Editor Agent
-**Purpose**: Quality assurance and refinement.
+#### 6. 编辑代理
+**目的**：质量保证和细化。
 
-**Context Budget**: Per-chapter. Reviews one chapter at a time.
+**上下文预算**：按章节。一次审查一章。
 
-**Responsibilities**:
-- Fact-check against source material
-- Verify quote accuracy
-- Check narrative coherence
-- Flag potential issues for human review
+**职责**：
+- 针对源材料进行事实检查
+- 验证引用准确性
+- 检查叙述连贯性
+- 为人工审查标记潜在问题
 
-**Output**: Edited chapters with revision notes.
+**输出**：带有修订备注的编辑章节。
 
 ---
 
-## Memory System Design
+## 记忆系统设计
 
-### Architecture: Temporal Knowledge Graph
+### 架构：时间知识图谱
 
-Based on the memory-systems skill, we need a **temporal knowledge graph** because:
-- Facts about accounts change over time (opinions shift, topics evolve)
-- We need time-travel queries ("What was @account's position on X in January?")
-- Cross-account relationships require graph traversal
-- Simple vector stores lose relationship structure
+基于记忆系统技能，我们需要**时间知识图谱**，因为：
+- 关于账户的事实随时间变化（意见转变、主题演变）
+- 我们需要时间旅行查询（"@账户在一月份对 X 的立场是什么？"）
+- 跨账户关系需要图遍历
+- 简单的向量存储会丢失关系结构
 
-### Entity Types
+### 实体类型
 
 ```python
 entities = {
@@ -157,7 +157,7 @@ entities = {
 }
 ```
 
-### Relationship Types
+### 关系类型
 
 ```python
 relationships = {
@@ -199,90 +199,90 @@ relationships = {
 }
 ```
 
-### Memory Retrieval Patterns
+### 记忆检索模式
 
 ```python
-# What has @account said about AI in the last 30 days?
+# @账户在过去 30 天说了关于 AI 的什么？
 query_account_theme_temporal(account_id, theme="AI", days=30)
 
-# Which accounts disagree on crypto?
+# 哪些账户在加密货币上不一致？
 query_disagreement_network(theme="crypto")
 
-# What quotes should be in today's book about regulation?
+# 今天的书中关于监管的哪些引用应该被包含？
 query_quotable_content(theme="regulation", min_engagement=100)
 ```
 
 ---
 
-## Context Optimization Strategy
+## 上下文优化策略
 
-### Challenge
+### 挑战
 
-X data is high-volume. A target account with 20 tweets/day across 10 accounts = 200 tweets/day. Each tweet with thread context averages 500 tokens. Daily raw context = 100k tokens before analysis.
+X 数据数据量大。一个目标账户每天 20 条推文，跨 10 个账户 = 每天 200 条推文。每条带线程上下文的推文平均 500 tokens。日常原始上下文 = 分析前 100k tokens。
 
-### Optimization Techniques
+### 优化技术
 
-#### 1. Observation Masking
-Raw tweet data is processed by Scraper, written to file system, and never passed through Orchestrator context.
+#### 1. 观察掩蔽
+原始推文数据由爬虫处理，写入文件系统，永远不通过协调器上下文传递。
 
 ```python
-# Instead of passing raw tweets through context
-# Scraper writes to file system
+# 而不是通过上下文传递原始推文
+# 爬虫写入文件系统
 scraper.write_to_store(account_id, raw_tweets)
 
-# Analyzer reads from file system
+# 分析器从文件系统读取
 raw_data = analyzer.read_from_store(account_id)
 ```
 
-#### 2. Compaction Triggers
+#### 2. 压缩触发器
 
 ```python
-COMPACTION_THRESHOLD = 0.7  # 70% context utilization
+COMPACTION_THRESHOLD = 0.7  # 70% 上下文使用率
 
 if context_utilization > COMPACTION_THRESHOLD:
-    # Summarize older phase outputs
+    # 汇总较早的阶段输出
     phase_outputs = compact_phase_outputs(phase_outputs)
 ```
 
-#### 3. Progressive Disclosure
+#### 3. 渐进式信息披露
 
-Book outline loads first (lightweight). Full chapter content loads only when Writer is working on that chapter.
+书籍大纲首先加载（轻量级）。完整的章节内容仅在写手处理该章节时加载。
 
 ```python
-# Level 1: Outline only
+# 第 1 级：仅大纲
 book_outline = {
     "chapters": [
-        {"title": "Chapter 1", "themes": ["AI", "Regulation"], "word_count_target": 2000}
+        {"title": "第 1 章", "themes": ["AI", "监管"], "word_count_target": 2000}
     ]
 }
 
-# Level 2: Full chapter context (only when writing)
+# 第 2 级：完整章节上下文（仅在写作时）
 chapter_context = load_chapter_context(chapter_id)
 ```
 
-#### 4. KV-Cache Optimization
+#### 4. KV 缓存优化
 
-System prompt and tool definitions are stable across runs. Structure context for cache hits:
+系统提示和工具定义在运行中是稳定的。构造上下文以获得缓存命中：
 
 ```python
 context_order = [
-    system_prompt,       # Stable, cacheable
-    tool_definitions,    # Stable, cacheable
-    account_config,      # Semi-stable
-    daily_outline,       # Changes daily
-    current_task         # Changes per call
+    system_prompt,       # 稳定、可缓存
+    tool_definitions,    # 稳定、可缓存
+    account_config,      # 半稳定
+    daily_outline,       # 每天变化
+    current_task         # 每次调用变化
 ]
 ```
 
 ---
 
-## Tool Design
+## 工具设计
 
-### Consolidation Principle Applied
+### 应用的整合原则
 
-Instead of multiple narrow tools, we implement comprehensive tools per domain:
+我们实现每个域的综合工具，而不是多个狭窄的工具：
 
-#### X Data Tool (Consolidated)
+#### X 数据工具（整合）
 
 ```python
 def x_data_tool(
@@ -295,32 +295,32 @@ def x_data_tool(
     format: Literal["concise", "detailed"] = "concise"
 ) -> Dict:
     """
-    Unified X data retrieval tool.
-    
-    Use when:
-    - Fetching timeline for target account monitoring
-    - Expanding thread context for full conversation
-    - Getting engagement metrics for content prioritization
-    - Searching for specific topics across accounts
-    
-    Actions:
-    - fetch_timeline: Get tweets from account in date range
-    - fetch_thread: Expand full thread from single tweet
-    - fetch_engagement: Get likes/retweets/replies
-    - search: Search across accounts for query
-    
-    Returns:
-    - concise: tweet_id, content_preview, timestamp, engagement_score
-    - detailed: full content, thread context, all engagement metrics, reply preview
-    
-    Errors:
-    - RATE_LIMITED: Wait {retry_after} seconds
-    - ACCOUNT_PRIVATE: Cannot access private account
-    - NOT_FOUND: Tweet/account does not exist
+    统一的 X 数据检索工具。
+
+    何时使用：
+    - 为目标账户监控获取时间线
+    - 为完整对话扩展线程上下文
+    - 为内容优先化获取参与度指标
+    - 跨账户搜索特定主题
+
+    操作：
+    - fetch_timeline：获取日期范围内的账户推文
+    - fetch_thread：从单个推文扩展完整线程
+    - fetch_engagement：获取点赞/转推/回复
+    - search：跨账户搜索查询
+
+    返回：
+    - concise: tweet_id、content_preview、timestamp、engagement_score
+    - detailed: 完整内容、线程上下文、所有参与度指标、回复预览
+
+    错误：
+    - RATE_LIMITED：等待 {retry_after} 秒
+    - ACCOUNT_PRIVATE：无法访问私人账户
+    - NOT_FOUND：推文/账户不存在
     """
 ```
 
-#### Memory Tool (Consolidated)
+#### 记忆工具（整合）
 
 ```python
 def memory_tool(
@@ -332,25 +332,25 @@ def memory_tool(
     as_of_date: Optional[str] = None
 ) -> Dict:
     """
-    Unified memory system tool.
-    
-    Use when:
-    - Storing new facts discovered from X data
-    - Querying historical information about accounts/themes
-    - Updating validity periods when facts change
-    - Running consolidation to merge duplicate facts
-    
-    Actions:
-    - store: Add new entity or relationship
-    - query: Retrieve entities/relationships matching params
-    - update_validity: Mark fact as expired with valid_until
-    - consolidate: Merge duplicates and cleanup
-    
-    Returns entity/relationship data or query results.
+    统一的记忆系统工具。
+
+    何时使用：
+    - 存储从 X 数据发现的新事实
+    - 查询关于账户/主题的历史信息
+    - 在事实变化时更新有效期
+    - 运行整合以合并重复的事实
+
+    操作：
+    - store：添加新实体或关系
+    - query：检索与参数匹配的实体/关系
+    - update_validity：用 valid_until 标记事实为已过期
+    - consolidate：合并重复项和清理
+
+    返回实体/关系数据或查询结果。
     """
 ```
 
-#### Writing Tool (Consolidated)
+#### 写作工具（整合）
 
 ```python
 def writing_tool(
@@ -361,61 +361,61 @@ def writing_tool(
     output_format: Literal["markdown", "html", "pdf"] = "markdown"
 ) -> Dict:
     """
-    Unified book writing tool.
-    
-    Use when:
-    - Drafting new chapter content
-    - Editing existing content for quality
-    - Formatting content for output
-    - Exporting final book
-    
-    Actions:
-    - draft: Create initial chapter draft
-    - edit: Apply revisions to existing content
-    - format: Apply styling and formatting
-    - export: Generate final output file
+    统一的书籍写作工具。
+
+    何时使用：
+    - 起草新的章节内容
+    - 编辑现有内容以提高质量
+    - 格式化输出内容
+    - 导出最终书籍
+
+    操作：
+    - draft：创建初始章节草稿
+    - edit：对现有内容应用修订
+    - format：应用样式和格式
+    - export：生成最终输出文件
     """
 ```
 
 ---
 
-## Evaluation Framework
+## 评估框架
 
-### Multi-Dimensional Rubric
+### 多维度评分标准
 
-Based on the evaluation skill, we define quality dimensions:
+基于评估技能，我们定义质量维度：
 
-| Dimension | Weight | Excellent | Acceptable | Failed |
-|-----------|--------|-----------|------------|--------|
-| Source Accuracy | 30% | All quotes verified, proper attribution | Minor attribution errors | Fabricated quotes |
-| Thematic Coherence | 25% | Clear narrative thread, logical flow | Some disconnected sections | No coherent narrative |
-| Completeness | 20% | Covers all major themes from sources | Misses some themes | Major gaps |
-| Insight Quality | 15% | Novel synthesis across sources | Restates obvious points | No synthesis |
-| Readability | 10% | Engaging, well-structured prose | Adequate but dry | Unreadable |
+| 维度 | 权重 | 优秀 | 可接受 | 失败 |
+|------|------|------|--------|------|
+| 源准确性 | 30% | 所有引用已验证，适当的属性 | 小的属性错误 | 虚构引用 |
+| 主题连贯性 | 25% | 清晰的叙述线程、逻辑流 | 一些断开的部分 | 无连贯的叙述 |
+| 完整性 | 20% | 涵盖源中的所有主要主题 | 遗漏一些主题 | 重大空缺 |
+| 见解质量 | 15% | 跨源的新颖综合 | 重述明显的观点 | 无综合 |
+| 可读性 | 10% | 引人入胜的、结构良好的散文 | 充分但单调 | 无法阅读 |
 
-### Automated Evaluation Pipeline
+### 自动化评估流程
 
 ```python
 def evaluate_daily_book(book: Book, source_data: Dict) -> EvaluationResult:
     scores = {}
-    
-    # Source accuracy: verify quotes against original tweets
+
+    # 源准确性：验证引用与原始推文
     scores["source_accuracy"] = verify_quotes(book.chapters, source_data)
-    
-    # Thematic coherence: LLM-as-judge for narrative flow
+
+    # 主题连贯性：LLM 评判叙述流
     scores["thematic_coherence"] = judge_coherence(book)
-    
-    # Completeness: check theme coverage
+
+    # 完整性：检查主题覆盖
     scores["completeness"] = calculate_theme_coverage(book, source_data)
-    
-    # Insight quality: LLM-as-judge for synthesis
+
+    # 见解质量：LLM 评判综合
     scores["insight_quality"] = judge_insights(book, source_data)
-    
-    # Readability: automated metrics + LLM judge
+
+    # 可读性：自动化指标 + LLM 评判
     scores["readability"] = assess_readability(book)
-    
+
     overall = weighted_average(scores, DIMENSION_WEIGHTS)
-    
+
     return EvaluationResult(
         passed=overall >= 0.7,
         scores=scores,
@@ -424,115 +424,115 @@ def evaluate_daily_book(book: Book, source_data: Dict) -> EvaluationResult:
     )
 ```
 
-### Human Review Triggers
+### 人工审查触发器
 
-- Overall score < 0.7
-- Source accuracy < 0.8
-- Any fabricated quote detected
-- New account added (first book needs review)
-- Controversial topic detected
+- 总体评分 < 0.7
+- 源准确性 < 0.8
+- 检测到任何虚构引用
+- 添加新账户（第一本书需要审查）
+- 检测到有争议的话题
 
 ---
 
-## Data Flow
+## 数据流
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              DAILY PIPELINE                                  │
+│                              每日流程                                        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 1. SCRAPE PHASE                                                              │
-│    Scraper Agent → X API → File System (raw_data/{account}/{date}.json)     │
-│    Context: Minimal (tool calls only)                                        │
-│    Output: Raw tweet data persisted to file system                           │
+│ 1. 爬虫阶段                                                                   │
+│    爬虫代理 → X API → 文件系统 (raw_data/{account}/{date}.json)             │
+│    上下文：最小（仅工具调用）                                                │
+│    输出：原始推文数据持久化到文件系统                                        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 2. ANALYZE PHASE                                                             │
-│    Analyzer Agent → File System → Memory Store                               │
-│    Context: One account at a time                                            │
-│    Output: Structured analysis per account + Knowledge Graph updates         │
+│ 2. 分析阶段                                                                   │
+│    分析器代理 → 文件系统 → 记忆存储                                          │
+│    上下文：一次一个账户                                                      │
+│    输出：每个账户的结构化分析 + 知识图谱更新                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 3. SYNTHESIZE PHASE                                                          │
-│    Synthesizer Agent → Analysis Summaries → Book Outline                     │
-│    Context: Summaries from all accounts (compacted)                          │
-│    Output: Book outline with chapter structure                               │
+│ 3. 合成阶段                                                                   │
+│    合成器代理 → 分析摘要 → 书籍大纲                                          │
+│    上下文：所有账户的摘要（压缩）                                            │
+│    输出：带有章节结构的书籍大纲                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 4. WRITE PHASE                                                               │
-│    Writer Agent → Outline + Relevant Sources → Draft Chapters                │
-│    Context: One chapter at a time (progressive disclosure)                   │
-│    Output: Draft markdown chapters                                           │
+│ 4. 写作阶段                                                                   │
+│    写手代理 → 大纲 + 相关源 → 草稿章节                                       │
+│    上下文：一次一章（渐进式披露）                                            │
+│    输出：草稿 markdown 章节                                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 5. EDIT PHASE                                                                │
-│    Editor Agent → Draft + Sources → Final Chapters                           │
-│    Context: One chapter at a time                                            │
-│    Output: Edited chapters with revision notes                               │
+│ 5. 编辑阶段                                                                   │
+│    编辑代理 → 草稿 + 源 → 最终章节                                           │
+│    上下文：一次一章                                                          │
+│    输出：带有修订备注的编辑章节                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 6. EVALUATE PHASE                                                            │
-│    Evaluation Pipeline → Final Book → Quality Report                         │
-│    Output: Pass/fail with scores, flagged issues                             │
+│ 6. 评估阶段                                                                   │
+│    评估流程 → 最终书籍 → 质量报告                                            │
+│    输出：通过/失败，有评分、标记问题                                        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 7. PUBLISH (if passed) or HUMAN REVIEW (if flagged)                          │
+│ 7. 发布（如果通过）或人工审查（如果标记）                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Failure Modes and Mitigations
+## 失败模式和缓解
 
-### Failure: Orchestrator Context Saturation
-**Symptom**: Orchestrator accumulates phase outputs, degrading routing decisions.
-**Mitigation**: Phase outputs stored in file system, Orchestrator receives only summaries. Implement checkpointing to persist state.
+### 失败：协调器上下文饱和
+**症状**：协调器累积阶段输出，路由决策降解。
+**缓解**：阶段输出存储在文件系统中，协调器仅接收摘要。实现检查点以持久化状态。
 
-### Failure: X API Rate Limiting
-**Symptom**: Scraper hits rate limits, incomplete data.
-**Mitigation**: 
-- Implement circuit breaker with exponential backoff
-- Checkpoint partial scrapes for resume
-- Schedule scraping across time windows
+### 失败：X API 速率限制
+**症状**：爬虫达到速率限制，数据不完整。
+**缓解**：
+- 使用指数退避实现断路器
+- 为恢复的部分爬虫进行检查点
+- 跨时间窗口安排爬虫
 
-### Failure: Quote Hallucination
-**Symptom**: Writer generates quotes not in source material.
-**Mitigation**:
-- Strict source attribution in writing prompt
-- Editor agent verifies all quotes against source
-- Automated quote verification in evaluation
+### 失败：引用幻觉
+**症状**：写手生成源材料中不存在的引用。
+**缓解**：
+- 写作提示中严格的源属性
+- 编辑代理验证所有引用与源
+- 评估中的自动化引用验证
 
-### Failure: Theme Drift
-**Symptom**: Book themes diverge from actual source content.
-**Mitigation**:
-- Synthesizer receives grounded summaries only
-- Writer tool includes source verification step
-- Evaluation checks theme-source alignment
+### 失败：主题漂移
+**症状**：书籍主题与实际源内容分歧。
+**缓解**：
+- 合成器仅接收基础摘要
+- 写手工具包含源验证步骤
+- 评估检查主题-源对齐
 
-### Failure: Coordination Overhead
-**Symptom**: Agent communication latency exceeds content value.
-**Mitigation**:
-- Batch phase outputs
-- Use file system for inter-agent data (no context passing for large payloads)
-- Parallelize where possible (Scraper can run per-account in parallel)
+### 失败：协调开销
+**症状**：代理通信延迟超过内容价值。
+**缓解**：
+- 批量阶段输出
+- 将文件系统用于代理间数据（大有效负载无上下文传递）
+- 尽可能平行化（爬虫可以按账户平行运行）
 
 ---
 
-## Configuration
+## 配置
 
 ```yaml
 # config.yaml
@@ -563,7 +563,7 @@ quality_thresholds:
 memory:
   retention_days: 90
   consolidation_frequency: "weekly"
-  
+
 context_limits:
   orchestrator: 50000
   scraper: 20000
@@ -575,70 +575,69 @@ context_limits:
 
 ---
 
-## Implementation Phases
+## 实现阶段
 
-### Phase 1: Core Pipeline (Week 1-2)
-- Orchestrator with basic routing
-- Scraper with X API integration
-- File system storage
-- Basic Writer producing markdown output
+### 第 1 阶段：核心流程（第 1-2 周）
+- 具有基本路由的协调器
+- 具有 X API 集成的爬虫
+- 文件系统存储
+- 生成 markdown 输出的基本写手
 
-### Phase 2: Analysis Layer (Week 3-4)
-- Analyzer agent with theme extraction
-- Synthesizer with cross-account patterns
-- Book outline generation
+### 第 2 阶段：分析层（第 3-4 周）
+- 具有主题提取的分析器代理
+- 具有跨账户模式的合成器
+- 书籍大纲生成
 
-### Phase 3: Memory System (Week 5-6)
-- Temporal knowledge graph implementation
-- Entity and relationship storage
-- Temporal queries for historical context
+### 第 3 阶段：记忆系统（第 5-6 周）
+- 时间知识图谱实现
+- 实体和关系存储
+- 历史上下文的时间查询
 
-### Phase 4: Quality Layer (Week 7-8)
-- Editor agent
-- Evaluation pipeline
-- Human review interface
+### 第 4 阶段：质量层（第 7-8 周）
+- 编辑代理
+- 评估流程
+- 人工审查界面
 
-### Phase 5: Production Hardening (Week 9-10)
-- Checkpoint/resume
-- Circuit breakers
-- Monitoring and alerting
-- Consolidation jobs
-
----
-
-## Technical Stack (Recommended)
-
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| Agent Framework | LangGraph | Graph-based state machines with explicit nodes/edges |
-| Knowledge Graph | Neo4j or Memgraph | Native temporal queries, relationship traversal |
-| Vector Store | Weaviate or Pinecone | Hybrid search (semantic + metadata filtering) |
-| X API | Official API or Scraping fallback | Rate limits require careful management |
-| Storage | PostgreSQL + S3 | Structured data + blob storage for content |
-| Orchestration | Temporal.io | Durable workflows with checkpoint/resume |
+### 第 5 阶段：生产硬化（第 9-10 周）
+- 检查点/恢复
+- 断路器
+- 监控和警报
+- 整合作业
 
 ---
 
-## Open Questions
+## 技术栈（推荐）
 
-1. **X API Access**: Official API vs scraping? Rate limits on official API are restrictive. Scraping has legal/TOS considerations.
-
-2. **Book Format**: Pure prose vs mixed media (including original tweet embeds)?
-
-3. **Attribution Model**: How prominent should account attribution be? Full quotes with handles vs paraphrased insights?
-
-4. **Monetization**: If books are sold, what are the IP implications of synthesizing public tweets?
-
-5. **Human-in-the-Loop**: How much editorial control? Full review of every book vs exception-based review?
+| 组件 | 技术 | 理由 |
+|------|------|------|
+| 代理框架 | LangGraph | 具有明确节点/边的基于图的状态机 |
+| 知识图谱 | Neo4j 或 Memgraph | 原生时间查询、关系遍历 |
+| 向量存储 | Weaviate 或 Pinecone | 混合搜索（语义 + 元数据过滤） |
+| X API | 官方 API 或爬虫备用 | 官方 API 速率限制很严格 |
+| 存储 | PostgreSQL + S3 | 结构化数据 + 内容的 blob 存储 |
+| 编排 | Temporal.io | 具有检查点/恢复的持久工作流 |
 
 ---
 
-## References
+## 开放问题
 
-- [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering) - Context engineering patterns
-- Multi-agent patterns skill - Supervisor architecture selection
-- Memory systems skill - Temporal knowledge graph design
-- Context optimization skill - Observation masking and compaction strategies
-- Tool design skill - Consolidation principle for tools
-- Evaluation skill - Multi-dimensional rubrics
+1. **X API 访问**：官方 API 还是爬虫？官方 API 的速率限制很严格。爬虫有法律/ToS 考虑。
 
+2. **书籍格式**：纯散文还是混合媒体（包括原始推文嵌入）？
+
+3. **属性模型**：账户属性应该有多突出？完整引用和句柄 vs 改述的见解？
+
+4. **货币化**：如果出售书籍，综合公开推文的知识产权意义是什么？
+
+5. **人在循环中**：多少编辑控制？每本书的完整审查 vs 基于异常的审查？
+
+---
+
+## 参考资源
+
+- [代理上下文工程技能](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering) - 上下文工程模式
+- 多代理模式技能 - 监督者架构选择
+- 记忆系统技能 - 时间知识图谱设计
+- 上下文优化技能 - 观察掩蔽和压缩策略
+- 工具设计技能 - 工具的整合原则
+- 评估技能 - 多维度评分标准

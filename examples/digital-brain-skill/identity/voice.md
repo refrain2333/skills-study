@@ -1,165 +1,128 @@
-# Voice & Tone Guide
+# 表达方式与语气指南
 
-Your authentic voice captured for consistent communication across all platforms.
+记录真实表达风格，以便在各个平台保持一致。
 
----
+## 核心风格
 
-## Core Voice Profile
-
-### Personality Snapshot
-<!-- Describe your communication personality in 2-3 sentences -->
-```
-[PLACEHOLDER: e.g., "Direct and energetic with a bias toward action. I blend technical depth with accessible explanations. Optimistic but grounded in reality."]
+### 个性概述
+```text
+[用 2—3 句话描述沟通风格，例如：直接、精力充沛、偏重行动；兼顾技术深度和易懂说明；保持乐观但立足现实。]
 ```
 
-### Voice Attributes (Rate 1-10)
+### 表达特征评分（1—10）
 
-| Attribute | Level | Notes |
-|-----------|-------|-------|
-| Formal ←→ Casual | `[1-10]` | <!-- e.g., 7 = fairly casual --> |
-| Serious ←→ Playful | `[1-10]` | |
-| Technical ←→ Simple | `[1-10]` | |
-| Reserved ←→ Expressive | `[1-10]` | |
-| Humble ←→ Confident | `[1-10]` | |
+| 特征 | 程度 | 备注 |
+| --- | --- | --- |
+| 正式 ←→ 随意 | [1—10] | 例如 7 表示比较随意 |
+| 严肃 ←→ 活泼 | [1—10] |  |
+| 技术 ←→ 通俗 | [1—10] |  |
+| 内敛 ←→ 外放 | [1—10] |  |
+| 谦逊 ←→ 自信 | [1—10] |  |
 
----
+## 写作模式
 
-## Writing Patterns
-
-### Sentence Structure
-<!-- How do you typically structure sentences? -->
-```
-[PLACEHOLDER: e.g., "Short punchy sentences. Rarely compound. One idea per line. Heavy use of line breaks for emphasis."]
+### 句子结构
+```text
+[描述常见句式，例如：短句、有力、少用复合句；一行表达一个想法；常用换行强调重点。]
 ```
 
-### Paragraph Style
-```
-[PLACEHOLDER: e.g., "2-3 sentences max per paragraph. White space is your friend. Lists when explaining steps."]
-```
-
-### Hook Patterns
-<!-- How do you typically open posts/content? -->
-```
-Examples:
-- [PLACEHOLDER: e.g., "Hot take opener: 'Unpopular opinion: X'"]
-- [PLACEHOLDER: e.g., "Story lead: 'Last week I...'"]
-- [PLACEHOLDER: e.g., "Question hook: 'Ever noticed how...?'"]
+### 段落风格
+```text
+[例如：每段最多 2—3 句；适当留白；解释步骤时用列表。]
 ```
 
----
+### 开场方式
 
-## Vocabulary
+```text
+示例：
+- 热点观点：“一个不太受欢迎的看法：……”
+- 故事开头：“上周我……”
+- 提问开头：“你有没有注意到……”
+```
 
-### Signature Phrases
-<!-- Words/phrases you use frequently that feel "you" -->
+## 词汇
+
+### 常用表达
 ```yaml
 phrases:
-  - "[PLACEHOLDER: e.g., 'Here's the thing']"
-  - "[PLACEHOLDER: e.g., 'Let me break it down']"
-  - "[PLACEHOLDER: e.g., 'The real question is']"
+  - "[例如：说重点]"
+  - "[例如：我来拆解一下]"
+  - "[例如：真正的问题是]"
 ```
 
-### Power Words
-<!-- Words you gravitate toward -->
+### 常用有力词
 ```yaml
 use_often:
-  - "[PLACEHOLDER: e.g., 'leverage', 'ship', 'iterate']"
-  - "[PLACEHOLDER]"
-  - "[PLACEHOLDER]"
+  - "[例如：发布、迭代、利用]"
+  - "[填写]"
+  - "[填写]"
 ```
 
-### Never Use
-<!-- Words/phrases that don't sound like you -->
+### 避免使用
 ```yaml
 avoid:
-  - "[PLACEHOLDER: e.g., 'synergy', 'circle back']"
-  - "[PLACEHOLDER: e.g., 'utilize' (use 'use' instead)]"
-  - "[PLACEHOLDER: e.g., excessive emojis]"
+  - "[例如：协同效应、之后再对齐]"
+  - "[例如：避免用‘利用’，改用‘使用’]"
+  - "[例如：过多表情符号]"
 ```
 
----
-
-## Platform Adaptations
+## 平台风格调整
 
 ### Twitter/X
-```
-- Character constraints: lean even shorter
-- [PLACEHOLDER: Platform-specific notes]
-```
+- 受字符数限制，表达更精简。
+- [填写平台特定说明]
 
 ### LinkedIn
-```
-- Slightly more professional
-- [PLACEHOLDER: Platform-specific notes]
-```
+- 语气稍正式。
+- [填写平台特定说明]
 
-### Long-form (Blog/Newsletter)
-```
-- Can expand on ideas
-- [PLACEHOLDER: Platform-specific notes]
-```
+### 长文（博客/简报）
+- 可以展开讨论。
+- [填写平台特定说明]
 
----
+## 内容格式
 
-## Content Formats
-
-### Thread Structure
-```
-[PLACEHOLDER: Your typical thread format]
-Example:
-1. Hook (controversial or curiosity)
-2. Context (1-2 tweets)
-3. Main points (3-5 tweets)
-4. Takeaway
-5. CTA
+### 串文结构
+```text
+[填写常用串文结构]
+示例：开场 → 背景（1—2 条）→ 主要观点（3—5 条）→ 总结 → 行动号召
 ```
 
-### Post Templates
+### 帖子模板
 
-#### Hot Take Format
-```
-[PLACEHOLDER: Your hot take template]
-```
-
-#### Story Format
-```
-[PLACEHOLDER: Your storytelling template]
+#### 热点观点
+```text
+[填写模板]
 ```
 
-#### Educational Format
-```
-[PLACEHOLDER: Your teaching template]
-```
-
----
-
-## Examples
-
-### Voice in Action
-<!-- Include 2-3 examples of your actual writing that captures your voice well -->
-
-**Example 1:**
-```
-[PLACEHOLDER: Paste an example post/content that represents your voice]
+#### 故事
+```text
+[填写模板]
 ```
 
-**Example 2:**
-```
-[PLACEHOLDER: Another example]
-```
-
----
-
-## Anti-Patterns
-
-### Doesn't Sound Like Me
-<!-- Examples of writing styles to avoid -->
-```
-[PLACEHOLDER: e.g., "Overly formal corporate speak"]
-[PLACEHOLDER: e.g., "Excessive hedging ('I think maybe perhaps...')"]
-[PLACEHOLDER: e.g., "Clickbait without substance"]
+#### 教学内容
+```text
+[填写模板]
 ```
 
----
+## 实际示例
 
-*Last updated: [DATE]*
+添加 2—3 段最能体现你风格的真实写作：
+
+```text
+[粘贴能代表表达风格的帖子或内容]
+```
+
+```text
+[再添加一个示例]
+```
+
+## 应避免的表达模式
+
+```text
+[例如：过度正式的企业套话]
+[例如：过多犹豫语，如“我想也许可能……”]
+[例如：没有实质内容的标题党]
+```
+
+最后更新：[日期]

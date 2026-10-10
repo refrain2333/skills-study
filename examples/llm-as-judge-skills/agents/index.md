@@ -1,114 +1,63 @@
-# Agents Index
+# 智能体索引
 
-Agents are reusable AI components with defined capabilities, tools, and instructions.
+智能体是具有明确能力、工具和指令的可复用 AI 组件。
 
-## Available Agents
+## 可用智能体
 
-### Evaluator Agent
-**Path**: `agents/evaluator-agent/evaluator-agent.md`
-**Purpose**: Assess the quality of LLM-generated responses
+### 评估智能体
 
-**Capabilities**:
-- Direct scoring against rubrics
-- Pairwise comparison of responses
-- Criteria extraction from task descriptions
-- Rubric generation for evaluation
+**路径**：`agents/evaluator-agent/evaluator-agent.md`
+**用途**：评估大语言模型生成回复的质量。
 
-**Tools Used**:
-- `directScore`
-- `pairwiseCompare`
-- `extractCriteria`
-- `generateRubric`
+能力包括按评分规则直接评分、成对比较、从任务描述提取标准和生成评分规则。使用 `directScore`、`pairwiseCompare`、`extractCriteria` 和 `generateRubric`。适合内容质量门槛、模型比较、偏好数据生成和交付前验证。
 
-**Best For**:
-- Quality gates in content pipelines
-- Model comparison studies
-- RLHF preference data generation
-- Output validation before delivery
+### 研究智能体
 
----
+**路径**：`agents/research-agent/research-agent.md`
+**用途**：从多个来源收集、核验和综合信息。
 
-### Research Agent
-**Path**: `agents/research-agent/research-agent.md`
-**Purpose**: Gather, verify, and synthesize information from multiple sources
+能力包括网页搜索、URL 内容提取、主张提取与核验、研究综合。使用 `webSearch`、`readUrl`、`extractClaims`、`verifyClaim` 和 `synthesize`。适合构建知识库、事实核验、市场研究和技术文档整理。
 
-**Capabilities**:
-- Web search and result analysis
-- URL content extraction
-- Claim extraction and verification
-- Research synthesis
+### 协调者智能体
 
-**Tools Used**:
-- `webSearch`
-- `readUrl`
-- `extractClaims`
-- `verifyClaim`
-- `synthesize`
+**路径**：`agents/orchestrator-agent/orchestrator-agent.md`
+**用途**：协调复杂任务中的多智能体工作流。
 
-**Best For**:
-- Knowledge base building
-- Fact checking
-- Market research
-- Technical documentation
+能力包括任务拆解和分配、并行执行、结果综合、错误处理和恢复。使用 `delegateToAgent`、`parallelExecution`、`waitForCompletion`、`synthesizeResults` 和 `handleError`。适合复杂多步骤任务、跨能力工作流、质量保障流程和长时间运行操作。
 
----
+## 智能体协作模式
 
-### Orchestrator Agent
-**Path**: `agents/orchestrator-agent/orchestrator-agent.md`
-**Purpose**: Coordinate multi-agent workflows for complex tasks
+### 顺序流水线
 
-**Capabilities**:
-- Task decomposition and assignment
-- Parallel task execution
-- Result synthesis
-- Error handling and recovery
-
-**Tools Used**:
-- `delegateToAgent`
-- `parallelExecution`
-- `waitForCompletion`
-- `synthesizeResults`
-- `handleError`
-
-**Best For**:
-- Complex multi-step tasks
-- Cross-capability workflows
-- Quality-assured pipelines
-- Long-running operations
-
-## Agent Interaction Patterns
-
-### Sequential Pipeline
+```text
+输入 → 智能体 A → 智能体 B → 智能体 C → 输出
 ```
-Input → Agent A → Agent B → Agent C → Output
-```
-Use when each step depends on the previous.
 
-### Parallel Fan-Out
-```
-        ┌→ Agent A ─┐
-Input ──┼→ Agent B ──┼→ Synthesis → Output
-        └→ Agent C ─┘
-```
-Use for independent subtasks that can run concurrently.
+前一步结果是后一步前提时使用。
 
-### Iterative Refinement
+### 并行分发与汇总
+
+```text
+        ┌→ 智能体 A ─┐
+输入 ───┼→ 智能体 B ──┼→ 综合 → 输出
+        └→ 智能体 C ─┘
 ```
-Input → Agent → Evaluator ─┬→ Output (if pass)
-                           └→ Agent (if fail, with feedback)
+
+子任务相互独立、可并发时使用。
+
+### 迭代优化
+
+```text
+输入 → 智能体 → 评估器 ─┬→ 通过后输出
+                         └→ 失败后反馈给智能体
 ```
-Use for quality-critical outputs.
 
-## Adding New Agents
+适用于质量要求较高的结果。
 
-1. Create agent directory: `agents/<agent-name>/`
-2. Create main file: `agents/<agent-name>/<agent-name>.md`
-3. Define:
-   - Purpose and role
-   - System instructions
-   - Tool assignments
-   - Configuration options
-   - Usage examples
-4. Update this index
-5. Register with orchestrator if applicable
+## 新增智能体
 
+1. 创建 `agents/<智能体名>/` 目录。
+2. 创建主说明文件 `agents/<智能体名>/<智能体名>.md`。
+3. 写清用途、角色、系统指令、工具分配、配置选项和使用示例。
+4. 更新本索引。
+5. 适用时在协调者中登记。

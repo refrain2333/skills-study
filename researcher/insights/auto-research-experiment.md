@@ -1,222 +1,187 @@
-# Auto-Research Experiment: Lessons From Building The Researcher OS
+# 自主研究实验：构建研究运行体系的经验
 
-This document records what was actually learned across the multi-session experiment that built the v2.2.0 researcher operating system. It is meant to be read alongside `researcher/README.md` and `runbooks/continuous-operation.md`, not in place of them.
+本文记录跨多个会话构建 v2.2.0 研究运行体系时得到的实际经验。应与 `researcher/README.md` 和 `runbooks/continuous-operation.md` 一起阅读，不能替代它们。
 
-## Context
+## 背景
 
-The experiment started with a published skill collection (v2.0/v2.1) and a single question: how do we keep this corpus alive without turning it into a one-person editorial job. The answer became an autonomous research-to-skill operating system with a continuous loop, deterministic gates, mechanism promotion, claim provenance, and explicit run states.
+实验从 v2.0/v2.1 的技能集合开始，核心问题是：怎样让语料持续更新，而不把它变成一个人的编辑工作？最终形成了自主研究转技能运行体系，包括持续循环、确定性门槛、机制晋级、主张来源和显式运行状态。
 
-The goal was not autonomy for its own sake. The goal was compounding: each run should leave the next run better off.
+目标不是追求自主本身，而是形成复利：每次运行结束时，都应让下一次运行更好开展。
 
-## Findings That Changed The Architecture
+## 改变架构的发现
 
-### 1. Activation scenarios beat keyword triggers
+### 1. 启用场景优于关键词触发
 
-The original skill frontmatter used quoted keyword lists like `"design agent tools"`, `"reduce tool complexity"`, etc. Those decayed fast: any rewording broke discovery, and the model could not distinguish neighboring skills with overlapping vocabularies.
+旧技能元数据使用“设计智能体工具”“减少工具复杂性”等关键词清单。换一种说法就可能无法触发，且很难区分词汇重叠的相邻技能。
 
-Switching every skill description to a task-boundary statement let `check_activation_cases.py` actually measure routing. The first run of that checker immediately failed on `evaluation` vs `advanced-evaluation` and `project-development` vs `harness-engineering`. Those failures pointed at real wording problems, not contrived edge cases.
+将技能描述改为任务边界后，`check_activation_cases.py` 才能测量路由效果。首次检查立刻发现 `evaluation`/`advanced-evaluation` 和 `project-development`/`harness-engineering` 的真实混淆。
 
-Takeaway: trigger lists feel concrete but are unstable scaffolding. Activation scenarios scale because they describe what the skill is for.
+**经验**：关键词清单看似具体，却是不稳定脚手架；描述技能的适用边界，更容易扩展和维护。
 
-### 2. The mechanism registry became the encyclopedia backbone
+### 2. 机制注册表成为知识主干
 
-The mechanism registry started as a way to make novelty detection smarter than token overlap. By the time it was wired through `novelty_check.py`, `validate_repo.py`, `corpus/index.json`, and the run state machine, it had become the canonical map of which behavior changes the corpus actually endorses.
+注册表最初只是为了让新颖性检查超越简单词汇重合。接入 `novelty_check.py`、`validate_repo.py`、`corpus/index.json` 和运行状态机后，它成为语料认可哪些行为变化的规范索引。
 
-Once mechanisms were first-class data with ledgers (`accepted.jsonl`, `rejected.jsonl`) and gated promotion, future runs gained free institutional memory. A new proposal can be compared against accepted patterns, candidate patterns, and explicitly rejected patterns from prior runs.
+将机制变成一等结构化数据，配套只追加的 `accepted.jsonl`、`rejected.jsonl` 和晋级门槛后，后续运行获得了可复用的组织记忆。新提案可与已接受、候选和明确拒绝的模式进行比较。
 
-Takeaway: making the unit of knowledge machine-readable is the actual unlock. Markdown is a publication target, not a memory layer.
+**经验**：让知识单元可由机器读取，是实现改进的关键；Markdown 是发布界面，不是记忆层。
 
-### 3. Deterministic gates caught the categorical failures
+### 3. 确定性门槛发现类别性错误
 
-Every time `validate_repo.py` was tightened, it caught real bugs that had already shipped:
+每次加固 `validate_repo.py` 都发现了已发布的真实错误：来源评估 JSON 有重复键；评分计算错误；检索失败或不完整的来源被批准；机制证据路径失效；启用案例指向未发布技能；运行产物缺失；原始研究材料留在仓库根目录。
 
-- Duplicate JSON keys in `source-evaluation.json`.
-- Incorrect rubric math (recorded `weighted_total` did not match the dimension scores).
-- `APPROVE` decisions on `partial` or `failed` retrievals.
-- Mechanism registry entries with broken evidence paths.
-- Activation cases pointing at unpublished skills.
-- Run artifacts missing required pieces.
-- Raw research dumps left at the repo root.
+这些问题都属于结构错误，不需要模型判断。先做模型评审、后补结构门槛，顺序是错的。
 
-None of these required model judgment. They were structural. Spending tokens on judges before these gates exist was the wrong order of operations.
+**经验**：确定性验证成本低于模型评审，而且可发现另一类问题；先构建结构检查器。
 
-Takeaway: deterministic verification is cheaper than LLM judgment and catches a different class of failures. Build the structural validator first.
+### 4. 散文日志不能作为自动化依据
 
-### 4. Prose logs are not enforceable
+`THREAD.md` 便于人类阅读运行历史，却无法判断运行实际处于什么状态，也不能安全地决定是否推进。后来增加带明确状态转换和 `state_history` 的 `run-state.json`，并用 `validate_run.py` 独立强制检查发布准备状态。
 
-`THREAD.md` was useful for humans reading the history of a run. It was useless for telling another agent what the run was actually doing or whether it was safe to advance. The fix was `run-state.json` with explicit transitions and `state_history`, plus `validate_run.py` to enforce publish readiness independent of the prose log.
+第一版状态机会在运行明显未完成时仍通过验证。将“语料是否健康”（`validate_repo`）与“本次运行是否可发布”（`validate_run`）分开后，歧义消失。
 
-The first version of the state machine still passed validation while runs were intentionally incomplete. Splitting "is the corpus healthy" (`validate_repo`) from "is this run ready to ship" (`validate_run`) eliminated that ambiguity.
+**经验**：结构化状态和显式转换能区分“看起来准备好了”和“确实准备好了”。散文日志应服务于人，而不是作为事实来源。
 
-Takeaway: machine-readable state with explicit transitions is the difference between "the run looks ready" and "the run is ready". Prose logs should be the human surface, not the source of truth.
+### 5. 关闭运行的清理器是明显缺陷
 
-### 5. Closed-run reaping was the obvious bug
+第一版持续循环会永久保留已关闭运行。`loop_step.py` 只推进活跃运行；运行通过 `research_loop.py close` 进入 `closed` 后仍留在 `parked.jsonl`，最终可能填满队列并停止循环。
 
-The first continuous loop would have parked closed runs forever. `loop_step.py` only advanced active runs, so a run that transitioned to `closed` via `research_loop.py close` would sit in `parked.jsonl` until the parked queue filled and the loop halted.
+新增的 `reap_closed_runs()` 只有六行。缺失的不是复杂功能，而是错误地假设“循环迟早会清掉它”，却没有任何清理路径。
 
-`reap_closed_runs()` is six lines. The missing piece was not complexity; it was recognizing that "the loop will eventually pick it up" was wishful thinking when no path existed.
+**经验**：队列系统必须为每个离开队列的终止状态设置明确清理器。审计每个终止状态，并问“谁负责移除这条记录？”
 
-Takeaway: queue-based systems need an explicit reaper for every state that exits the queue. Audit every terminal state and ask "who removes this entry?"
+### 6. 只有假设守护进程运行后，才能发现并发问题
 
-### 6. Concurrency bugs are invisible until you assume the daemon
+`loop_discover.py` 向 `inbox.jsonl` 追加；`loop_step.py` 读取、取出一项并把剩余项目写回。人工单独使用时正常；launchd 任务时间重叠时，发现进程追加的新项目可能被静默覆盖。
 
-`loop_discover.py` appended to `inbox.jsonl`. `loop_step.py` read `inbox.jsonl`, popped one item, and wrote the rest back. With manual usage this was fine. With launchd running both on overlapping schedules, discovery's appended items could be silently overwritten.
+解决方式是原子写入（`tempfile` + `os.replace`）和按队列类别使用 `fcntl` 排他锁。锁还必须保持到初始化运行的子进程结束，不能取出队列项后立即释放；否则两个并发进程都可能通过预算检查，超过 `max_active_runs`。
 
-The fix was atomic writes (`tempfile` + `os.replace`) plus `fcntl` exclusive locks scoped per queue family. Cost was a small dependency on `fcntl` (Unix only, acceptable for macOS). The lock also had to be held through the subprocess that initialized the run, not released right after the pop, because otherwise two concurrent invocations would each pass the budget check and exceed `max_active_runs`.
+**经验**：两个计划任务开始访问同一文件后，就需要原子操作和锁；不存在“半可靠”的并发设计。
 
-Takeaway: as soon as the same files are touched by two cron jobs, append/replace patterns need atomic semantics and locks. There is no halfway design.
+### 7. 对抗基准测试的是运行框架，不是输出质量
 
-### 7. Adversarial benchmarks tested the harness, not the outputs
+基准情景应提出：“如果有人试图钻这个循环的空子，会怎么做？”实际攻击包括：换种措辞重复机制、可信作者发布泛泛内容、引用未获取来源、JSON 有效但评分计算错误、草案冗长却不改变行为，以及修改用于批准自身的评分规则。
 
-The benchmark harness exists to ask "what would it look like if someone tried to game this loop?" The scenarios are concrete attacks: duplicate mechanism with different wording, credible-author-but-generic content, unretrieved source cited as evidence, valid JSON with wrong rubric math, verbose skill draft that adds no behavior change, proposal that modifies the rubric used to approve itself.
+先写攻击情景，就能发现缺失门槛。多数验证器加固都来自逐项追问“当前代码能否挡住这个情况？”
 
-Writing the attack first showed which gates were missing. Most of the validator hardening came from staring at adversarial scenarios and asking "would the current code catch this?"
+**经验**：先列出失败模式，再声称防护有效。对抗样例是发现类别性缺口的低成本方法。
 
-Takeaway: write the failure modes before claiming the defense works. Adversarial fixtures are the cheapest way to find category-level gaps.
+### 8. 主张来源记录可避免知识过时
 
-### 8. Claim provenance prevents claim rot
+技能中会累积易变数值，例如 BrowseComp 方差、LoCoMo 准确率、多智能体令牌倍率和屏蔽收益。它们容易过时，来源失效后人们通常不会察觉。
 
-Skills accumulate numeric claims: BrowseComp variance percentages, LoCoMo accuracy numbers, multi-agent token multipliers, masking gain estimates. These age fast and humans never notice until the source is gone.
+`researcher/claims/index.jsonl` 记录每项主张的来源网址、证据强度、易变性和最后审查日期。`loop_daily.py` 可标记需要复核的高易变主张；验证器会确认所属技能存在且来源路径有效。
 
-`researcher/claims/index.jsonl` makes each claim auditable: source URL, evidence strength, volatility, last reviewed date. `loop_daily.py` can flag high-volatility claims that have not been reviewed today. The validator enforces that owning skills exist and source paths resolve.
+**经验**：可能过时的主张必须明确记录来源；把它们埋在散文里，等于保证后续智能体会不核实就重复引用。
 
-Takeaway: any claim that could rot needs explicit provenance. Burying them in prose is a guarantee that future agents will repeat them without checking.
+### 9. 子智能体审查也应成为构建门槛
 
-### 9. Subagent reviews are a deterministic gate too
+多次实现被宣布完成后，独立 `code-reviewer` 子智能体才发现具体缺陷：关闭运行清理、抓取协议白名单、收件箱锁竞态、无效配置选项，以及会静默放过失败的冗余启发式规则。审查将实现从“看起来对”推进到“行为正确”。
 
-Multiple times in this experiment, an implementation was declared complete, then a `code-reviewer` subagent flagged concrete bugs: closed-run reaping, scheme allowlist on fetch, race condition on the inbox lock, dead config flags, redundant heuristics that silently passed broken runs. Each review pass moved the implementation from "looks right" to "is right".
+一次审查的成本通常低于生产环境调试成本。效果最好的审查要求只报告高置信度问题，并聚焦错误行为、数据丢失、资源失控或安全风险，跳过风格意见。
 
-This is cheap. A single review pass typically costs less than what it saves in production debugging. The review prompt that worked best was: "Focus only on HIGH-CONFIDENCE issues that would cause incorrect behavior, data loss, runaway resource use, or security risk. Skip stylistic comments."
+**经验**：代码审查属于构建流程。对抗情景未必能发现新鲜读者几分钟就能发现的代码类别错误。
 
-Takeaway: treat code review as part of the build pipeline. Even adversarial scenarios miss class-of-error bugs that a fresh reader catches in minutes.
+### 10. 真实运行发现纸面审查漏掉的问题
 
-### 10. Live execution caught what paper review missed
+持续循环构建后，实际运行 13 轮发现：种子运行因来源网址指向 Parallel 研究交互而非证据文件，被暂停为“需要评估”；每日预算是否包含测试运行影响了计时；`loop_step` 返回 78（无操作）时，launchd 包装器提前结束，导致闲置轮次不刷新仪表板。
 
-After building the continuous loop, running it for 13 iterations live exposed:
+这些问题无法只靠读代码发现，实际执行后几分钟内就能看见。
 
-- The pre-existing seed run got parked at "needs evaluation" because its source URL pointed at a Parallel research interaction, not the actual evidence files.
-- Daily-budget timing depended on the test runs counting against the same day.
-- Status dashboard short-circuited the launchd wrapper when loop_step exited 78 (no-op), preventing dashboard refresh on idle iterations.
+**经验**：端到端运行是验证编排代码的高信号方法。各组件的单元检查无法发现状态机计时和包装器退出码交互问题。
 
-None of these were visible from reading the code. All were obvious within minutes of running it.
+### 11. 持续运行是独立架构问题
 
-Takeaway: end-to-end execution is the highest-signal validation for orchestration code. Unit tests of pieces will not catch state-machine timing or wrapper exit-code interactions.
+逐任务突破路线提供了 `validate_run`、机制晋级、主张来源、启用测试、基准和语料索引，但没有回答“无人操作时是谁运行这个循环？”
 
-### 11. Continuous operation is a separate architectural concern
+答案需要另一组组件：队列、收件箱、来源发现、调度器（launchd）、预算、暂停、清理、状态界面和操作手册。功能实现与持续运行是正交问题，不能混成同一里程碑；应分层设计，并通过文件状态连接。
 
-The breakthrough roadmap delivered the right per-task primitives: validate_run, mechanism promotion, claim provenance, activation tests, benchmarks, corpus index. None of those answered "what runs this loop when no one is at the keyboard."
+### 12. 终止状态能把技术债变成文档资产
 
-That answer required different machinery: queue, source discovery, scheduler (launchd), budgets, parking, reaping, status surfaces, runbook. Features and continuous operation are orthogonal concerns. Treating them as the same milestone hid the gap.
+种子运行开始时仍在进行，来源评估是草稿，技能提案是模板；每次仓库验证都要为它写特例。后来将其关闭为 `reference-only` 并说明理由，它就从“未完成工作”变成“运行生命周期的完整示例”。文件没有变，状态和解释变了。
 
-Takeaway: per-task correctness and continuous operation are different problems. Design them as separate layers and only couple them through file-based state.
+**经验**：无法完成的在途产物应有明确终止状态和理由，使其成为示例，而不是持续累积的债务。
 
-### 12. Terminal states convert technical debt into documentation
+### 13. 结构检查几乎不花令牌
 
-The seed run started this experiment in flight, with a draft evaluation and a template proposal. Each repo-validation pass had to special-case it. Closing it as `reference-only` with a clear rationale converted it from "incomplete work" into "worked example of the lifecycle." Same files, different framing.
+验证完整 14 项技能语料、所有评分规则和清单、机制注册表、主张索引、语料索引、启用案例、基准情景和运行产物，CPU 时间不到一秒，模型令牌为零。因此应在每个拉取请求和每轮循环中运行这些便宜检查。
 
-Takeaway: when in-flight artifacts will not be completed, give them a terminal state with an explicit reason. They become useful as examples instead of remaining as debt.
+### 14. 描述基准循环约两小时完成，是系统中最高杠杆反馈环
 
-### 13. Token cost of structural validation is near zero
+v2.3.0 阶段二在四个模型上发布真实结果；根据混淆矩阵改写两项技能描述，再用相同设置重跑并测量差异：
 
-Validating the entire 14-skill corpus, all rubrics, all manifests, the mechanism registry, the claims index, the corpus index, activation cases, benchmark scenarios, and all run artifacts takes under a second of CPU and zero LLM tokens. There is no excuse for not running these checks on every PR and on every loop iteration.
+- 基线：50 条提示 × 4 个模型 × 3 次，共 600 次；顺序运行约 60 分钟，首轮在 566 次时中断，之后通过扫描结果目录恢复。
+- 根据混淆矩阵改写 `context-fundamentals`、`tool-design` 和 `project-development`，约花 10 分钟。
+- 使用相同随机种子和样例重跑：并行度 4 时 600 次约 15 分钟，并显示逐次进度。
+- 生成差异报告约 1 分钟。
 
-Takeaway: cheap structural checks are the right floor. Spend model attention only on what cannot be deterministically verified.
+端到端总耗时不到两小时（含讨论）。结果：`context-fundamentals` top-1 提高 23.4 个百分点，`project-development` 提高 25 个百分点并达到满分，`tool-design` 提高 7.8 个百分点；四个模型中三个 top-1 提升，所有模型 top-3 提升。
 
-### 14. The description-benchmark loop closes in ~2 hours and is the highest-leverage feedback loop in the system
+循环依赖三点：
 
-This was the v2.3.0 finding. Stage 2 of the benchmark plan shipped real numbers across four frontier models, then we rewrote two skill descriptions based on the confusion matrix, then we re-ran the benchmark and measured the delta. End to end:
+1. 随机种子、样例和打乱方式相同；两次运行间只改描述，才能把差异归因于改写。
+2. 行动单位是单技能效应量。总体准确率可能只动约 1 个百分点，单技能却可提高 25 个百分点；只报告总分会隐藏应改进的描述。
+3. 混淆矩阵指出改写方向。基线显示 `context-fundamentals` 被 `context-degradation`、`project-development` 和 `context-optimization` 抢走任务；根据具体误路由方向改写，比反复阅读描述更有效。
 
-- Baseline benchmark: 50 prompts x 4 models x 3 reps = 600 runs (sequential, ~60 min; killed at 566 on first attempt and resumed via results-folder scan).
-- Description rewrites for `context-fundamentals`, `tool-design`, `project-development` based on the baseline confusion matrix: ~10 minutes of focused writing.
-- Re-run benchmark with same seed, same fixture: 600/600 runs in ~15 minutes (concurrency=4) with per-run progress logging.
-- Delta report generation: 1 minute.
+**经验**：凡自然语言描述会影响路由的系统（技能路由、工具路由、RAG 文档选择），都应尽早建立测量循环。第一次发现失败，第二次证明修复有效；没有第二次，就不知道修复是否奏效。
 
-Total wall time end-to-end: under 2 hours including discussion. Result: `context-fundamentals` top-1 +23.4pp, `project-development` top-1 +25pp (now perfect), `tool-design` top-1 +7.8pp, three of four models gained on top-1, all four gained on top-3.
+### 15. 改写描述后还要同步正文，路由基准无法检测正文错位
 
-Three properties of the loop matter:
+v2.3.0 首轮只改写了三项技能 frontmatter 中的一行 `description`。路由基准证明改写有效，但误以为工作已结束。
 
-1. **Same seed, same fixture, same shuffles**. The only changing variable across the two runs was the descriptions. This is what lets the delta be attributed to the rewrites, not luck.
-2. **Per-skill effect size is the unit of action**. Aggregate accuracy moves by ~1pp; individual skills move by 25pp. Reporting only the aggregate hides which descriptions need work.
-3. **The confusion matrix tells you what to rewrite**. The baseline showed `context-fundamentals` leaking specifically to `context-degradation`, `project-development`, and `context-optimization`. The rewrite was guided by the exact direction of each leak. It is much harder to fix a description by re-reading it; it is straightforward to fix one by looking at which other skill claimed its territory.
+frontmatter 描述用于路由提示；技能正文中的“何时启用”“实践指南”“示例”“集成”和“易错点”会在技能实际加载后影响行为。这是两个面向不同阶段的界面：描述可能能正确路由，正文却仍把智能体引向错误任务。
 
-Takeaway: for any system where description quality matters (skill routers, tool routers, RAG document selection), invest in a measurement loop early. The first run identifies the failures; the second run proves whether the fix worked. Without the second run, you do not actually know.
+例如 `context-fundamentals` 描述改写后，基础问题能正确路由到该技能，但正文仍把“优化上下文以减少令牌成本”列为触发条件。技能激活后，智能体会看到与描述相冲突的操作职责。路由基准将 `settingSources` 设为空，只读取描述，因此无法发现这种问题。
 
-### 15. Description rewrites are incomplete without body alignment, and the router benchmark cannot catch that
+改进方法：把“改写描述”和“对齐正文”分作两个任务；重点检查“何时启用”，因为它会立即加载，是技能内部的第二个路由界面；每次改写描述后，还要检查同伴技能“集成”章节是否残留旧路由声明。
 
-The first v2.3.0 description-rewrite pass changed the one-line frontmatter `description` for three skills. The router benchmark validated that change (top-1 rates improved as predicted). The mistake was assuming the work was done.
+**经验**：收窄技能描述后，应当天审计正文。技能是多界面产物，界面之间保持一致属于变更的一部分。
 
-The frontmatter description is what gets injected into a routing prompt. The SKILL.md body (`When to Activate`, `Practical Guidance`, `Examples`, `Integration`, `Gotchas`) is what gets loaded into the agent's context once the skill activates. These are two different surfaces with two different audiences. A description can route correctly while the body still steers the agent toward the wrong work.
+### 16. 并发、恢复和逐次日志是运行器必需能力
 
-Concrete instance: after the description rewrite, `context-fundamentals` correctly routed to itself for foundational prompts, but its body still listed "Optimizing context usage to reduce token costs or improve performance" as a `When to Activate` trigger. The moment the skill activated for a real task, the agent saw operational ownership claims that contradicted the description that got it there. The router benchmark (which runs with `settingSources: []` and only sees descriptions) had no way to surface this gap.
+v1 路由运行器顺序执行、无法恢复，也不逐次打印进度；扫描在 566/600 时停止，操作者不知道何时中断、完成多少、是否需要全部重跑。
 
-Three fixes:
+v2 运行器加入有界并发、扫描结果目录后跳过已完成工作，以及逐次进度日志。May 19 运行还发现 SDK 暂时空输出或格式错误应先重试一次，再计为失败；首轮 15 个格式失败通过恢复运行全部成功。当前运行器会自动重试格式失败。
 
-1. Treat "rewrite the description" and "align the body" as two work items, not one. The first is cheap and benchmark-measurable; the second is cheaper still but invisible to the router benchmark and only measurable in Stage 3 effectiveness tests where the body actually loads.
-2. The `When to Activate` body section is the highest-leverage body content. It is loaded immediately, parsed by the model, and acts as a second routing surface inside the skill. A `When to Activate` that contradicts the frontmatter `description` is worse than no `When to Activate` at all.
-3. The `Integration` section is the cross-reference layer. After every description rewrite, every sibling skill's `Integration` should be checked for stale routing claims. A skill that says "for X, go to old-skill-name" when X has been re-homed introduces real routing damage.
+**经验**：任何循环调用付费 API 的运行器都必须具备并发上限、基于结果目录的恢复、能及时发现停滞的逐次日志，以及暂时空输出或解析失败的一次重试。这些不是优化，而是基本能力。
 
-Takeaway: any time a skill's scope is narrowed at the description level, audit the body the same day. A skill is a multi-surface artifact; consistency across surfaces is part of the change.
+### 17. 技能改进还必须同步语料元数据
 
-### 16. Concurrency, resume, and per-run logging are the three non-negotiable runner features
+用户指出只改描述和三个正文不够：虽然路由改进了，但其余技能正文标准不一、机制归属缺失、主张来源薄弱、启用边界未验证。
 
-The v1 router runner ran sequentially, had no resume capability, and printed nothing per-run. The sweep died at 566 of 600 and we did not know:
+全语料加固将工作单位从“修复基准指出的技能”变成“让每个技能通过相同发布标准”：每项技能补充明确边界和相邻技能路由；弱结构技能 `bdi-mental-states`、`hosted-agents` 补充实践指导与示例；每个技能至少关联一项已接受机制；易变主张改为有限定措辞或关联 `claim-*` 和来源路径；扩展启用样例；让 `validate_repo.py --strict` 强制检查正文章节和不启用边界。
 
-- That it had died (no per-run output meant the stalled state was invisible).
-- How far it had gotten (had to count files in the results directory).
-- That we would have to redo everything (no resume meant any restart was a full do-over).
+结果无需付费 SDK 扫描即可衡量：技能健康度从 0.8111 升至 0.9117，被标记技能从 2 项降为 0；严格检查 0 警告；启用案例 19/19 通过；对抗性确定性基准 7/7 通过。
 
-The v2 runner has all three. The v2 sweep ran in 15 minutes with full visibility and complete coverage. Same code path, same SDK, same models. The May 19 corpus-hardening sweep added one more operational lesson: transient empty/format-failed SDK responses should be retried once before being counted. The full 600-record sweep initially had 15 format failures, all of which completed successfully when rerun through resume. The runner now has an automatic format-failure retry.
+**经验**：自主研究系统应同时改进正文、元数据和门槛。只改正文会让语料更漂亮，却不会让系统更具自我改进能力。
 
-Takeaway: any runner that calls a paid API in a loop needs: bounded parallelism with a concurrency flag; resume that scans the results directory and skips completed work; per-run progress logging that surfaces stalls in less than the time it takes to finish one call; and one retry for transient empty or unparsable outputs. These are not optimization. They are baseline competence.
+## 本实验未解决的问题
 
-### 17. A skill is not improved until the corpus metadata improves with it
+- **没有模型评审适配器**：`retrieved -> evaluated` 和 `proposed -> novelty_checked` 仍需人工或未来评审器。契约已定义，但受成本门槛控制的实现尚未完成。
+- **除了手动种子外，没有自动来源发现**：Parallel 深度研究、网页搜索、RSS 和学术预印本适配器仍是占位项。
+- **没有日志轮转**：各脚本日志会持续增长，适合数周运行，不适合数年运行。
+- **没有完整 pytest 套件**：脚本通过真实运行和确定性门槛进行冒烟检查；单元和集成测试能更早发现重构退化。
+- **还没有完整正文有效性基准**：当前健康度衡量结构，第三阶段仍需比较完整技能加载前后的真实任务效果。
 
-The user was right to call out the shortcut. Rewriting descriptions and aligning three skill bodies was not enough. It improved the router surface, but it left the rest of the corpus with uneven body standards, missing mechanism ownership, weak claim provenance, and untested activation boundaries.
+## 可复用模式
 
-The corpus-wide hardening pass changed the unit of work from "fix the skills the benchmark complained about" to "make every skill pass the same publication standard." That meant:
+1. 用 JSON 文件保存运行状态，用只追加讨论日志服务于人：状态驱动自动化，讨论日志服务于审查。
+2. 任何处理任务的智能体至少需要队列、收件箱、暂停、完成和隔离区域。
+3. 两个进程共享文件时，默认使用原子写入（`tempfile` + `os.replace`）和 `fcntl` 锁。
+4. 用带晋级门槛的机制注册表积累经验，避免随意改写。
+5. 通过启用回归样例检查依靠描述路由任务的技能组件。
+6. 对决定发布或合并的运行框架，先建立对抗基准，再考虑模型评审。
+7. 每个队列都要为关闭状态设计清理器。
+8. 按问题拆分验证器，例如分别检查“语料是否健康”和“本次运行是否可发布”。
+9. 编排代码宣布完成前应真实端到端运行。
+10. 将持续运行作为独立里程碑，不要与单次任务正确性混为一谈。
+11. 对自然语言路由系统采用描述基准循环：基线扫描 → 分析混淆矩阵 → 按误路由方向改写 → 固定种子和样例重跑 → 发布差异。
+12. 付费 API 循环必须支持结果目录恢复、有界并发、逐次进度日志和格式失败重试。
+13. 描述改动当天审计正文；“何时启用”是第二个路由界面，不能与 frontmatter 相矛盾。只包含描述的路由基准无法发现此类错位。
+14. 同步修改正文、元数据和门槛：机制注册表、主张来源、语料索引、启用样例和验证器都应与技能变更保持一致。
 
-- Every skill body got explicit ownership boundaries and adjacent `Do not activate` routes.
-- Structurally weak bodies (`bdi-mental-states`, `hosted-agents`) gained practical guidance and examples.
-- Every skill was mapped to at least one accepted mechanism in `researcher/mechanisms/registry.jsonl`.
-- Volatile numeric/vendor claims were softened or tied to `claim-*` IDs with concrete source paths.
-- Activation fixtures grew to cover previously untested skills, not just the benchmark-confused ones.
-- `validate_repo.py --strict` was tightened so required body sections and non-activation boundaries are enforced.
+## 使用方法
 
-The result was measurable without another paid SDK sweep: skill health moved from 0.8111 with two flagged skills to 0.9117 with zero flagged skills; strict validation passed with zero warnings; activation cases passed 19/19; adversarial deterministic benchmarks passed 7/7 scenarios.
+扩展研究运行体系或设计类似系统前，先阅读本文。实验中的许多摩擦都是同类错误以不同形式重复出现：静默失败、缺少清理器、只用散文表示状态、推迟确定性检查。理解失败模式后，可避免重复犯错。
 
-Takeaway: auto-research should improve three layers at once: prose, metadata, and gates. If only the prose changes, the corpus becomes prettier but not more self-improving.
-
-## What This Experiment Did Not Solve
-
-Honest list, not aspirations:
-
-- **No LLM judge adapter**: `retrieved -> evaluated` and `proposed -> novelty_checked` still require human or future judge action. The contract is in place; the cost-gated implementation is not.
-- **No automated source discovery beyond the manual seed**: feed adapters for Parallel deep research, web search, RSS, and academic preprints are placeholders.
-- **No log rotation**: per-script logs grow indefinitely. Acceptable for weeks, not years.
-- **No pytest suite**: scripts are smoke-tested via live execution and the deterministic gates. Real unit/integration tests would catch refactor regressions earlier.
-- **No full-body effectiveness benchmark yet**: deterministic health now measures skill-body structure, but Stage 3 still needs real agent tasks with and without full skills loaded.
-
-## Reusable Patterns For Future Work
-
-Patterns from this experiment that are worth carrying into other agentic systems:
-
-1. **Run state in a JSON file plus an append-only thread log**. State governs automation, thread governs humans.
-2. **Queue + inbox + parked + done + quarantine** as the minimum durable surface for any agent that processes work.
-3. **Atomic writes (`tempfile` + `os.replace`) plus `fcntl` locks** as the default whenever two processes share a file.
-4. **Mechanism registry with gated promotion** as the way to accumulate "what we have learned" without ad hoc edits.
-5. **Activation regression fixtures** for any skill-router style component that uses descriptions to route tasks.
-6. **Adversarial benchmarks before model judges** for any harness that decides whether to publish or merge.
-7. **Closed-state reaper** in every queue.
-8. **Split validators by question** ("is the corpus healthy" vs "is this run ready") instead of one validator per artifact.
-9. **Run live before declaring done** for any orchestration code.
-10. **Treat continuous operation as a separate milestone** from per-task correctness.
-11. **The description-benchmark loop** for any system where natural-language descriptions affect routing: baseline benchmark, read the confusion matrix, rewrite based on specific leak directions, re-run with the same seed and fixture, publish the delta.
-12. **Resume-by-results-folder-scan + bounded concurrency + per-run progress logging + format-failure retry** as the non-negotiable runner features for any paid-API loop.
-13. **Audit the body the same day the description changes.** A skill is a multi-surface artifact; the `When to Activate` body section is a second routing surface and must not contradict the frontmatter description. The router benchmark cannot catch body-vs-description inconsistencies because router prompts only contain descriptions.
-14. **Update prose, metadata, and gates together.** A skill improvement is incomplete until the body text, mechanism registry, claim provenance, corpus index, activation fixtures, and validators all agree.
-
-## How To Use This Document
-
-When extending the researcher OS or designing similar systems, read this before writing new infrastructure. Most of the friction in this experiment came from making the same shape of mistake (silent failure modes, missing reapers, prose-only state, deterministic checks deferred) in different concrete forms. Knowing the shape lets you skip the mistake.
-
-If a future change here invalidates one of these findings, update this file in the same PR.
+若未来变更推翻了某项结论，应在同一拉取请求中更新本文。

@@ -1,12 +1,12 @@
-# Harness Protocol Reference
+# 运行框架协议参考
 
-Implementation detail for the self-managed-context skill. Source: the released Context Language Models code at `github.com/facebookresearch/context-language-models`, commit `18dc111` (retrieved 2026-10-01), licensed CC BY-NC 4.0, plus the paper's Appendix E where a protocol is described but not shipped. Prompt wording below is paraphrased with attribution. Defaults are pinned to that commit and are volatile (claim-self-managed-context-harness-defaults).
+本文记录“自主管理上下文”技能的实现细节。来源为已发布的 Context Language Models 代码库 `github.com/facebookresearch/context-language-models`，提交 `18dc111`（检索于 2026-10-01，采用 CC BY-NC 4.0 许可），以及论文附录 E 中有描述、但未随代码发布的协议。以下提示词措辞为转述，并注明来源。默认值固定对应上述提交，后续可能变化（`claim-self-managed-context-harness-defaults`）。
 
-## Mirror File
+## 镜像文件
 
-- One file per agent context (the reference uses a path under `/tmp/.live_ctx/`). It is refreshed from the live messages before every command.
-- The pinned prefix (system prompt and initial task, `protect=2`) is never written to the file.
-- Each editable turn is rendered as a header line followed by its text:
+- 每个智能体上下文对应一个文件（参考实现使用 `/tmp/.live_ctx/` 下的路径）。每次执行命令前，文件都会从当前消息刷新。
+- 固定前缀（系统提示和初始任务，`protect=2`）绝不写入文件。
+- 每个可编辑轮次渲染为一行标题和后续正文：
 
 ```text
 [[CTX_TURN 1 role=assistant]]
@@ -17,127 +17,127 @@ grep -n "split(',')" src/parser.py
 142:    fields = line.split(',')
 ```
 
-- Turn numbers start at 1 from the top of the editable region and are display-only; parse-back ignores them. Tool calls render as `name {json-args}` text.
-- Whitespace-only differences between the rendered and read-back file are treated as no change.
+- 轮次编号从可编辑区域开头按 1 起算，只用于显示；解析回消息列表时会忽略编号。工具调用渲染为 `名称 {JSON 参数}` 文本。
+- 渲染文件和读取回来的文件若只有空白差异，则视为没有变更。
 
-## Parse-Back Rules
+## 解析回消息列表的规则
 
-`parse_back(edited, protected)` maps any edited string to a legal message list:
+`parse_back(edited, protected)` 会把编辑后的字符串映射为合法消息列表：
 
-1. Re-pin the protected prefix from the original messages, never from the file.
-2. Surviving headers define the remaining turns. Text before the first header, or a file with no headers, becomes a user turn.
-3. `assistant` stays `assistant`; every other role (including `system`, `tool`, and invented roles such as `notes`) becomes `user`. Tool-call structure is not reconstructed.
-4. Drop turns whose body is empty (emptying a turn deletes it) and merge consecutive same-role turns.
+1. 从原始消息重新固定受保护前缀，不从文件读取。
+2. 保留下来的标题决定剩余轮次。首个标题之前的文本，或没有标题的整个文件，都会变成一条用户消息。
+3. `assistant` 保持为 `assistant`；其他任何角色（包括 `system`、`tool` 和 `notes` 等自创角色）都变为 `user`。不会重建工具调用结构。
+4. 删除正文为空的轮次（清空轮次就会删除它），并合并连续的同角色轮次。
 
-Consequence: tool results become plain user turns after any applied edit. That is acceptable for chat-completion APIs but loses tool-call pairing; any harness feature that depends on tool-call identifiers must run before the first edit or tolerate their absence.
+后果：任何一次编辑应用后，工具结果都会变成普通用户消息。这对聊天补全 API 可以接受，但会丢失工具调用配对；依赖工具调用编号的运行框架功能，必须在首次编辑前执行，或容忍编号缺失。
 
-## Edit Gate
+## 编辑门槛
 
-- Growth is measured against the round-tripped original (`parse_back(rendered)`), not the raw messages, so parse normalization never counts as an edit.
-- `fit` (default, selectable by environment variable or agent kwarg): growth is allowed if the result fits the budget. With no budget configured, growth is refused.
-- `shrink`: any growth is rejected.
-- A rejected edit leaves the context unchanged and does not count as a change.
+- 相对大小以往返解析后的原始上下文 `parse_back(rendered)` 为基准，而非原始消息，因此解析规范化不会被算成编辑。
+- `fit`（默认，可通过环境变量或智能体参数选择）：只要结果不超过预算，允许增长；没有配置预算时拒绝增长。
+- `shrink`：拒绝任何增长。
+- 被门槛拒绝的编辑不会改变上下文，也不计为编辑。
 
-## Receipts
+## 回执
 
-Appended to the tool result whenever the mirror changed or the command text referenced the main context file or its directory; a turn that does neither gets no receipt:
+只要镜像有变化，或命令文本提到了主上下文文件及其目录，工具结果末尾就会附加回执；两者都没有发生时不提供回执：
 
-| Situation | Receipt content |
+| 情况 | 回执内容 |
 | --- | --- |
-| Edit applied, did not grow, within the limit | Applied, tokens before and after, turn count |
-| Edit applied but still over the limit | Applied, still over, compact more now or the session ends |
-| Edit applied and grew (fits) | Applied, grew; warns that the model likely duplicated instead of replacing |
-| Edit rejected by gate | Rejected, the rule in force, sizes |
-| Command referenced the file but exited non-zero | No change, the exit code |
-| Command referenced the file but matched nothing | No change, a reminder of the real header format |
+| 编辑已应用，大小未增长且未超限 | 已应用、编辑前后令牌数、轮次数 |
+| 编辑已应用，但仍超过限制 | 已应用、仍然超限，并提示立即继续压缩或会话将结束 |
+| 编辑已应用且增长，但仍能放入预算 | 已应用、内容变大；提示模型可能重复添加，而不是替换旧内容 |
+| 编辑被门槛拒绝 | 拒绝、当前生效规则、大小 |
+| 命令提及文件但退出码非零 | 无变化和退出码 |
+| 命令提及文件但未匹配内容 | 无变化，并提醒实际标题格式 |
 
-When a budget is configured, a context readout follows on every result: `[context: ~N/LIMIT tokens]`, where LIMIT is the strict target (budget minus reserve), with an `OVER` marker once the calibrated count passes it.
+配置预算后，每个结果还会显示上下文估算：`[context: ~N/LIMIT tokens]`。`LIMIT` 是严格目标（预算减预留量）；校准后的计数超过目标时会标记 `OVER`。
 
-## Free Edit Turns
+## 免费编辑轮次
 
-A turn is free (does not consume task-step budget) only when the edit was applied, the command printed nothing to stdout or stderr, and it exited 0. Any output, non-zero exit, or no-match edit costs a normal turn.
+只有同时满足以下条件时，编辑轮次才免费（不消耗任务步骤预算）：编辑已应用、命令没有向标准输出或标准错误打印内容、退出码为 0。任何输出、非零退出码或没有匹配到内容，都会按普通轮次计费。
 
-## System Prompt Content (paraphrased)
+## 系统提示内容（转述）
 
-The reference system prompt tells the model:
+参考系统提示告诉模型：
 
-- The goal is task success; there is no penalty for extra turns. The budget is stated, and every result shows current size.
-- The conversation is mirrored to the file and refreshed before each command. Free context by replacing stale regions (large outputs, dead ends, superseded notes) with concise, specific summaries.
-- Locate text with code; never paste or retype context. One worked example collapses a turn by regex on its header and substitutes a one-line note.
-- Do not print the file (its text is already in context). Keep the header of any turn being kept. The prefix is protected.
-- Edit cost grows with the text after the edit: batch; do not compact a small early region under a long useful tail unless the limit is near; write generous replacements because the tail is re-read anyway.
+- 目标是完成任务；多轮不会受罚。提示词会给出预算，每次工具结果都会显示当前大小。
+- 对话会镜像到文件，并在每条命令执行前刷新。应将过时区域（大型输出、死路、被新信息取代的备注）替换成简洁具体的摘要，以释放上下文。
+- 使用代码定位文本；不要复制或重打已有上下文。示例会按轮次标题用正则替换一段内容为单行备注。
+- 不要打印整个文件，因为其中的文字已经在上下文中。保留任何待保留轮次的标题；固定前缀受保护。
+- 编辑成本随编辑位置之后的文本增加：应批量编辑；除非接近上限，否则不要压缩一个较长有效尾部前的小段内容；替换内容可以相对充分，因为尾部本来就会重新读取。
 
-Tool outputs longer than the observation cap are head- and tail-truncated (5,000 characters each in the reference config) with a hint to produce less output.
+超过观察上限的工具输出会只保留开头和结尾（参考配置各 5,000 个字符），并提示模型减少输出。
 
-## Budget Controller Defaults
+## 预算控制器默认值
 
-| Setting | Default | Purpose |
+| 设置 | 默认值 | 用途 |
 | --- | --- | --- |
-| Reserve | 2,048 tokens | Strict target is budget minus reserve |
-| Protected prefix | 2 messages | Rollback and parse never touch system and task |
-| Tokenizer | Local o200k count times a calibration ratio | Deterministic; corrected toward the served tokenizer |
-| Calibration clamp | Ratio accepted only within [0.5, 3.0] | A wild ratio means a truncated or cached prompt or a gateway miscount |
-| Nudge tiers | 25%, 50%, 75% of the budget; each fires once and re-arms after compacting below it | See below |
-| Adaptive urgent band | On by default: max(10% of limit, 2x largest of the last 3 tool outputs), capped at 50% of limit; fires every turn inside the band | Fires before one large output can jump past the limit |
-| Retry on limit | Up to 50 rollbacks per run at the agent level (the standalone controller defaults to 0, meaning final turn then stop) | Overflow becomes a recoverable event instead of the end of the run |
-| Rollback margin | 2,048 tokens | Free just enough room for one compaction |
-| Rollback escalation | The first four consecutive rollbacks without an applied edit free exactly the margin; from the fifth, depth grows by one margin per rollback, capped at max(three quarters of the target, margin) | Breaks livelock without discarding more than necessary |
-| Newest-output cap | Head and tail truncate only the newest tool output to fit | Cache-friendly; older turns untouched |
+| 预留量 | 2,048 个令牌 | 严格目标等于预算减去预留量 |
+| 受保护前缀 | 2 条消息 | 回滚和解析不会修改系统消息与任务消息 |
+| 分词器 | 本地 o200k 计数乘以校准比例 | 提供确定性计数，并校准到实际服务使用的分词器 |
+| 校准比例范围 | 只接受 `[0.5, 3.0]` | 比例异常通常说明提示词被截断或缓存，或网关计数错误 |
+| 提醒层级 | 预算的 25%、50%、75%；每层只触发一次，压缩到该层以下后重新启用 | 见下文 |
+| 自适应紧急区间 | 默认开启：取目标上限的 10% 与最近三次工具输出最大值两倍中的较大者，但不超过上限的 50%；进入后每轮提醒 | 避免一次大输出直接越过上限 |
+| 超限重试 | 每次运行最多回滚 50 次；独立控制器默认 0 次，表示给最后一轮后停止 | 把溢出变成可恢复事件，而非运行终点 |
+| 回滚余量 | 2,048 个令牌 | 只释放足够进行一次压缩的空间 |
+| 回滚升级 | 连续四次回滚仍无编辑时，每次只释放固定余量；从第五次起，每次多释放一个余量，最多达到目标的四分之三或一个余量中的较大值 | 打破空转，同时避免不必要地丢弃上下文 |
+| 最新输出上限 | 只截断最新工具输出的头部和尾部，直到能放入预算 | 适配缓存，不修改旧轮次 |
 
-Paper runs override the retry count: BrowseComp-Plus allowed up to six rollbacks and EdgeBench-10 up to 50; TerminalBench 2.1, skill evolution, and steering ended the run on overflow.
+论文运行覆盖默认重试次数：BrowseComp-Plus 最多允许回滚六次，EdgeBench-10 最多 50 次；TerminalBench 2.1、技能演进和策略引导在溢出时结束运行。
 
-Nudge message classes:
+提醒消息分级如下：
 
-- At or below 25% fill: informational only. States the size, says no action is needed, and asks the model to keep a record of queries already tried. The compaction how-to is deliberately omitted because it triggers premature wholesale deletion.
-- At or below 50%: finish the unit of work in flight, then tidy once, following the note contract.
-- Above 50%: close to the limit; compact settled spans but do not wipe, because edits keeping under a quarter of the region they touch are usually followed by redoing the deleted work. Note contract plus the overflow consequence.
-- Urgent band: compact this turn and do nothing else; crossing the limit yields one final turn.
+- **填充度不超过 25%**：只提供信息，不要求采取行动；报告大小，说明无需处理，并提示记录已尝试的查询。刻意不提供压缩步骤，因为那可能诱发过早整体删除。
+- **填充度不超过 50%**：先完成当前工作单元，再按备注约定整理一次。
+- **填充度超过 50%**：提示接近上限，压缩已完成部分但不要清空上下文。通常，替换内容少于被编辑区域四分之一的编辑会导致后续重做已删除工作。此级提醒附有备注约定和超限后果。
+- **紧急区间**：本轮立即压缩，不做其他工作；越过上限后只剩一轮。
 
-Note contract, appended to mid and high tiers: when writing a replacement note, copy facts forward from the text being replaced, including every ruled-out candidate with its reason and a "do not retry" marker, the exact queries or commands already tried, exact values marked verified or unverified, and a next-step line.
+中、高层级提醒附加备注约定：写替代备注时，应从即将替换的文本中复制事实，包括每个已排除候选及其理由、“不要重试”标记、已经尝试过的精确查询或命令、明确标记为已验证或未验证的数值，以及下一步事项。
 
-Rollback notice on overflow: states that the newest turns were rolled back and are unrecoverable, the cumulative turns lost, the remaining room, an instruction to condense this turn only, and the list of commands whose output blew the budget with advice to re-run them with less output. Only an applied context edit resets escalation; dipping under the limit does not, because that happens every cycle of a livelock.
+超限时的回滚通知会说明：最新轮次已被回滚且无法恢复、累计丢失轮次数、剩余空间、只精简当前轮次的指示，以及导致超限的命令列表和减少输出的重试建议。只有应用了一次上下文编辑才会重置升级计数；仅仅回到上限以下不会重置，因为空转循环的每一轮都会出现这种情况。
 
-Final-turn notice: when the budget is exhausted and retries are spent, the model gets one turn to put its answer in place before grading.
+当预算耗尽且重试用完时，模型会收到最后一轮通知，可在评分前把答案放到最终位置。
 
-## Skill Evolution Loop
+## 技能演进循环
 
-Released code (`clm_icl`):
+公开代码 `clm_icl` 的流程：
 
-- Each round runs the incumbent skill on the training tasks and builds a contrastive note from up to five pairs of runs (configurable): same task with different rewards first, then worst versus best across tasks, then two successful runs of the same task where one was cheaper.
-- A proposer model reads the note and writes N full candidate skill documents. Malformed candidates are dropped, never repaired.
-- Every valid candidate is evaluated on the development tasks. Gate with d = candidate accuracy minus incumbent accuracy and SE the paired standard error of per-task differences (unpaired combination when task sets differ): pass if d > SE; fail if d < -SE; inside one SE, pass only if cost is in the same metric and lower. Selection takes the most accurate passing candidate, breaking ties within one SE by cost.
-- If no development split is supplied, selection falls back to the training tasks and the loop logs a warning; treat such results as in-sample.
+- 每轮先在训练任务上运行当前技能，并从最多五组运行配对中生成对比备注（数量可配置）：优先选同一任务、奖励不同的配对；其次选不同任务中最差与最佳的配对；最后选同一任务中都成功、但成本较低的配对。
+- 提案模型读取备注并撰写 N 份完整候选技能文档。格式错误的候选会直接丢弃，不会自动修补。
+- 所有有效候选都在开发集上评估。令 `d` 为候选准确率减去当前版本准确率，`SE` 为逐任务差值的配对标准误（任务集合不同时使用非配对组合）：若 `d > SE` 则通过，若 `d < -SE` 则失败；若差距在一个 `SE` 内，只有成本指标一致且成本更低时才通过。选择通过候选中准确率最高者；若准确率差距在一个 `SE` 内，则按成本破同分。
+- 如果未提供开发集，选择流程退回到训练集并记录警告；应将此类结果视为样本内结果。
 
-Paper protocol (Appendix E, not encoded in the released loop):
+论文附录 E 的协议（未编码进公开循环）：
 
-- Four proposers in parallel, each reading at least ten rollouts and writing at least four rewrites with a predicted effect on accuracy and cost. A lineage stops after five consecutive proposals without development improvement.
-- Staged evaluation: six training instances; if accuracy is at least the frontier's, twelve more; then a development split (102 instances per task, one seed) that alone decides frontier membership and selection. A held-out test split (102 instances, three seeds) is evaluated once after the archive freezes.
+- 四个提案模型并行运行；每个模型至少阅读十条运行轨迹，并至少撰写四个改写方案，同时预测对准确率和成本的影响。某条技能谱系若连续五个提案都未改善开发集表现，就停止。
+- 分阶段评估：先用六个训练实例；若准确率不低于当前最强方案，再增加十二个；然后使用开发集（每项任务 102 个实例、一个随机种子）决定最强方案归属和最终选择。归档冻结后，留出测试集（102 个实例、三个随机种子）只评估一次。
 
-## RL Advantage
+## 强化学习优势函数
 
-Stepwise GRPO: trajectories are split at context edits, each segment is trained under the exact input it was generated from, and the outcome advantage is assigned to every segment rather than differentiated through edits.
+逐步 GRPO：轨迹按上下文编辑点切段；每个片段按生成时的精确输入训练；结果优势分配到每个片段，而不是对编辑操作求导。
 
 ```text
 A[i, t] = r_i + w_eff * a_eff_i * m_i[t]
-a_eff_i = clip((mean_cost_successes - cost_i) / mean_cost_successes, -1, 1)   for successful i
-a_eff_i = 0                                                                     for failures, or groups with < 2 successes
-m_i[t]  = 1 on context-edit tokens, 0 elsewhere
-w_eff   = 0.25
-cost    = prefix-reuse FLOPs of the trajectory
+a_eff_i = clip((成功样本平均成本 - cost_i) / 成功样本平均成本, -1, 1)   成功样本 i
+若失败，或组内成功样本少于 2 个，则 a_eff_i = 0
+m_i[t] = 上下文编辑令牌取 1，其他令牌取 0
+w_eff = 0.25
+cost = 轨迹的前缀复用 FLOPs
 ```
 
-Reference training run: Qwen3.5-9B, 3,040 OpenResearcher prompts, 8 prompts by 32 rollouts per step, 70 steps, 28K budget with a 2,048-token reserve, up to 80 turns with editing turns excluded, binary reward from GPT-5.4-nano with the DeepSearchQA rubric. The CLM run also adds penalties for failed tool calls and malformed outputs; the summary harness in the paper's headline comparison (Table 2) is trained on task reward alone (claim-self-managed-context-rl).
+参考训练运行使用 Qwen3.5-9B、3,040 个 OpenResearcher 提示词；每步 8 个提示词、每个提示词 32 条轨迹，共 70 步；预算 28K，预留 2,048 个令牌；最多 80 轮，但编辑轮次不计入；GPT-5.4-nano 根据 DeepSearchQA 评分规则提供二元奖励。CLM 运行还会惩罚工具调用失败和格式错误输出；论文重点比较中的摘要运行框架只按任务奖励训练（`claim-self-managed-context-rl`）。
 
-## Suffix Cache Reuse Configuration
+## 后缀缓存复用配置
 
-SCR is a start-up monkeypatch for SGLang 0.5.16; no SGLang source file is modified.
+SCR 是针对 SGLang 0.5.16 的启动时猴子补丁，不修改 SGLang 源文件。
 
-- Full-attention layers: diff the new prompt against the session's previous prompt, relocate up to K surviving spans (largest first), re-rotate key positions, splice after the edited text, and prefill only new tokens. Relocated entries live in session-private slots, so the shared radix tree never holds a moved entry. If slots cannot be allocated, the server falls back to standard re-prefill.
-- Linear-attention layers (hybrid models): restore the recurrent state saved at the end of the previous prompt when splicing the first relocated span; the edit is reflected through the full-attention layers.
-- Defaults: K = 6 relocated blocks per request, linear-attention mode `fork`, 16 trailing tokens of each block re-prefilled, 12 side sessions of 30,000 tokens each.
-- Memory: the side buffer is a separate GPU allocation. At defaults for Qwen3.6-27B it is about 22 GiB; lower the static memory fraction to leave room, and size side sessions to at least the number of concurrent conversations.
-- Remaining waste on hybrid models: recurrent states are stored only at cached request boundaries, so a prompt diverging inside a cached span can fall back to a much shorter prefix match. This affects standard prefix caching as well.
+- **全注意力层**：比较新提示词与该会话上一版提示词，最多搬移 K 个仍然有效的片段（优先搬移较大的片段），重新旋转键的位置，在编辑文本后拼接，并只对新增令牌执行预填充。搬移条目位于会话私有槽位中，因此共享基数树不会保存移动后的条目。无法分配槽位时，服务器退回标准重新预填充。
+- **线性注意力层（混合模型）**：拼接第一个搬移片段时恢复上一版提示词末尾保存的递归状态；编辑通过全注意力层体现。
+- **默认值**：每次请求最多搬移 K = 6 个块；线性注意力模式为 `fork`；每个块尾部 16 个令牌重新预填充；设置 12 个边缘会话，每个 30,000 个令牌。
+- **内存**：边缘缓冲区单独占用 GPU 内存。Qwen3.6-27B 使用默认设置时约需 22 GiB；应降低静态内存比例留出空间，并将边缘会话数量至少设置为并发会话数。
+- **混合模型的剩余浪费**：递归状态只保存在缓存请求边界。如果提示词在已缓存片段内部发生分歧，可能退回到短得多的前缀匹配。标准前缀缓存也有同样限制。
 
-## Prefix-Reuse FLOPs
+## 前缀复用 FLOPs
 
-Per turn, cost is the forward compute for the prompt tokens beyond the reusable prefix plus decode for generated tokens; summed over the trajectory it captures decode, prefill, and re-prefill under standard serving. It is a theoretical metric from a model FLOPs formula, not measured GPU time; SCR savings are reported separately as empirical reused-token accounting (claim-self-managed-context-edit-cost, claim-self-managed-context-scr-savings).
+每轮成本等于超过可复用前缀的提示词令牌前向计算量，加上生成令牌的解码计算量；在整个轨迹上求和，可估计标准服务下的解码、预填充和重新预填充开销。这是根据模型 FLOPs 公式计算的理论指标，不是实测 GPU 时间。SCR 收益另以经验复用令牌统计报告（`claim-self-managed-context-edit-cost`、`claim-self-managed-context-scr-savings`）。

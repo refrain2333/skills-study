@@ -5,157 +5,157 @@
       "owner": "researcher/fixtures/activation-cases.jsonl",
       "records": [
         {
-          "digest": "sha256:9e84b1140ddf77e60af3e2e236d5d5a62dd3ca4fd7ad59932e281ad466554db8",
+          "digest": "sha256:95fea66d2d96738265114b412ccf0fcc19ccff037f3ffd7e5f676b193139b4e8",
           "expected_primary_skill": "bdi-mental-states",
           "id": "activation-bdi-vs-memory",
           "line": 15
         },
         {
-          "digest": "sha256:e41f7ac28af4e25a06f9f21cf33b1d5bb394e3c28f861826c77e3f044c83b3c2",
+          "digest": "sha256:11ce8a69a5edb0c8619cbb3f26c09b9ea4508d57a52e113a883681d8ed859821",
           "expected_primary_skill": "context-compression",
           "id": "activation-compression-summary-vs-self-managed",
           "line": 26
         },
         {
-          "digest": "sha256:ac5786d2d1b2866d903f2df56be2d2458e979f8fe5e67f1d8021b092654649f3",
+          "digest": "sha256:4ae3891448b437fe1b6a2afa2a683243789a3d6b58f4b7c3a4b7acf89db8cceb",
           "expected_primary_skill": "context-compression",
           "id": "activation-compression-vs-optimization",
           "line": 3
         },
         {
-          "digest": "sha256:284a7f7dc3fe7da6364a5f9f9f1f9b77773f783b00400ae51db07ddfe81f039b",
+          "digest": "sha256:4b9dccd08bbea5da459ea9e466c71e904a8a4d4114caa5a42e1d0d6bbe1bc97b",
           "expected_primary_skill": "context-degradation",
           "id": "activation-degradation-poisoning",
           "line": 16
         },
         {
-          "digest": "sha256:b452f5dc7910a48ac388f01ddf455fa36dce84564bfdd0c7902ae0dc1fd6ae97",
+          "digest": "sha256:e17765aa0d9fa70aecc0ad868f3170a336a8900f528f70225abb8764ca3d82e7",
           "expected_primary_skill": "evaluation",
           "id": "activation-evaluation-general-quality-gate",
           "line": 2
         },
         {
-          "digest": "sha256:a13f96f409c041e7a79db8dcfc4f6f16546adb3e73257de9a0bb8cda8eb968fb",
+          "digest": "sha256:c40cf457dbdcf3e3b6f9ebc16bd091ddf5f4216776dbe88b53d003a96f4d3dec",
           "expected_primary_skill": "advanced-evaluation",
           "id": "activation-evaluation-vs-advanced-judge",
           "line": 1
         },
         {
-          "digest": "sha256:84ef54be54ef8bfe40510ebc4ad262228308b8cda41d750c049ad607b6136c0f",
+          "digest": "sha256:071449f0283b92ee93b791ba15044c86319c73465daab0b85f1970aa06369836",
           "expected_primary_skill": "filesystem-context",
           "id": "activation-filesystem-vs-memory",
           "line": 5
         },
         {
-          "digest": "sha256:11b3418ee65209d9dfd72656fe85bd07cb4c7027608f6c4fe79c8825314642bb",
+          "digest": "sha256:cd16acc8de034ce6d019804a1bce7547342c1eaf9c969e216d46159c0c5ee69a",
           "expected_primary_skill": "context-fundamentals",
           "id": "activation-fundamentals-onboarding",
           "line": 10
         },
         {
-          "digest": "sha256:d861a44539acf68d65de8fa1369bbfeaa619787ffa0f069bfc79d7d3ab24d72f",
+          "digest": "sha256:a22f777c63ff3cd5b9f57a5bba3b59bcc7c42c33d62eaa10ae29e73ac7c95231",
           "expected_primary_skill": "context-fundamentals",
           "id": "activation-fundamentals-vs-degradation",
           "line": 9
         },
         {
-          "digest": "sha256:e69ccf3440044653c0e4023234a285d64aa4b8dea7a46f1e9eca5428de064b91",
+          "digest": "sha256:b88d942f5c58eb7f5e44a542a97d6cf710a9cbe65549020f7689a63e77bd1496",
           "expected_primary_skill": "context-fundamentals",
           "id": "activation-fundamentals-vs-optimization",
           "line": 11
         },
         {
-          "digest": "sha256:c93c1142dfc36398c716f10dc7ae6ed8dcb4b5d7a3d252a297e70952cf219e06",
+          "digest": "sha256:62a2256c03d71f40b6fe3f137bf0cb82f65b49d59fd0f121543f4f2b2499cd86",
           "expected_primary_skill": "harness-engineering",
           "id": "activation-harness-vs-project",
           "line": 7
         },
         {
-          "digest": "sha256:6609906b44c920e61e558d18845bbe9102f1bd68a66b0b8588ae66100999fef7",
+          "digest": "sha256:95a8baf945511c6bec8ab7dad27dc47df8ebfa155cb0d3976b3e89e555621b30",
           "expected_primary_skill": "hosted-agents",
           "id": "activation-hosted-vs-harness",
           "line": 17
         },
         {
-          "digest": "sha256:42cfcae3dc69ea624c9231063f71c825b9fe819a29c33e8dc33e90515abb5476",
+          "digest": "sha256:e45adbad24dae937822b4df96de5c052420b98be8cce5b53f3147476afa00fbd",
           "expected_primary_skill": "latent-briefing",
           "id": "activation-latent-briefing-vs-memory",
           "line": 18
         },
         {
-          "digest": "sha256:9cb5207bd3f823630e62dc632b1ebd4bc5bfa3fb90968ad71dc29c8f3dee63ee",
+          "digest": "sha256:4d33a522d8c7abc3a6516542d2408085b02acb7b988db6119ac47f173594c714",
           "expected_primary_skill": "long-horizon-prompting",
           "id": "activation-long-horizon-orchestrator-brief",
           "line": 23
         },
         {
-          "digest": "sha256:3265d232f4415113799f4e32ff172a32673e5fa0fedc787259a4de050cc0909e",
+          "digest": "sha256:586146610990d1b4b8d86bc75faaf32e69126f2e3c58d8a1faa18e4d73d7ae06",
           "expected_primary_skill": "long-horizon-prompting",
           "id": "activation-long-horizon-vs-multi-agent",
           "line": 22
         },
         {
-          "digest": "sha256:79cc936e39cbcbf35bae50010e19614cf404ad39fd8839b463c081ad1e531368",
+          "digest": "sha256:5aaceae8a192f1e111a4c15e7b014f4a39a03be07641358beec2d9e01071a0d7",
           "expected_primary_skill": "memory-systems",
           "id": "activation-memory-vs-filesystem",
           "line": 6
         },
         {
-          "digest": "sha256:cf0523636dd07604980ec4a4add7460ddfa2a82b296e1e4bd8d6efa1ff27f4f3",
+          "digest": "sha256:b2da0338cba6f8a6e5a56955603fae63c24fdfe072ef4003f6c0764dc1a4d3d7",
           "expected_primary_skill": "multi-agent-patterns",
           "id": "activation-multi-agent-topology",
           "line": 19
         },
         {
-          "digest": "sha256:4b3e4760f303706452d8f8acd9dd8dd54836083bb9be57de1c4ba078b20de590",
+          "digest": "sha256:7091cd1c7e2fd9431f3cf608764aa879d0b9fe3d5e30a36cbc031a1f45f973b3",
           "expected_primary_skill": "context-optimization",
           "id": "activation-optimization-vs-compression",
           "line": 4
         },
         {
-          "digest": "sha256:eb17cc7739511022e4eaae9819ab65d30b9a6ac2eb36c901e064997be3389a76",
+          "digest": "sha256:15c36cffa878c02dcedef9c8ea4051cb2ee5b0fea59d5b466ab535ef1e462adc",
           "expected_primary_skill": "project-development",
           "id": "activation-project-vs-harness",
           "line": 8
         },
         {
-          "digest": "sha256:ff490ff825efd9f91fea70e185d0bc808f61d294361a7705edc15d25fdcecdcc",
+          "digest": "sha256:6c5407714234888da62b2f742d93a4e345bc297841418f22d0ad455e284556f2",
           "expected_primary_skill": "self-improvement-loops",
           "id": "activation-self-improvement-evolutionary-search",
           "line": 21
         },
         {
-          "digest": "sha256:777c66ea79a2b8a166086ab4f3255436fda2da0af5ba285bcbcc2ca63289b246",
+          "digest": "sha256:ff6ce9d1929f389c9468060163a8a94d19caad1b3dc5672a7fb217ea49b387e4",
           "expected_primary_skill": "self-improvement-loops",
           "id": "activation-self-improvement-vs-harness",
           "line": 20
         },
         {
-          "digest": "sha256:968892d704e1384de5f672b64ed9d16551ce7d8a268d2254212345143daf59fd",
+          "digest": "sha256:97a4fe8a8e697077f4ca07c81042d5d1fa3f1c9f62863b341f3cda0072f2aa8d",
           "expected_primary_skill": "self-managed-context",
           "id": "activation-self-managed-context-edit-cost-budget",
           "line": 25
         },
         {
-          "digest": "sha256:65adcb6b1db6a9739c3eaf1b0d058a9ba74f6c9e616582c495864b2655895b5b",
+          "digest": "sha256:5d432b99d596ff6283f6c3cfc5946452cbe11d5bbf1b26df098cb33169ada4cd",
           "expected_primary_skill": "self-managed-context",
           "id": "activation-self-managed-context-editable-file",
           "line": 24
         },
         {
-          "digest": "sha256:569c70d63ac3f53acb93400db87bc099bfb1521a86df16d1bf72f155bb42cf29",
+          "digest": "sha256:4d307e459dfbb27e3c03d1e2b6eb7102e7aa988115d268bf3a0f1de7e856323a",
           "expected_primary_skill": "tool-design",
           "id": "activation-tool-consolidation",
           "line": 14
         },
         {
-          "digest": "sha256:0cdc6d6c709ee9f24e627e36a219768c12ca548eb4cba4812e835b5c6bcca576",
+          "digest": "sha256:4a917303fa507e33eb8333de6bc5859cc3904a14b914b137924aa2b8b18da1bf",
           "expected_primary_skill": "tool-design",
           "id": "activation-tool-individual-tool",
           "line": 13
         },
         {
-          "digest": "sha256:0f27b5bfe884491c3b1f8e81212ed143ee3d6dec3c64cbfb4eb4c6c66431bc08",
+          "digest": "sha256:e83a26a219d509642daee960d19a6472160f4994624b57df73893542caf66556",
           "expected_primary_skill": "project-development",
           "id": "activation-tool-vs-project-structured-output",
           "line": 12
@@ -1010,32 +1010,32 @@
       "owner": "examples/*/README.md",
       "records": [
         {
-          "digest": "sha256:e80dc5fe7391c3a5745c574814a1502d24ba9acea91fcbb5dc7ec7d38eb43545",
+          "digest": "sha256:99f7efc9e50dcc3805151fecd64e5c884407ede8a9abb40178f2abef652f6369",
           "id": "book-sft-pipeline",
           "path": "examples/book-sft-pipeline"
         },
         {
-          "digest": "sha256:4ac5d0f82bfa76166bad86e703f4e84c3f50d5d9592d356d46db5a6aa2f19855",
+          "digest": "sha256:3c4bcf0f597ea954b5a473ae86eb8da456207b0f7882eb69928686c9c03b6f37",
           "id": "digital-brain-skill",
           "path": "examples/digital-brain-skill"
         },
         {
-          "digest": "sha256:a4d8ae566b7ea9112a69b05ec35fefa40cb6cc27e8693ad41606a4cb6066e34e",
+          "digest": "sha256:a11c501c531962a1caf027b9ea04c26e07cb015157e86b054215c7a5d423dab4",
           "id": "interleaved-thinking",
           "path": "examples/interleaved-thinking"
         },
         {
-          "digest": "sha256:518fa7b815ecb40b05bb4240086ba9d388d7899b3d0ba24babe55b2af4e6dad1",
+          "digest": "sha256:c9b477ec8fe97fd28ee957583e2d3ae8d7049dda8035e9f4a40f3ca045a72b06",
           "id": "llm-as-judge-skills",
           "path": "examples/llm-as-judge-skills"
         },
         {
-          "digest": "sha256:fbfb940a5866244f2bb10457f5876fd162e552d964b3ad000b03514a2d63cd94",
+          "digest": "sha256:6d2e81dc345e99b5e2b96c11e66d7b3df5d2bb245296d2d782a4739b7ed77b6d",
           "id": "long-horizon-prompt-lab",
           "path": "examples/long-horizon-prompt-lab"
         },
         {
-          "digest": "sha256:a819cf042650a3b5e458bf97b2697d4263bb08d7bd9a26fa0ba6c2381423cdf7",
+          "digest": "sha256:6d850c28f9eefade1452b50659df8440436144edb80f121500b29cf0b2495425",
           "id": "x-to-book-system",
           "path": "examples/x-to-book-system"
         }
@@ -1110,7 +1110,7 @@
           "version": "2.6.0"
         },
         {
-          "digest": "sha256:b3a3ae63ea430ce38edd4030ec2942df968e4a5174ee3f42ecf729d19a105f65",
+          "digest": "sha256:610abad6e57d9150f73e203c1e78a2618c8c3f04f3e8d7ce39122124610f8b23",
           "id": "collection-skill",
           "path": "SKILL.md",
           "version": "2.6.0"
@@ -2230,92 +2230,92 @@
       "owner": "skills/*/SKILL.md",
       "records": [
         {
-          "digest": "sha256:8b9e3d9de07a0505ae2b42df2e15dd75bab5f2486e336194481c558e0648ded0",
+          "digest": "sha256:dc785bf2edbb400292ca72c327b40496cb0ea021c8c98199fb34432de3ac0726",
           "id": "advanced-evaluation",
           "path": "skills/advanced-evaluation/SKILL.md"
         },
         {
-          "digest": "sha256:2a68bf11815b166a508141c6ecb24a2007808e6d46557c0b111bb9b10b87cbe6",
+          "digest": "sha256:94b845313bc1bb61adef7dd316731b10495f33e7d98c06773636d36abf68f5f4",
           "id": "bdi-mental-states",
           "path": "skills/bdi-mental-states/SKILL.md"
         },
         {
-          "digest": "sha256:ab4fd1e1046db339d83ead5089d4cb9d9c487232945d4ff6be90e08a03f6cfea",
+          "digest": "sha256:e0a48e0916e13fb2c08ee2a3b51bbb63c1e2f26b14e3806460a95a37809d4a8c",
           "id": "context-compression",
           "path": "skills/context-compression/SKILL.md"
         },
         {
-          "digest": "sha256:4e1896f641ddc99cc9cb14322606c6133b9fd520c84d3af0541e64f553c7f928",
+          "digest": "sha256:b7cf0153875410cfbd64b2ba7151ff6c02448366880dd65dc70532cc8acaed52",
           "id": "context-degradation",
           "path": "skills/context-degradation/SKILL.md"
         },
         {
-          "digest": "sha256:03b56e1c40edc6314b1f204498c3ba40163a32e63bdbceaeba93513ccddcaba6",
+          "digest": "sha256:2296b1202f55100286d406c5b35e758c3c0d0b5f80a753aaa3845cd00b5862d3",
           "id": "context-fundamentals",
           "path": "skills/context-fundamentals/SKILL.md"
         },
         {
-          "digest": "sha256:96fbd47c16d163857b92d477ba5c7ec3ae947127772e327b8236d05d64d5b123",
+          "digest": "sha256:5c0339e2e5eef06dcddd4e55d9609e650d296a806e3dfbd6b50887891b33c555",
           "id": "context-optimization",
           "path": "skills/context-optimization/SKILL.md"
         },
         {
-          "digest": "sha256:1f31cda0910dfd48d928e1485b303b739608ceeb0babca0e9a6f821cbf4320ff",
+          "digest": "sha256:02ee3e3cd344fa99a2a335615e8e39cdbb56f3f125d4bb7b064121291a3f3bc6",
           "id": "evaluation",
           "path": "skills/evaluation/SKILL.md"
         },
         {
-          "digest": "sha256:91cd7f071e38dbeee15dbebd9dd549c9116affae939702f05409ed1952355f50",
+          "digest": "sha256:f83c0a15422194cb0308fd3d96e579d5d562e87741c872b5549ace08cb647ae6",
           "id": "filesystem-context",
           "path": "skills/filesystem-context/SKILL.md"
         },
         {
-          "digest": "sha256:dde3d8f46d4d09dbab41358baa3e8310d7fdfcd2fbefa127153ac4f6b5ef7b16",
+          "digest": "sha256:fe2c2a330c41c6650c1b027f0409d3b781fb9da14cbaf020fed9cf796a88cc66",
           "id": "harness-engineering",
           "path": "skills/harness-engineering/SKILL.md"
         },
         {
-          "digest": "sha256:4786dad600b063378410de444a77f4b22cc80e673b5cd6e426cbe9d6fb2c0273",
+          "digest": "sha256:7996554f1cae9c6fe543352462872b1b85ac781fa8e3c0843ee2b1413e728453",
           "id": "hosted-agents",
           "path": "skills/hosted-agents/SKILL.md"
         },
         {
-          "digest": "sha256:d84e7abe51f037a353dc3ccf18498498099fc633373a0d223bd6cc45277fd0bd",
+          "digest": "sha256:6d005119786155637dff409c9071cfa900cb5851ede807c1bdeef22f519d826e",
           "id": "latent-briefing",
           "path": "skills/latent-briefing/SKILL.md"
         },
         {
-          "digest": "sha256:75f8c53453fb526a4b4dc6f3c7d8870af87d68aeba12a7c3e77f19c44f27ad82",
+          "digest": "sha256:9ea69f89a559e2b77eebd5bd563abebab1079f08f5506f2c2e7459196c9613a5",
           "id": "long-horizon-prompting",
           "path": "skills/long-horizon-prompting/SKILL.md"
         },
         {
-          "digest": "sha256:9e2b38ffe9474ba19c93b3d75c80e683705d82e8a4b59af16d603d133bab8d2f",
+          "digest": "sha256:12eca233146f37127cc0083a3ad72d28db00c21734614b4c6fa1abb1ca5ab44a",
           "id": "memory-systems",
           "path": "skills/memory-systems/SKILL.md"
         },
         {
-          "digest": "sha256:786ff9345eb49f1d8e1bc5183e437a6d882f15b50bdb2ce0055a9d54390a3ce2",
+          "digest": "sha256:f3ff5e191289d9221f7836cf5532389c8c21fe6a647c4650775e2eb4c9774ae0",
           "id": "multi-agent-patterns",
           "path": "skills/multi-agent-patterns/SKILL.md"
         },
         {
-          "digest": "sha256:acfeda3048cf6213be2d0c4699c1884914a1a044ca2707094483ca6423d17a11",
+          "digest": "sha256:160ba9a447d766841f3827187f733cf8f439633cb0e126b5510b2c52eb76b67d",
           "id": "project-development",
           "path": "skills/project-development/SKILL.md"
         },
         {
-          "digest": "sha256:de088dd42e92de999da54c6d1a17bed7daf3404688888482735deaa4f482d846",
+          "digest": "sha256:f126e9ffaea1db0fa62799ebcf5f1201230b6ea9775b03ee8833f31bbf99d348",
           "id": "self-improvement-loops",
           "path": "skills/self-improvement-loops/SKILL.md"
         },
         {
-          "digest": "sha256:0b077da6d7725af414a42a627321a11ce9ffc90b4c3e583a1ae126968a8bbd26",
+          "digest": "sha256:b267ad0a6d71836ac5098c0a161036b777a98a2b5e96948922b5e0b2ce05b117",
           "id": "self-managed-context",
           "path": "skills/self-managed-context/SKILL.md"
         },
         {
-          "digest": "sha256:14f5a12b69113bc6450da69c5b4d408fe91601832ab1055ae25311339c84a06b",
+          "digest": "sha256:e5cbea2e846b8a25e0a1abb1a81047d60617ecbcc65f8e8c7f4cd504454f0b51",
           "id": "tool-design",
           "path": "skills/tool-design/SKILL.md"
         }
@@ -2326,7 +2326,7 @@
       "owner": "declared validator ownership",
       "records": [
         {
-          "digest": "sha256:7f189e876bc7cba64683a187d1f4f0699864602802cb73cccb30084eaa5d8c08",
+          "digest": "sha256:1c6a769620434e1545aa7c94d92a2a601e7cb20f4907293e4fec7e476f56740a",
           "id": "governance-policy",
           "owns": [
             "authority vocabulary",
@@ -2336,7 +2336,7 @@
           "path": "researcher/scripts/validate_governance.py"
         },
         {
-          "digest": "sha256:5ea42cd39cf030d35c44075e76b1be615bd1c6b717e67ff3a7e161e518876388",
+          "digest": "sha256:9d986afece1da820d6f49a096f065a3f0896dd279804509c44d61547d2665ae3",
           "id": "repository-inventory",
           "owns": [
             "identifier uniqueness",
@@ -2357,7 +2357,7 @@
           "path": "researcher/scripts/validate_export.py"
         },
         {
-          "digest": "sha256:ba09b1c3ff4ad79de01c5d2bb308edbdc9658ba07114d1e3e0165b0bddb0e65a",
+          "digest": "sha256:49407dc23f58d0b10e310a4a977262edaeb8959fe020f4d5cb762c3e23abfebd",
           "id": "schema-contract",
           "owns": [
             "schema registry",
@@ -2378,7 +2378,7 @@
           "path": "researcher/scripts/validate_platform_compat.py"
         },
         {
-          "digest": "sha256:578c88644d0839ba8e9846108f48c6e36d56e1bbda4b733d760cc2865834bdb7",
+          "digest": "sha256:9167a59df958a120e2dbc6a1fc10b6e0d734ae3df14f19dfc6e29dcb362c3e70",
           "id": "repository-structure",
           "owns": [
             "content invariants",
@@ -2389,7 +2389,7 @@
           "path": "researcher/scripts/validate_repo.py"
         },
         {
-          "digest": "sha256:3dc2d0f0daa6327914bc733731723631bbd0f2a52b192a54762715a05ff343d7",
+          "digest": "sha256:ada62fe22f64f1ed63c253def6ede4579beccc301aa300177cd7c4f74596febd",
           "id": "skill-health",
           "owns": [
             "skill body quality score"
@@ -2397,7 +2397,7 @@
           "path": "researcher/scripts/skill_health.py"
         },
         {
-          "digest": "sha256:91d32d5ebcdbaf8d5a417ed29f43ace7ce126bf427ef6c64176b67612d24987b",
+          "digest": "sha256:d737780b4dc37fa27a105e4105fb032dbc440ebd0898f75e44585a49cdfe5bd9",
           "id": "activation-cases",
           "owns": [
             "activation boundary smoke tests"
@@ -2903,12 +2903,12 @@
     ]
   },
   "repository_revision": {
-    "digest": "sha256:dcbac67436e1252ff10fcdcc5ad1649c77ff0669837f42b04d1abea9c471d36c",
+    "digest": "sha256:1d5fde6854833ab4ec4eb416f85322fa1639f5ded69210d4a0f1373ae3c7c307",
     "git_commit_excluded_to_avoid_self_reference": true,
     "kind": "canonical_source_tree"
   },
   "schema_version": "1.0.0",
-  "source_tree_digest": "sha256:dcbac67436e1252ff10fcdcc5ad1649c77ff0669837f42b04d1abea9c471d36c",
+  "source_tree_digest": "sha256:1d5fde6854833ab4ec4eb416f85322fa1639f5ded69210d4a0f1373ae3c7c307",
   "sources": [
     {
       "digest": "sha256:f924467d535c67ddc43c747d6b3361469414ca8c5d15c2e8b406d4bbb7c7ca1e",
@@ -2921,39 +2921,39 @@
       "size_bytes": 829
     },
     {
-      "digest": "sha256:b3a3ae63ea430ce38edd4030ec2942df968e4a5174ee3f42ecf729d19a105f65",
+      "digest": "sha256:610abad6e57d9150f73e203c1e78a2618c8c3f04f3e8d7ce39122124610f8b23",
       "path": "SKILL.md",
-      "size_bytes": 11082
+      "size_bytes": 4204
     },
     {
-      "digest": "sha256:e80dc5fe7391c3a5745c574814a1502d24ba9acea91fcbb5dc7ec7d38eb43545",
+      "digest": "sha256:99f7efc9e50dcc3805151fecd64e5c884407ede8a9abb40178f2abef652f6369",
       "path": "examples/book-sft-pipeline/README.md",
-      "size_bytes": 2795
+      "size_bytes": 2318
     },
     {
-      "digest": "sha256:4ac5d0f82bfa76166bad86e703f4e84c3f50d5d9592d356d46db5a6aa2f19855",
+      "digest": "sha256:3c4bcf0f597ea954b5a473ae86eb8da456207b0f7882eb69928686c9c03b6f37",
       "path": "examples/digital-brain-skill/README.md",
-      "size_bytes": 7416
+      "size_bytes": 6979
     },
     {
-      "digest": "sha256:a4d8ae566b7ea9112a69b05ec35fefa40cb6cc27e8693ad41606a4cb6066e34e",
+      "digest": "sha256:a11c501c531962a1caf027b9ea04c26e07cb015157e86b054215c7a5d423dab4",
       "path": "examples/interleaved-thinking/README.md",
-      "size_bytes": 20169
+      "size_bytes": 9950
     },
     {
-      "digest": "sha256:518fa7b815ecb40b05bb4240086ba9d388d7899b3d0ba24babe55b2af4e6dad1",
+      "digest": "sha256:c9b477ec8fe97fd28ee957583e2d3ae8d7049dda8035e9f4a40f3ca045a72b06",
       "path": "examples/llm-as-judge-skills/README.md",
-      "size_bytes": 23890
+      "size_bytes": 4242
     },
     {
-      "digest": "sha256:fbfb940a5866244f2bb10457f5876fd162e552d964b3ad000b03514a2d63cd94",
+      "digest": "sha256:6d2e81dc345e99b5e2b96c11e66d7b3df5d2bb245296d2d782a4739b7ed77b6d",
       "path": "examples/long-horizon-prompt-lab/README.md",
-      "size_bytes": 6611
+      "size_bytes": 6184
     },
     {
-      "digest": "sha256:a819cf042650a3b5e458bf97b2697d4263bb08d7bd9a26fa0ba6c2381423cdf7",
+      "digest": "sha256:6d850c28f9eefade1452b50659df8440436144edb80f121500b29cf0b2495425",
       "path": "examples/x-to-book-system/README.md",
-      "size_bytes": 10108
+      "size_bytes": 9334
     },
     {
       "digest": "sha256:500c1d138249a135e462e2fcbdbab0874e6ef841c7ca005560106bb727359722",
@@ -2966,14 +2966,14 @@
       "size_bytes": 3091
     },
     {
-      "digest": "sha256:6b8795d5245c17235d45c433b0a32d7b1bf85a89f744cb5108963c86579dc847",
+      "digest": "sha256:eacdd0db88b723041e827b81e9aa59bb7a56ecd4b2e47f465a38c54cd283c7e1",
       "path": "researcher/artifacts/README.md",
-      "size_bytes": 1970
+      "size_bytes": 1910
     },
     {
-      "digest": "sha256:4ae1af9564863e50508b70e39965c31ddc034fef59dc887e8655736435f52dd6",
+      "digest": "sha256:c09795bf4e9fb060427929080136d97a009ff8ffc39f7b7c71495b7b4e3202a3",
       "path": "researcher/benchmarks/effectiveness/tasks/001-filesystem-context-offload/README.md",
-      "size_bytes": 1678
+      "size_bytes": 1566
     },
     {
       "digest": "sha256:f2d2a7e1faf3ec1fc5fc5da3a1b8154edd155653c12ca302dd642bea17723b8d",
@@ -2981,9 +2981,9 @@
       "size_bytes": 454
     },
     {
-      "digest": "sha256:0199d8d669ce3d8e468191db9da6a19dd7e5ef39234924077ec1c780267e5ae3",
+      "digest": "sha256:b9fb7da2a3864dbcd62b448e500c49e76bd3c067c7ab5d794c37b862ea7f4bbf",
       "path": "researcher/benchmarks/effectiveness/tasks/001-filesystem-context-offload/starting/instructions.md",
-      "size_bytes": 248
+      "size_bytes": 210
     },
     {
       "digest": "sha256:3dfe499328e039c100bac2a131fcac33be97da0033e96375e4e07877fb5c764c",
@@ -2991,9 +2991,9 @@
       "size_bytes": 464976
     },
     {
-      "digest": "sha256:3ea1343f337c5d7263eb0db9367e46213da140dfc490f2275b93445137a95caf",
+      "digest": "sha256:694dff3254a019699ab340e7a1b203ce6768b8b7936c9ed773a4bc748add0992",
       "path": "researcher/benchmarks/effectiveness/tasks/001-filesystem-context-offload/task.md",
-      "size_bytes": 501
+      "size_bytes": 405
     },
     {
       "digest": "sha256:deceb09fad46a00a1ae681c9e617336e74884479721107a0f2279c4e2fd055cf",
@@ -3076,9 +3076,9 @@
       "size_bytes": 7258
     },
     {
-      "digest": "sha256:cf909215854992409e46ef90dba130c4f3b4a16e42a968a62ecc82467d396ca4",
+      "digest": "sha256:1fcb1d45324610beaf49b7352c7c631bce7e6333bab443ee7f4eeea9127af9f4",
       "path": "researcher/fixtures/activation-cases.jsonl",
-      "size_bytes": 13587
+      "size_bytes": 12456
     },
     {
       "digest": "sha256:6a0ee2e312f7798802bbc159120c8b621edc3cb0b52d17c9f337a8f61bfbf33b",
@@ -3106,14 +3106,14 @@
       "size_bytes": 20318
     },
     {
-      "digest": "sha256:0ac5456af9a440308082b4f730cb69f5a4bbfc9cb32928db1f8d4c656243e7ba",
+      "digest": "sha256:1e463a3442241cdf15c8dc89527134471081cff683450dee23c0cb66bcd6eee4",
       "path": "researcher/runbooks/schema-migration.md",
-      "size_bytes": 2622
+      "size_bytes": 2509
     },
     {
-      "digest": "sha256:08f6885d0cb8ece581ad74cea95966fbb0facb9a6df066d6e37f42b1a9f5176b",
+      "digest": "sha256:4b69dd1c3c24b0edcb41ce73f6fb18f6e1b7cb7da2b982a5f3b6e44244cb4502",
       "path": "researcher/schemas/README.md",
-      "size_bytes": 3918
+      "size_bytes": 3768
     },
     {
       "digest": "sha256:f85913b47745ef1e028a1f36988ce33419658bdcdb382402f76e316386244091",
@@ -3231,9 +3231,9 @@
       "size_bytes": 401
     },
     {
-      "digest": "sha256:238e9161ed1e860de1d738e083a67461b453c8e207d8f238bfa22b19a7129a7b",
+      "digest": "sha256:f594c5e104d95e77e6d88a9d4ae8c0c640b6ed454268bed9014d270162d8af15",
       "path": "researcher/schemas/generated/compatibility-matrix.md",
-      "size_bytes": 2311
+      "size_bytes": 2290
     },
     {
       "digest": "sha256:5fb86d1aa14fcd9f892a8473438056896848d02009e2367dd8a4311850dfdfe3",
@@ -3391,14 +3391,14 @@
       "size_bytes": 54898
     },
     {
-      "digest": "sha256:5ea42cd39cf030d35c44075e76b1be615bd1c6b717e67ff3a7e161e518876388",
+      "digest": "sha256:9d986afece1da820d6f49a096f065a3f0896dd279804509c44d61547d2665ae3",
       "path": "researcher/scripts/build_inventory.py",
-      "size_bytes": 56436
+      "size_bytes": 56410
     },
     {
-      "digest": "sha256:91d32d5ebcdbaf8d5a417ed29f43ace7ce126bf427ef6c64176b67612d24987b",
+      "digest": "sha256:d737780b4dc37fa27a105e4105fb032dbc440ebd0898f75e44585a49cdfe5bd9",
       "path": "researcher/scripts/check_activation_cases.py",
-      "size_bytes": 4529
+      "size_bytes": 4940
     },
     {
       "digest": "sha256:826eb51007060a637823c454e79460caf1478de7f1fa1e7371ab1d8573cccb57",
@@ -3421,9 +3421,9 @@
       "size_bytes": 30084
     },
     {
-      "digest": "sha256:3dc2d0f0daa6327914bc733731723631bbd0f2a52b192a54762715a05ff343d7",
+      "digest": "sha256:ada62fe22f64f1ed63c253def6ede4579beccc301aa300177cd7c4f74596febd",
       "path": "researcher/scripts/skill_health.py",
-      "size_bytes": 13616
+      "size_bytes": 13906
     },
     {
       "digest": "sha256:081a7c4b21db5a77e108c39f1b7b82abd92249bce3bc66a9fb8eea4bef7db3e3",
@@ -3441,9 +3441,9 @@
       "size_bytes": 5382
     },
     {
-      "digest": "sha256:7f189e876bc7cba64683a187d1f4f0699864602802cb73cccb30084eaa5d8c08",
+      "digest": "sha256:1c6a769620434e1545aa7c94d92a2a601e7cb20f4907293e4fec7e476f56740a",
       "path": "researcher/scripts/validate_governance.py",
-      "size_bytes": 10034
+      "size_bytes": 10114
     },
     {
       "digest": "sha256:facebf497d771a018adff8c0bbbbcbb1b28cf38a797c82d48e47fcc9c46fd81f",
@@ -3451,110 +3451,110 @@
       "size_bytes": 8654
     },
     {
-      "digest": "sha256:578c88644d0839ba8e9846108f48c6e36d56e1bbda4b733d760cc2865834bdb7",
+      "digest": "sha256:9167a59df958a120e2dbc6a1fc10b6e0d734ae3df14f19dfc6e29dcb362c3e70",
       "path": "researcher/scripts/validate_repo.py",
-      "size_bytes": 33210
+      "size_bytes": 33524
     },
     {
-      "digest": "sha256:ba09b1c3ff4ad79de01c5d2bb308edbdc9658ba07114d1e3e0165b0bddb0e65a",
+      "digest": "sha256:49407dc23f58d0b10e310a4a977262edaeb8959fe020f4d5cb762c3e23abfebd",
       "path": "researcher/scripts/validate_schemas.py",
-      "size_bytes": 9310
+      "size_bytes": 9289
     },
     {
-      "digest": "sha256:8b9e3d9de07a0505ae2b42df2e15dd75bab5f2486e336194481c558e0648ded0",
+      "digest": "sha256:dc785bf2edbb400292ca72c327b40496cb0ea021c8c98199fb34432de3ac0726",
       "path": "skills/advanced-evaluation/SKILL.md",
-      "size_bytes": 16990
+      "size_bytes": 16106
     },
     {
-      "digest": "sha256:2a68bf11815b166a508141c6ecb24a2007808e6d46557c0b111bb9b10b87cbe6",
+      "digest": "sha256:94b845313bc1bb61adef7dd316731b10495f33e7d98c06773636d36abf68f5f4",
       "path": "skills/bdi-mental-states/SKILL.md",
-      "size_bytes": 17738
+      "size_bytes": 16582
     },
     {
-      "digest": "sha256:ab4fd1e1046db339d83ead5089d4cb9d9c487232945d4ff6be90e08a03f6cfea",
+      "digest": "sha256:e0a48e0916e13fb2c08ee2a3b51bbb63c1e2f26b14e3806460a95a37809d4a8c",
       "path": "skills/context-compression/SKILL.md",
-      "size_bytes": 18507
+      "size_bytes": 17148
     },
     {
-      "digest": "sha256:4e1896f641ddc99cc9cb14322606c6133b9fd520c84d3af0541e64f553c7f928",
+      "digest": "sha256:b7cf0153875410cfbd64b2ba7151ff6c02448366880dd65dc70532cc8acaed52",
       "path": "skills/context-degradation/SKILL.md",
-      "size_bytes": 19180
+      "size_bytes": 17782
     },
     {
-      "digest": "sha256:03b56e1c40edc6314b1f204498c3ba40163a32e63bdbceaeba93513ccddcaba6",
+      "digest": "sha256:2296b1202f55100286d406c5b35e758c3c0d0b5f80a753aaa3845cd00b5862d3",
       "path": "skills/context-fundamentals/SKILL.md",
-      "size_bytes": 17013
+      "size_bytes": 15410
     },
     {
-      "digest": "sha256:96fbd47c16d163857b92d477ba5c7ec3ae947127772e327b8236d05d64d5b123",
+      "digest": "sha256:5c0339e2e5eef06dcddd4e55d9609e650d296a806e3dfbd6b50887891b33c555",
       "path": "skills/context-optimization/SKILL.md",
-      "size_bytes": 16052
+      "size_bytes": 14519
     },
     {
-      "digest": "sha256:1f31cda0910dfd48d928e1485b303b739608ceeb0babca0e9a6f821cbf4320ff",
+      "digest": "sha256:02ee3e3cd344fa99a2a335615e8e39cdbb56f3f125d4bb7b064121291a3f3bc6",
       "path": "skills/evaluation/SKILL.md",
-      "size_bytes": 16829
+      "size_bytes": 15241
     },
     {
-      "digest": "sha256:91cd7f071e38dbeee15dbebd9dd549c9116affae939702f05409ed1952355f50",
+      "digest": "sha256:f83c0a15422194cb0308fd3d96e579d5d562e87741c872b5549ace08cb647ae6",
       "path": "skills/filesystem-context/SKILL.md",
-      "size_bytes": 16138
+      "size_bytes": 15455
     },
     {
-      "digest": "sha256:dde3d8f46d4d09dbab41358baa3e8310d7fdfcd2fbefa127153ac4f6b5ef7b16",
+      "digest": "sha256:fe2c2a330c41c6650c1b027f0409d3b781fb9da14cbaf020fed9cf796a88cc66",
       "path": "skills/harness-engineering/SKILL.md",
-      "size_bytes": 11413
+      "size_bytes": 11328
     },
     {
-      "digest": "sha256:4786dad600b063378410de444a77f4b22cc80e673b5cd6e426cbe9d6fb2c0273",
+      "digest": "sha256:7996554f1cae9c6fe543352462872b1b85ac781fa8e3c0843ee2b1413e728453",
       "path": "skills/hosted-agents/SKILL.md",
-      "size_bytes": 17717
+      "size_bytes": 16407
     },
     {
-      "digest": "sha256:d84e7abe51f037a353dc3ccf18498498099fc633373a0d223bd6cc45277fd0bd",
+      "digest": "sha256:6d005119786155637dff409c9071cfa900cb5851ede807c1bdeef22f519d826e",
       "path": "skills/latent-briefing/SKILL.md",
-      "size_bytes": 13029
+      "size_bytes": 11836
     },
     {
-      "digest": "sha256:75f8c53453fb526a4b4dc6f3c7d8870af87d68aeba12a7c3e77f19c44f27ad82",
+      "digest": "sha256:9ea69f89a559e2b77eebd5bd563abebab1079f08f5506f2c2e7459196c9613a5",
       "path": "skills/long-horizon-prompting/SKILL.md",
-      "size_bytes": 25666
+      "size_bytes": 23648
     },
     {
-      "digest": "sha256:9e2b38ffe9474ba19c93b3d75c80e683705d82e8a4b59af16d603d133bab8d2f",
+      "digest": "sha256:12eca233146f37127cc0083a3ad72d28db00c21734614b4c6fa1abb1ca5ab44a",
       "path": "skills/memory-systems/SKILL.md",
-      "size_bytes": 16554
+      "size_bytes": 14928
     },
     {
-      "digest": "sha256:786ff9345eb49f1d8e1bc5183e437a6d882f15b50bdb2ce0055a9d54390a3ce2",
+      "digest": "sha256:f3ff5e191289d9221f7836cf5532389c8c21fe6a647c4650775e2eb4c9774ae0",
       "path": "skills/multi-agent-patterns/SKILL.md",
-      "size_bytes": 18649
+      "size_bytes": 17847
     },
     {
-      "digest": "sha256:acfeda3048cf6213be2d0c4699c1884914a1a044ca2707094483ca6423d17a11",
+      "digest": "sha256:160ba9a447d766841f3827187f733cf8f439633cb0e126b5510b2c52eb76b67d",
       "path": "skills/project-development/SKILL.md",
-      "size_bytes": 18960
+      "size_bytes": 17370
     },
     {
-      "digest": "sha256:de088dd42e92de999da54c6d1a17bed7daf3404688888482735deaa4f482d846",
+      "digest": "sha256:f126e9ffaea1db0fa62799ebcf5f1201230b6ea9775b03ee8833f31bbf99d348",
       "path": "skills/self-improvement-loops/SKILL.md",
-      "size_bytes": 22494
+      "size_bytes": 20797
     },
     {
-      "digest": "sha256:0b077da6d7725af414a42a627321a11ce9ffc90b4c3e583a1ae126968a8bbd26",
+      "digest": "sha256:b267ad0a6d71836ac5098c0a161036b777a98a2b5e96948922b5e0b2ce05b117",
       "path": "skills/self-managed-context/SKILL.md",
-      "size_bytes": 24111
+      "size_bytes": 23747
     },
     {
-      "digest": "sha256:14f5a12b69113bc6450da69c5b4d408fe91601832ab1055ae25311339c84a06b",
+      "digest": "sha256:e5cbea2e846b8a25e0a1abb1a81047d60617ecbcc65f8e8c7f4cd504454f0b51",
       "path": "skills/tool-design/SKILL.md",
-      "size_bytes": 20089
+      "size_bytes": 17878
     }
   ],
   "unresolved_references": [],
   "validator_ownership": [
     {
-      "digest": "sha256:7f189e876bc7cba64683a187d1f4f0699864602802cb73cccb30084eaa5d8c08",
+      "digest": "sha256:1c6a769620434e1545aa7c94d92a2a601e7cb20f4907293e4fec7e476f56740a",
       "id": "governance-policy",
       "owns": [
         "authority vocabulary",
@@ -3564,7 +3564,7 @@
       "path": "researcher/scripts/validate_governance.py"
     },
     {
-      "digest": "sha256:5ea42cd39cf030d35c44075e76b1be615bd1c6b717e67ff3a7e161e518876388",
+      "digest": "sha256:9d986afece1da820d6f49a096f065a3f0896dd279804509c44d61547d2665ae3",
       "id": "repository-inventory",
       "owns": [
         "identifier uniqueness",
@@ -3585,7 +3585,7 @@
       "path": "researcher/scripts/validate_export.py"
     },
     {
-      "digest": "sha256:ba09b1c3ff4ad79de01c5d2bb308edbdc9658ba07114d1e3e0165b0bddb0e65a",
+      "digest": "sha256:49407dc23f58d0b10e310a4a977262edaeb8959fe020f4d5cb762c3e23abfebd",
       "id": "schema-contract",
       "owns": [
         "schema registry",
@@ -3606,7 +3606,7 @@
       "path": "researcher/scripts/validate_platform_compat.py"
     },
     {
-      "digest": "sha256:578c88644d0839ba8e9846108f48c6e36d56e1bbda4b733d760cc2865834bdb7",
+      "digest": "sha256:9167a59df958a120e2dbc6a1fc10b6e0d734ae3df14f19dfc6e29dcb362c3e70",
       "id": "repository-structure",
       "owns": [
         "content invariants",
@@ -3617,7 +3617,7 @@
       "path": "researcher/scripts/validate_repo.py"
     },
     {
-      "digest": "sha256:3dc2d0f0daa6327914bc733731723631bbd0f2a52b192a54762715a05ff343d7",
+      "digest": "sha256:ada62fe22f64f1ed63c253def6ede4579beccc301aa300177cd7c4f74596febd",
       "id": "skill-health",
       "owns": [
         "skill body quality score"
@@ -3625,7 +3625,7 @@
       "path": "researcher/scripts/skill_health.py"
     },
     {
-      "digest": "sha256:91d32d5ebcdbaf8d5a417ed29f43ace7ce126bf427ef6c64176b67612d24987b",
+      "digest": "sha256:d737780b4dc37fa27a105e4105fb032dbc440ebd0898f75e44585a49cdfe5bd9",
       "id": "activation-cases",
       "owns": [
         "activation boundary smoke tests"

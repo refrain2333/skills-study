@@ -1,10 +1,10 @@
-# Evaluator Agent
+# 评估智能体
 
-## Purpose
+## 用途
 
-The Evaluator Agent assesses the quality of LLM-generated responses using configurable evaluation criteria. It implements the LLM-as-a-Judge pattern with support for both direct scoring and pairwise comparison.
+评估智能体根据可配置的评价标准判断大语言模型回复质量，支持直接评分和成对比较两种 LLM-as-a-Judge 方法。
 
-## Agent Definition
+## 智能体定义
 
 ```typescript
 import { ToolLoopAgent } from "ai";
@@ -14,26 +14,17 @@ import { evaluationTools } from "../tools";
 export const evaluatorAgent = new ToolLoopAgent({
   name: "evaluator",
   model: anthropic("claude-sonnet-4-20250514"),
-  instructions: `You are an expert evaluator of LLM-generated content.
+  instructions: `你是一名大语言模型输出质量评审员。
 
-Your role is to:
-1. Assess response quality against specific criteria
-2. Provide structured scores with justifications
-3. Identify specific issues and strengths
-4. Compare responses when asked for pairwise evaluation
+工作职责：
+1. 根据明确标准评估回复质量。
+2. 给出结构化分数和理由。
+3. 指出具体问题与优点。
+4. 按要求比较多个回复。
 
-Evaluation Guidelines:
-- Be objective and consistent in your assessments
-- Ground evaluations in specific evidence from the response
-- Consider the context and requirements of the original task
-- Avoid position bias - evaluate content not placement
-- Do not favor verbose responses unless verbosity adds value
+评估原则：客观一致；引用回复中的具体证据；考虑原任务要求；避免位置偏差；除非内容确实更有价值，不要仅因回复更长而偏好它。
 
-Always provide:
-- Numerical scores for each criterion
-- Specific examples supporting your assessment
-- Actionable feedback for improvement`,
-  
+始终提供每项标准的数值评分、支持判断的具体示例，以及可执行的改进建议。`,
   tools: {
     directScore: evaluationTools.directScore,
     pairwiseCompare: evaluationTools.pairwiseCompare,
@@ -43,78 +34,33 @@ Always provide:
 });
 ```
 
-## Capabilities
+## 能力
 
-### Direct Scoring
-Evaluate a single response against defined criteria and rubric.
+### 直接评分
 
-**Input:**
-- Response to evaluate
-- Original prompt/context
-- Evaluation criteria
-- Scoring rubric
+按预先定义的标准和评分规则评估单份回复。输入为待评估回复、原始提示/上下文、评价标准和评分规则；输出为每项标准的 1—5 分、总分、详细理由、问题和优点。
 
-**Output:**
-- Score per criterion (1-5)
-- Overall score
-- Detailed justification
-- Identified issues and strengths
+### 成对比较
 
-### Pairwise Comparison
-Compare two responses and select the better one.
+比较回复 A 和回复 B，选择更好者。输出包括 A/B/平局、置信度、比较分析和关键差异。
 
-**Input:**
-- Response A
-- Response B
-- Original prompt/context
-- Comparison criteria
+### 提取评价标准
 
-**Output:**
-- Winner selection (A, B, or Tie)
-- Confidence score
-- Comparative analysis
-- Specific differentiators
+根据任务描述、领域背景和质量要求自动提取标准、说明及建议权重。
 
-### Criteria Extraction
-Automatically extract evaluation criteria from a task description.
+### 生成评分规则
 
-**Input:**
-- Task description
-- Domain context
-- Quality expectations
+根据标准名称、质量维度和评分范围（默认 1—5）生成各级描述、示例和边界情况指导。
 
-**Output:**
-- List of relevant criteria
-- Criterion descriptions
-- Suggested weights
-
-### Rubric Generation
-Generate a scoring rubric for specific criteria.
-
-**Input:**
-- Criterion name
-- Quality dimensions
-- Scale (default 1-5)
-
-**Output:**
-- Rubric with score descriptions
-- Examples for each level
-- Edge case guidance
-
-## Configuration
+## 配置
 
 ```typescript
 interface EvaluatorConfig {
-  // Scoring configuration
   scoringMode: "direct" | "pairwise";
   useChainOfThought: boolean;
   nShotExamples: number;
-  
-  // Bias mitigation
   swapPositionsForPairwise: boolean;
   normalizeForLength: boolean;
-  
-  // Output configuration
   includeJustification: boolean;
   includeExamples: boolean;
   outputFormat: "structured" | "prose";
@@ -132,46 +78,13 @@ const defaultConfig: EvaluatorConfig = {
 };
 ```
 
-## Usage Example
+## 使用示例
 
-```typescript
-import { evaluatorAgent } from "./agents/evaluator-agent";
+直接评分时提供原始问题、回复和准确性、清晰度、吸引力、完整性等标准。成对比较时提供两个回复及比较标准，并要求说明判断理由。
 
-// Direct scoring
-const evaluation = await evaluatorAgent.generate({
-  prompt: `Evaluate the following response:
+## 集成场景
 
-Original Question: "Explain quantum entanglement to a high school student"
-
-Response: "${generatedResponse}"
-
-Criteria:
-1. Accuracy - Scientific correctness
-2. Clarity - Understandable for target audience
-3. Engagement - Interesting and memorable
-4. Completeness - Covers key concepts
-
-Provide scores and detailed feedback.`
-});
-
-// Pairwise comparison
-const comparison = await evaluatorAgent.generate({
-  prompt: `Compare these two responses to the same question.
-
-Question: "What are the benefits of exercise?"
-
-Response A: "${responseA}"
-
-Response B: "${responseB}"
-
-Which response is better? Explain your reasoning.`
-});
-```
-
-## Integration Points
-
-- **Content Generation Pipeline**: Evaluate outputs before delivery
-- **Model Comparison**: Compare responses from different models
-- **Quality Monitoring**: Track response quality over time
-- **Fine-tuning Data**: Generate preference data for RLHF
-
+- 内容生成流程：交付前评估输出。
+- 模型比较：比较不同模型的回复。
+- 质量监控：长期追踪回复质量。
+- 微调数据：生成 RLHF 偏好数据。

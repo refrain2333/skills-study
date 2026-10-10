@@ -1,62 +1,62 @@
-# Content Curation Rubric
+# 内容筛选评分规则
 
-Use this rubric to decide whether an external source deserves entry into the research pipeline. It extracts the reusable policy from `researcher/llm-as-a-judge.md` and resolves the gate ambiguity: any failed gate rejects the source unless a human explicitly overrides it.
+使用本规则判断外部来源是否应进入研究流程。内容提炼自 `researcher/llm-as-a-judge.md`，并明确门槛处理方式：任何一项门槛失败都应拒绝来源，除非人工明确覆盖该决定。
 
-## Gatekeeper Triage
+## 初筛门槛
 
-All gates must pass before dimensional scoring.
+维度评分前，所有门槛都必须通过。
 
-| Gate | Pass | Fail |
+| 门槛 | 通过 | 未通过 |
 | --- | --- | --- |
-| G1 Mechanism Specificity | Defines a concrete mechanism, pattern, metric, workflow, or architecture | Uses vague advice like "improve prompts" without explaining how |
-| G2 Implementable Artifacts | Includes code, schemas, prompt templates, diagrams, API contracts, configs, or enough procedure to implement | Pure commentary with no artifact or reproducible procedure |
-| G3 Beyond Basics | Covers advanced context, harness, memory, tool, evaluation, multi-agent, or research operations patterns | Introductory content only |
-| G4 Source Verifiability | Author or organization is identifiable and technically credible | Anonymous, unverifiable, or marketing-only source |
+| G1 机制明确 | 定义了具体机制、模式、指标、工作流或架构 | 只说“改进提示词”等泛泛建议，却未说明做法 |
+| G2 有可实施产物 | 包含代码、数据结构、提示词模板、图示、API 契约、配置或足以实现的步骤 | 只有评论，没有产物或可复现流程 |
+| G3 超出基础知识 | 涵盖高级上下文、运行框架、记忆、工具、评估、多智能体或研究操作模式 | 只有入门内容 |
+| G4 来源可核验 | 作者或组织身份明确，且技术可信 | 匿名、无法验证或仅有营销内容 |
 
-If any gate fails, record `REJECT` with the failed gate and stop.
+任一门槛失败时，记录 `REJECT` 及未通过门槛，然后停止。
 
-## Dimensional Scoring
+## 维度评分
 
-Score each dimension as 0, 1, or 2.
+每项评分为 0、1 或 2。
 
-| Dimension | Weight | Score 2 | Score 1 | Score 0 |
+| 维度 | 权重 | 2 分 | 1 分 | 0 分 |
 | --- | --- | --- | --- | --- |
-| D1 Technical Depth and Actionability | 35% | Directly implementable with artifacts or exact procedure | Useful but requires interpretation | No path to implementation |
-| D2 Repo Relevance | 30% | Directly maps to context engineering, harness engineering, or skill authoring | Adjacent to repo scope | Out of scope |
-| D3 Evidence and Rigor | 20% | Quantitative evidence, baselines, ablations, public logs, or reproducible method | Plausible experience report | Unsupported claim |
-| D4 Novelty and Insight | 15% | New mechanism, counterintuitive finding, or high-value failure mode | Useful synthesis of known ideas | Common knowledge |
+| D1 技术深度与可执行性 | 35% | 可直接依据产物或精确步骤实现 | 有用，但仍需解释和推断 | 没有实现路径 |
+| D2 与仓库相关性 | 30% | 直接对应上下文工程、运行框架工程或技能编写 | 与仓库范围相邻 | 超出范围 |
+| D3 证据与严谨性 | 20% | 有量化证据、基线、消融、公开日志或可复现方法 | 可信的经验报告 | 主张无依据 |
+| D4 新颖性与洞见 | 15% | 新机制、反直觉发现或高价值失败模式 | 对已知思路有用的综合 | 常识 |
 
-Formula:
+计算公式：
 
 ```text
 weighted_total = D1*0.35 + D2*0.30 + D3*0.20 + D4*0.15
 ```
 
-## Decisions
+## 决策
 
-| Decision | Condition |
+| 决策 | 条件 |
 | --- | --- |
-| APPROVE | All gates pass and weighted total >= 1.4 |
-| HUMAN_REVIEW | All gates pass and 0.9 <= weighted total < 1.4 |
-| REJECT | Any gate fails or weighted total < 0.9 |
+| `APPROVE` | 所有门槛通过，且加权总分不低于 1.4 |
+| `HUMAN_REVIEW` | 所有门槛通过，且 0.9 <= 加权总分 < 1.4 |
+| `REJECT` | 任一门槛失败，或加权总分低于 0.9 |
 
-## Overrides
+## 覆盖规则
 
-- O1: D1 = 0 forces `REJECT`.
-- O2: D2 = 0 forces `REJECT`.
-- O3: D3 = 1 and total >= 1.4 forces `HUMAN_REVIEW`.
-- O4: D4 = 2 and total < 1.4 forces `HUMAN_REVIEW`.
+- O1：D1 = 0 时强制 `REJECT`。
+- O2：D2 = 0 时强制 `REJECT`。
+- O3：D3 = 1 且总分不低于 1.4 时，改为 `HUMAN_REVIEW`。
+- O4：D4 = 2 且总分低于 1.4 时，改为 `HUMAN_REVIEW`。
 
-## Required Evidence
+## 必需证据
 
-Every approved or reviewed source must include:
+每个批准或交由人工审查的来源都必须提供：
 
-1. Retrieved source URL and retrieval status.
-2. Specific quoted or paraphrased evidence for every passing gate.
-3. A mechanism summary in one paragraph.
-4. Candidate skill impact: new skill, update existing skill, reference-only, or reject.
-5. Known limitations, missing evidence, or assumptions.
+1. 已获取的来源网址和检索状态。
+2. 支持每个通过门槛的具体引文或转述证据。
+3. 一段话概述的机制摘要。
+4. 候选技能影响：新增技能、更新现有技能、仅供参考或拒绝。
+5. 已知限制、证据缺口或依赖假设。
 
-## Output Shape
+## 输出格式
 
-Use `../templates/source-evaluation.json` for machine-readable output. If the model cannot produce valid JSON, log the raw output and route to human review instead of silently fixing the evaluation.
+机器可读输出使用 `../templates/source-evaluation.json`。如果模型无法生成有效 JSON，应记录原始输出并交由人工审查，不要静默修复评估结果。

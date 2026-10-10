@@ -1,78 +1,53 @@
-# Contributing to LLM-as-a-Judge Skills
+# 参与贡献
 
-Thank you for your interest in contributing! This project is part of the [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering) ecosystem.
+感谢你参与本项目。本示例属于[智能体上下文工程技能集](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)。
 
-## How to Contribute
+## 报告问题
 
-### Reporting Issues
+- 先检查已有问题。
+- 提供清楚的复现步骤。
+- 如适用，附上检查输出。
 
-- Check existing issues first
-- Provide clear reproduction steps
-- Include test output if applicable
+## 新增工具
 
-### Adding New Tools
+1. 在 `src/tools/<类别>/<工具名>.ts` 中实现工具。
+   - 定义输入和输出 Zod 数据结构。
+   - 实现工具函数并处理错误。
+   - 补充正确的 TypeScript 类型。
+2. 从 `src/tools/<类别>/index.ts` 导出工具。
+3. 在 `tools/<类别>/<工具名>.md` 编写说明，包括用途、适用时机、输入输出和示例。
+4. 在 `tests/` 中增加数据结构检查和 API 集成测试。
 
-1. **Create the implementation** in `src/tools/<category>/<tool-name>.ts`
-   - Define input/output Zod schemas
-   - Implement execute function with error handling
-   - Include proper TypeScript types
+## 代码风格
 
-2. **Export from index** in `src/tools/<category>/index.ts`
+- 提交前运行 `npm run lint`。
+- 使用 `npm run format` 保持格式一致。
+- 使用 TypeScript 严格模式。
+- 为公开 API 编写 JSDoc 注释。
 
-3. **Add documentation** in `tools/<category>/<tool-name>.md`
-   - Purpose and when to use
-   - Input/output specifications
-   - Example usage
+## 拉取请求流程
 
-4. **Write tests** in `tests/`
-   - Unit tests for schema validation
-   - Integration tests with real API calls
+1. Fork 仓库。
+2. 创建功能分支：`git checkout -b feature/my-feature`。
+3. 修改代码。
+4. 在当前任务允许的范围内检查改动。
+5. 提交：`git commit -m 'Add my feature'`。
+6. 推送分支并创建拉取请求。
 
-### Code Style
+## 测试指南
 
-- Run `npm run lint` before committing
-- Run `npm run format` for consistent formatting
-- Use TypeScript strict mode
-- Add JSDoc comments for public APIs
+原项目测试会调用真实 OpenAI API，需要 API 密钥；单次调用默认超时 `60000ms`，多次调用默认超时 `120000ms`。模型输出存在随机性，设计检查时应考虑这种变化。是否运行测试应遵守当前任务的用户指示。
 
-### Pull Request Process
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Make your changes
-4. Run tests: `npm test`
-5. Commit: `git commit -m 'Add my feature'`
-6. Push: `git push origin feature/my-feature`
-7. Open a Pull Request
-
-### Testing Guidelines
-
-- Tests run against real OpenAI API (requires API key)
-- Use `60000ms` timeout for single API calls
-- Use `120000ms` timeout for multiple API calls
-- Tests should be deterministic despite LLM variance
-
-## Development Setup
+## 开发环境
 
 ```bash
-# Clone
 git clone https://github.com/muratcankoylan/llm-as-judge-skills.git
 cd llm-as-judge-skills
-
-# Install
 npm install
-
-# Configure
 cp env.example .env
-# Add your OPENAI_API_KEY to .env
-
-# Build
+# 将 OPENAI_API_KEY 写入 .env
 npm run build
-
-# Test
 npm test
 ```
 
-## Questions?
-
-Open an issue or reach out via the main repository.
+有问题可在主仓库提交 issue。

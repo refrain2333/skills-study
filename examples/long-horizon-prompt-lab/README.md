@@ -1,130 +1,100 @@
-# Long-Horizon Prompting Website
+# 长时程提示词实验室网站
 
-A dependency-free educational website and before/after lab for the
-[`long-horizon-prompting`](../../skills/long-horizon-prompting/) skill. It explains the method,
-provides a copyable builder template and checklist, maps the research evidence and caveats, and
-shows four complete prompt rewrites.
+这是一个无需额外依赖的教学网站和提示词前后对照实验，用于演示 [`long-horizon-prompting`](../../skills/long-horizon-prompting/) 技能。网站介绍方法、提供可复制的任务简报模板和检查清单、整理研究证据及限制，并展示四组完整提示词改写。
 
-This example was built by applying the skill to itself: each "after" is a complete launch prompt
-produced with the skill's brief-writing workflow, and the scoring uses the rubric from
-[`task-brief-template.md`](../../skills/long-horizon-prompting/references/task-brief-template.md).
+本示例通过将技能应用于自身构建：每个“改写后”提示词都使用该技能的简报编写流程生成完整启动提示，并按 [`task-brief-template.md`](../../skills/long-horizon-prompting/references/task-brief-template.md) 中的评分规则评估。
 
-![Aggregate before/after](screenshots/shot-hero.png)
+![前后对照汇总](screenshots/shot-hero.png)
 
-## Website
+## 网站内容
 
-This is a **Long-Horizon Prompting** project site hosted from this monorepo. The on-page brand
-is Long-Horizon Prompting; GitHub Pages serves it under the repository path:
+这是仓库中的长时程提示词项目站点。网页品牌为 Long-Horizon Prompting；GitHub Pages 使用以下仓库路径：
 
 `https://muratcankoylan.github.io/Agent-Skills-for-Context-Engineering/`
 
-Pages:
+- `index.html`：主题概览、简报结构、系统边界和站内导航。
+- `guide.html`：八步方法、提示词与运行框架的分工、可复制模板、检查清单和易错点。
+- `lab.html`：完整提示词对照、下载与复制功能、评分规则和剩余风险。
+- `references.html`：研究、厂商指导、周期双重覆盖案例、证据标记和限制。
 
-- `index.html`: topic overview, brief anatomy, system boundaries, and routes into the site
-- `guide.html`: eight-step method, prompt/harness split, copyable template, checklist, and gotchas
-- `lab.html`: complete prompt comparisons, downloads, copy controls, rubric, and residual risks
-- `references.html`: research, vendor guidance, CDC case notes, evidence labels, and caveats
+网页中的提示词会完整展开。截图工具只在捕获时添加专用页面样式，使发布截图尺寸稳定，不改变网站本身。
 
-Website prompts expand fully. The screenshot renderer adds a capture-only body class so release
-PNGs remain bounded without changing the site.
+## 发布方式
 
-### Publish from this repository
+1. 在仓库设置中打开 **Settings → Pages → Build and deployment**，将 Source 设为 GitHub Actions。
+2. 合并到 `main`，或通过 `workflow_dispatch` 手动运行 **Deploy long-horizon prompt lab**。
+3. 打开上方网站地址。
 
-1. In this monorepo: **Settings → Pages → Build and deployment → Source = GitHub Actions**.
-2. Merge to `main` (or run **Deploy long-horizon prompt lab** via workflow_dispatch).
-3. Open `https://muratcankoylan.github.io/Agent-Skills-for-Context-Engineering/`
+部署定义在 `.github/workflows/deploy-prompt-lab.yml`，只在 `main` 分支触发。
 
-Deployment is defined in `.github/workflows/deploy-prompt-lab.yml`. The deploy job runs only on
-`main`.
+## 仓库内容
 
-
-## What is here
-
-```
-report/            CDC case-study artifacts, fetched local with provenance
-  cdc_prompt.pdf     OpenAI's published GPT-5.6 Sol Ultra Cycle Double Cover prompt
-  cdc_proof.pdf      The candidate proof (unreviewed; see caveats)
-  cdc_prompt.txt     Text extraction (for grep/diff)
+```text
+report/            周期双重覆盖案例及来源记录
+  cdc_prompt.pdf    OpenAI 发布的 GPT-5.6 Sol Ultra 提示词
+  cdc_proof.pdf     候选证明，尚未审查；参见来源说明
+  cdc_prompt.txt    提取文本，便于搜索和差异比较
   cdc_proof.txt
-  PROVENANCE.md      Source URLs, SHA-256, retrieval date, caveats
+  PROVENANCE.md     来源网址、SHA-256、获取日期和限制
 scripts/
-  fetch_report.sh    Re-fetch the report PDFs and re-extract text
-  verify_report.py   Assert the skill's annotated CDC reference matches the published prompt
-  install_skill.sh   Install the skill into .cursor/skills and validate it
-  build_lab.py       Source of truth: prompt pairs + rubric scores -> data/ and ui/data.js
-  validate_site.py   Deterministic pages, metadata, link, reference, sitemap, and prompt checks
-  capture.mjs        Render the UI and capture the release screenshots
-data/prompt-pairs.json  Machine-readable pairs and scores
-ui/                Static multi-page site and generated prompt downloads
-screenshots/       Generated PNGs for sharing
+  fetch_report.sh   重新获取 PDF 并提取文本
+  verify_report.py  检查技能中的注释引用是否与公开提示词一致
+  install_skill.sh  安装技能到 .cursor/skills 并进行结构检查
+  build_lab.py      提示词对、评分规则和 UI 数据的规范来源
+  validate_site.py  检查网页、元数据、链接、引用、站点地图和提示词
+  capture.mjs       渲染网页并捕获发布截图
+ data/prompt-pairs.json 机器可读的提示词对和分数
+ui/                 静态多页网站和生成的提示词下载
+screenshots/        可分享的生成 PNG
 ```
 
-## The four use cases
+## 四组案例
 
-Each "before" is a genuine prompt-engineered launch prompt (expert persona, task context,
-chain-of-thought, explicit output format, persistence). None is a strawman. Each "after" is a
-complete, copy-ready prompt that applies the pseudo-formal task-brief method; it is not a template
-or an outline.
+每个“原始版本”都是实际经过提示词工程的启动提示，包含专家角色、任务上下文、推理和输出格式，并非故意设置的弱对照。每个“改写版本”都是可直接复制使用的完整提示词，而不是提纲或模板。
 
-| Use case | Domain | Topology | Failure the brief pre-blocks |
+| 用例 | 领域 | 架构 | 简报预先阻止的失败 |
 | --- | --- | --- | --- |
-| Autonomous model-improvement run | ML training | Single agent | "Beat the number" invites train-on-eval and single-seed noise wins |
-| Parallel approximation-ratio proof | Algorithms / theory | 64-worker orchestration | Frequent-sync consensus is a diversity-collapse recipe |
-| Long-horizon distributed-systems RCA | Concurrency | Multi-session single agent | "Find the root cause" has no checkable success predicate |
-| Autonomous security audit / red-team | AppSec | Parallel workers | Persistence + checklist inflates unconfirmed findings |
+| 自主改进模型运行 | 机器学习训练 | 单智能体 | “超过指标”可能诱发训练集泄漏或单随机种子偶然获胜 |
+| 并行近似比证明 | 算法与理论 | 64 个工作者编排 | 频繁同步和一致意见可能造成多样性坍塌 |
+| 长时程分布式系统根因分析 | 并发系统 | 单智能体、多会话 | “找到根因”没有可检查的成功判定 |
+| 自主安全审计/红队 | 应用安全 | 并行工作者 | 持续执行和清单可能放大未经核实的发现 |
 
-The dominant edit differs by case (contamination guards for ML, diversity policy for the proof,
-a reproduction predicate for RCA, non-counting outcomes for the audit), which is the point: the
-skill is a checklist of independent failure modes, not one trick.
+不同案例主要改动不同：机器学习使用污染防护，证明任务使用多样性策略，根因分析使用可复现判定，安全审计明确哪些结果不算完成。这体现了该技能是一组独立失败模式检查，而不是单一技巧。
 
-## Reproduce
+## 复现
 
 ```bash
-# From the repo root. Requires python3 with pypdf and Pillow, and Node with Chrome available.
+# 从仓库根目录运行，需要 pypdf、Pillow 和可用的 Node/Chrome 环境
 python3 -m pip install pypdf Pillow skills-ref
 
-# 1. Bring the exemplar report local and verify the skill reference is faithful to it
+# 获取案例报告，并检查技能引用与原始提示词一致
 examples/long-horizon-prompt-lab/scripts/fetch_report.sh
 python3 examples/long-horizon-prompt-lab/scripts/verify_report.py
 
-# 2. Install the skill into this project's .cursor/skills and validate it
+# 将技能安装到当前项目的 .cursor/skills 并检查
 examples/long-horizon-prompt-lab/scripts/install_skill.sh
 
-# 3. Build, validate, serve, or capture the site
+# 构建、检查或本地查看网站
 cd examples/long-horizon-prompt-lab
 npm ci
 npm test
 npm run serve
-# In another terminal: npm run capture
+# 另开终端运行截图：npm run capture
 ```
 
-Open `http://localhost:8000/`. Prompt Lab cases use URL hashes such as
-`lab.html#security-audit`. The site remains file-safe for local inspection, while HTTP is
-recommended for clipboard behavior and production parity.
+本地地址为 `http://localhost:8000/`。实验室案例支持 `lab.html#security-audit` 之类的链接片段。网站可直接从文件查看；剪贴板功能和线上效果建议通过 HTTP 访问。
 
-## How to read the scorecard
+## 如何理解评分卡
 
-Each dimension is scored 0 (absent), 1 (present but gameable), or 2 (adversary-proof), straight
-from the skill's rubric. `n/a` marks dimensions that do not apply (the diversity policy is
-irrelevant to a single-agent run). The total is over applicable dimensions only.
+每个维度按 0（缺失）、1（存在但容易规避）或 2（能抵御对抗）评分，直接依据技能中的评分规则。`n/a` 表示该维度不适用，例如单智能体任务不需要多样性策略；总分只计算适用维度。
 
-## Honesty and limits
+## 诚实说明与限制
 
-- The scores use the **skill's own rubric**, so a high "after" score means the brief fully
-  applies the skill's checklist, measured by that checklist. This is a structural comparison of
-  specification quality, not an outcome benchmark. It shows the briefs are harder to satisfy with
-  a near miss; it does not claim any particular run succeeds.
-- Every pair carries a **residual risk** the brief cannot remove (harness-enforced budgets,
-  lenient proof verification, solvability framing on ill-posed problems, prompt-advisory scope
-  limits). These are shown in the UI, not hidden.
-- The CDC candidate proof in `report/` had **no peer review or formalization at publication**.
-  The validated artifact of interest is the prompt structure, not the theorem. See
-  `report/PROVENANCE.md`.
-- `.cursor/` is gitignored in this repo, so the installed skill copy is not committed;
-  `scripts/install_skill.sh` is the reproducible record of the install.
+- 评分使用**该技能自己的评分规则**，因此“改写后”高分表示简报完整应用了该技能的检查清单。这是规格质量的结构性比较，不是任务成功率基准；它说明简报较难被近似结果糊弄，不保证任何运行一定成功。
+- 每组案例都列出简报无法消除的剩余风险，例如预算需由运行框架强制执行、证明验证器可能宽松、问题表述可能不适定、提示词中的范围限制只是建议。网页会展示这些风险。
+- `report/` 中的周期双重覆盖候选证明在发布时**没有同行评审或形式化验证**。本项目核验的是提示词结构，不是定理；详见 `report/PROVENANCE.md`。
+- `.cursor/` 已加入 Git 忽略规则，因此安装后的技能副本不会提交；`scripts/install_skill.sh` 可重复完成安装。
 
-## Skills demonstrated
+## 展示的技能
 
-`long-horizon-prompting` (primary). Adjacent skills referenced by the briefs' division of labor:
-`harness-engineering` (runtime-enforced budgets and permissions), `multi-agent-patterns`
-(topology behind the orchestration policy), `advanced-evaluation` (adversarial audit design).
+核心技能为 `long-horizon-prompting`。案例中的职责划分还引用 `harness-engineering`（运行时强制的预算和权限）及 `multi-agent-patterns`（编排策略背后的拓扑设计）、`advanced-evaluation`（对抗性审查设计）。

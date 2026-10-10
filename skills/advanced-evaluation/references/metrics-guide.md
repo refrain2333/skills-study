@@ -1,22 +1,22 @@
-# Metric Selection Guide for LLM Evaluation
+# LLM评估的指标选择指南
 
-This reference provides guidance on selecting appropriate metrics for different evaluation scenarios.
+本参考为不同的评估场景提供指标选择的指导。
 
-## Metric Categories
+## 指标类别
 
-### Classification Metrics
+### 分类指标
 
-Use for binary or multi-class evaluation tasks (pass/fail, correct/incorrect).
+用于二元或多类别评估任务（通过/失败，正确/不正确）。
 
-#### Precision
+#### 精确度
 
 ```
-Precision = True Positives / (True Positives + False Positives)
+精确度 = 真正例 / (真正例 + 假正例)
 ```
 
-**Interpretation**: Of all responses the judge said were good, what fraction were actually good?
+**解释**：在所有判官说的好响应中，实际有好的占多少？
 
-**Use when**: False positives are costly (e.g., approving unsafe content)
+**何时使用**：假正例成本高（例如，批准不安全内容）
 
 ```python
 def precision(predictions, ground_truth):
@@ -25,15 +25,15 @@ def precision(predictions, ground_truth):
     return true_positives / predicted_positives if predicted_positives > 0 else 0
 ```
 
-#### Recall
+#### 召回率
 
 ```
-Recall = True Positives / (True Positives + False Negatives)
+召回率 = 真正例 / (真正例 + 假负例)
 ```
 
-**Interpretation**: Of all actually good responses, what fraction did the judge identify?
+**解释**：在所有实际好的响应中，判官识别出多少？
 
-**Use when**: False negatives are costly (e.g., missing good content in filtering)
+**何时使用**：假负例成本高（例如，在过滤中遗漏好的内容）
 
 ```python
 def recall(predictions, ground_truth):
@@ -42,15 +42,15 @@ def recall(predictions, ground_truth):
     return true_positives / actual_positives if actual_positives > 0 else 0
 ```
 
-#### F1 Score
+#### F1评分
 
 ```
-F1 = 2 * (Precision * Recall) / (Precision + Recall)
+F1 = 2 * (精确度 * 召回率) / (精确度 + 召回率)
 ```
 
-**Interpretation**: Harmonic mean of precision and recall
+**解释**：精确度和召回率的调和平均值
 
-**Use when**: You need a single number balancing both concerns
+**何时使用**：你需要一个平衡两个关注的单一数字
 
 ```python
 def f1_score(predictions, ground_truth):
@@ -59,23 +59,23 @@ def f1_score(predictions, ground_truth):
     return 2 * p * r / (p + r) if (p + r) > 0 else 0
 ```
 
-### Agreement Metrics
+### 一致性指标
 
-Use for comparing automated evaluation with human judgment.
+用于比较自动化评估与人工判断。
 
-#### Cohen's Kappa (κ)
+#### Cohen的Kappa（κ）
 
 ```
-κ = (Observed Agreement - Expected Agreement) / (1 - Expected Agreement)
+κ = (观察一致性 - 期望一致性) / (1 - 期望一致性)
 ```
 
-**Interpretation**: Agreement adjusted for chance
-- κ > 0.8: Almost perfect agreement
-- κ 0.6-0.8: Substantial agreement
-- κ 0.4-0.6: Moderate agreement
-- κ < 0.4: Fair to poor agreement
+**解释**：考虑了概率的一致性
+- κ > 0.8：几乎完美的一致性
+- κ 0.6-0.8：实质性一致性
+- κ 0.4-0.6：中等一致性
+- κ < 0.4：公平到差的一致性
 
-**Use for**: Binary or categorical judgments
+**用于**：二元或分类判断
 
 ```python
 def cohens_kappa(judge1, judge2):
@@ -83,9 +83,9 @@ def cohens_kappa(judge1, judge2):
     return cohen_kappa_score(judge1, judge2)
 ```
 
-#### Weighted Kappa
+#### 加权Kappa
 
-For ordinal scales where disagreement severity matters:
+对于序数量表，分歧严重程度很重要：
 
 ```python
 def weighted_kappa(judge1, judge2):
@@ -93,21 +93,21 @@ def weighted_kappa(judge1, judge2):
     return cohen_kappa_score(judge1, judge2, weights='quadratic')
 ```
 
-**Interpretation**: Penalizes large disagreements more than small ones
+**解释**：对大分歧惩罚比小分歧更多
 
-### Correlation Metrics
+### 相关性指标
 
-Use for ordinal/continuous scores.
+用于序数/连续评分。
 
-#### Spearman's Rank Correlation (ρ)
+#### Spearman秩相关（ρ）
 
-**Interpretation**: Correlation between rankings, not absolute values
-- ρ > 0.9: Very strong correlation
-- ρ 0.7-0.9: Strong correlation
-- ρ 0.5-0.7: Moderate correlation
-- ρ < 0.5: Weak correlation
+**解释**：排名之间的相关性，而不是绝对值
+- ρ > 0.9：非常强的相关性
+- ρ 0.7-0.9：强相关性
+- ρ 0.5-0.7：中等相关性
+- ρ < 0.5：弱相关性
 
-**Use when**: Order matters more than exact values
+**何时使用**：顺序比确切值更重要
 
 ```python
 def spearmans_rho(scores1, scores2):
@@ -116,11 +116,11 @@ def spearmans_rho(scores1, scores2):
     return {'rho': rho, 'p_value': p_value}
 ```
 
-#### Kendall's Tau (τ)
+#### Kendall的Tau（τ）
 
-**Interpretation**: Similar to Spearman but based on pairwise concordance
+**解释**：类似于Spearman但基于成对一致性
 
-**Use when**: You have many tied values
+**何时使用**：你有许多的并列值
 
 ```python
 def kendalls_tau(scores1, scores2):
@@ -129,11 +129,11 @@ def kendalls_tau(scores1, scores2):
     return {'tau': tau, 'p_value': p_value}
 ```
 
-#### Pearson Correlation (r)
+#### Pearson相关（r）
 
-**Interpretation**: Linear correlation between scores
+**解释**：评分之间的线性相关性
 
-**Use when**: Exact score values matter, not just order
+**何时使用**：确切的评分值很重要，而不仅仅是顺序
 
 ```python
 def pearsons_r(scores1, scores2):
@@ -142,15 +142,15 @@ def pearsons_r(scores1, scores2):
     return {'r': r, 'p_value': p_value}
 ```
 
-### Pairwise Comparison Metrics
+### 成对比较指标
 
-#### Agreement Rate
+#### 一致性率
 
 ```
-Agreement = (Matching Decisions) / (Total Comparisons)
+一致性 = (匹配决定) / (总比较)
 ```
 
-**Interpretation**: Simple percentage of agreement
+**解释**：一致性的简单百分比
 
 ```python
 def pairwise_agreement(decisions1, decisions2):
@@ -158,13 +158,13 @@ def pairwise_agreement(decisions1, decisions2):
     return matches / len(decisions1)
 ```
 
-#### Position Consistency
+#### 位置一致性
 
 ```
-Consistency = (Consistent across position swaps) / (Total comparisons)
+一致性 = (位置交换中保持一致) / (总比较)
 ```
 
-**Interpretation**: How often does swapping position change the decision?
+**解释**：交换位置改变决定的频率有多高？
 
 ```python
 def position_consistency(results):
@@ -172,62 +172,62 @@ def position_consistency(results):
     return consistent / len(results)
 ```
 
-## Selection Decision Tree
+## 选择决策树
 
 ```
-What type of evaluation task?
+什么类型的评估任务？
 │
-├── Binary classification (pass/fail)
-│   └── Use: Precision, Recall, F1, Cohen's κ
+├── 二元分类（通过/失败）
+│   └── 使用：精确度、召回率、F1、Cohen's κ
 │
-├── Ordinal scale (1-5 rating)
-│   ├── Comparing to human judgments?
-│   │   └── Use: Spearman's ρ, Weighted κ
-│   └── Comparing two automated judges?
-│       └── Use: Kendall's τ, Spearman's ρ
+├── 序数量表（1-5评分）
+│   ├── 与人工判断比较？
+│   │   └── 使用：Spearman's ρ、加权κ
+│   └── 比较两个自动化判官？
+│       └── 使用：Kendall's τ、Spearman's ρ
 │
-├── Pairwise preference
-│   └── Use: Agreement rate, Position consistency
+├── 成对偏好
+│   └── 使用：一致性率、位置一致性
 │
-└── Multi-label classification
-    └── Use: Macro-F1, Micro-F1, Per-label metrics
+└── 多标签分类
+    └── 使用：宏观F1、微观F1、每个标签的指标
 ```
 
-## Metric Selection by Use Case
+## 按用例选择指标
 
-### Use Case 1: Validating Automated Evaluation
+### 用例1：验证自动化评估
 
-**Goal**: Ensure automated evaluation correlates with human judgment
+**目标**：确保自动化评估与人工判断相关联
 
-**Recommended Metrics**:
-1. Primary: Spearman's ρ (for ordinal scales) or Cohen's κ (for categorical)
-2. Secondary: Per-criterion agreement
-3. Diagnostic: Confusion matrix for systematic errors
+**推荐指标**：
+1. 主要：Spearman's ρ（对于序数量表）或Cohen's κ（对于分类）
+2. 次要：每个标准的一致性
+3. 诊断：混淆矩阵以查找系统性错误
 
 ```python
 def validate_automated_eval(automated_scores, human_scores, criteria):
     results = {}
-    
-    # Overall correlation
+
+    # 总体相关性
     results['overall_spearman'] = spearmans_rho(automated_scores, human_scores)
-    
-    # Per-criterion agreement
+
+    # 每个标准的一致性
     for criterion in criteria:
         auto_crit = [s[criterion] for s in automated_scores]
         human_crit = [s[criterion] for s in human_scores]
         results[f'{criterion}_spearman'] = spearmans_rho(auto_crit, human_crit)
-    
+
     return results
 ```
 
-### Use Case 2: Comparing Two Models
+### 用例2：比较两个模型
 
-**Goal**: Determine which model produces better outputs
+**目标**：确定哪个模型产生更好的输出
 
-**Recommended Metrics**:
-1. Primary: Win rate (from pairwise comparison)
-2. Secondary: Position consistency (bias check)
-3. Diagnostic: Per-criterion breakdown
+**推荐指标**：
+1. 主要：获胜率（来自成对比较）
+2. 次要：位置一致性（偏差检查）
+3. 诊断：每个标准的细分
 
 ```python
 def compare_models(model_a_outputs, model_b_outputs, prompts):
@@ -235,7 +235,7 @@ def compare_models(model_a_outputs, model_b_outputs, prompts):
     for a, b, p in zip(model_a_outputs, model_b_outputs, prompts):
         comparison = await compare_with_position_swap(a, b, p)
         results.append(comparison)
-    
+
     return {
         'a_wins': sum(1 for r in results if r['winner'] == 'A'),
         'b_wins': sum(1 for r in results if r['winner'] == 'B'),
@@ -244,37 +244,37 @@ def compare_models(model_a_outputs, model_b_outputs, prompts):
     }
 ```
 
-### Use Case 3: Quality Monitoring
+### 用例3：质量监控
 
-**Goal**: Track evaluation quality over time
+**目标**：随时间追踪评估质量
 
-**Recommended Metrics**:
-1. Primary: Rolling agreement with human spot-checks
-2. Secondary: Score distribution stability
-3. Diagnostic: Bias indicators (position, length)
+**推荐指标**：
+1. 主要：与人工抽查的滚动一致性
+2. 次要：评分分布稳定性
+3. 诊断：偏差指标（位置、长度）
 
 ```python
 class QualityMonitor:
     def __init__(self, window_size=100):
         self.window = deque(maxlen=window_size)
-    
+
     def add_evaluation(self, automated, human_spot_check=None):
         self.window.append({
             'automated': automated,
             'human': human_spot_check,
             'length': len(automated['response'])
         })
-    
+
     def get_metrics(self):
-        # Filter to evaluations with human spot-checks
+        # 筛选有人工抽查的评估
         with_human = [e for e in self.window if e['human'] is not None]
-        
+
         if len(with_human) < 10:
             return {'insufficient_data': True}
-        
+
         auto_scores = [e['automated']['score'] for e in with_human]
         human_scores = [e['human']['score'] for e in with_human]
-        
+
         return {
             'correlation': spearmans_rho(auto_scores, human_scores),
             'mean_difference': np.mean([a - h for a, h in zip(auto_scores, human_scores)]),
@@ -285,47 +285,46 @@ class QualityMonitor:
         }
 ```
 
-## Interpreting Metric Results
+## 解释指标结果
 
-### Good Evaluation System Indicators
+### 好的评估系统指标
 
-| Metric | Good | Acceptable | Concerning |
-|--------|------|------------|------------|
+| 指标 | 好 | 可接受 | 令人担忧 |
+|------|------|--------|--------|
 | Spearman's ρ | > 0.8 | 0.6-0.8 | < 0.6 |
 | Cohen's κ | > 0.7 | 0.5-0.7 | < 0.5 |
-| Position consistency | > 0.9 | 0.8-0.9 | < 0.8 |
-| Length correlation | < 0.2 | 0.2-0.4 | > 0.4 |
+| 位置一致性 | > 0.9 | 0.8-0.9 | < 0.8 |
+| 长度相关性 | < 0.2 | 0.2-0.4 | > 0.4 |
 
-### Warning Signs
+### 警告信号
 
-1. **High agreement but low correlation**: May indicate calibration issues
-2. **Low position consistency**: Position bias affecting results
-3. **High length correlation**: Length bias inflating scores
-4. **Per-criterion variance**: Some criteria may be poorly defined
+1. **高一致性但低相关性**：可能表示校准问题
+2. **低位置一致性**：位置偏差影响结果
+3. **高长度相关性**：长度偏差膨胀评分
+4. **每个标准方差**：一些标准可能定义不良
 
-## Reporting Template
+## 报告模板
 
 ```markdown
-## Evaluation System Metrics Report
+## 评估系统指标报告
 
-### Human Agreement
-- Spearman's ρ: 0.82 (p < 0.001)
-- Cohen's κ: 0.74
-- Sample size: 500 evaluations
+### 人工一致性
+- Spearman's ρ：0.82（p < 0.001）
+- Cohen's κ：0.74
+- 样本大小：500个评估
 
-### Bias Indicators
-- Position consistency: 91%
-- Length-score correlation: 0.12
+### 偏差指标
+- 位置一致性：91%
+- 长度-评分相关性：0.12
 
-### Per-Criterion Performance
-| Criterion | Spearman's ρ | κ |
-|-----------|--------------|---|
-| Accuracy | 0.88 | 0.79 |
-| Clarity | 0.76 | 0.68 |
-| Completeness | 0.81 | 0.72 |
+### 每个标准的性能
+| 标准 | Spearman's ρ | κ |
+|------|--------------|---|
+| 准确性 | 0.88 | 0.79 |
+| 清晰度 | 0.76 | 0.68 |
+| 完整性 | 0.81 | 0.72 |
 
-### Recommendations
-- All metrics within acceptable ranges
-- Monitor "Clarity" criterion - lower agreement may indicate need for rubric refinement
+### 建议
+- 所有指标在可接受范围内
+- 监控"清晰度"标准 - 较低的一致性可能表示需要改进评分标准
 ```
-

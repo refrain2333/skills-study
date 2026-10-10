@@ -1,5 +1,5 @@
-# Topic Details
+# 专题详情
 
-Use this file for detailed material that would make `SKILL.md` too long or too noisy for first-load context.
+将会使 `SKILL.md` 过长或初次加载过于嘈杂的详细材料放在此文件中。
 
-Replace this stub when creating a real skill, or delete the link from `SKILL.md` if no extended reference is needed.
+创建真实技能时，用实际内容替换此模板；若不需要扩展资料，请从 `SKILL.md` 中删除对应链接。

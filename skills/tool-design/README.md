@@ -1,4 +1,4 @@
-# 智能体工具设计 (Tool Design for Agents)
+# 智能体工具设计
 
 设计智能体可以有效使用的工具，包括何时减少工具复杂性。
 
@@ -12,35 +12,32 @@
 
 ```
 tool-design/
-├── SKILL.md                              # 主要技能指令
-├── SKILL_zh.md                           # 主要技能指令 (中文)
+├── SKILL.md                              # 技能说明
 ├── README.md                             # 本文件
 ├── references/
-│   ├── best_practices.md                 # 详细的设计指南
-│   ├── best_practices_zh.md              # 详细的设计指南 (中文)
-│   ├── architectural_reduction.md        # 关于工具极简主义的案例研究
-│   └── architectural_reduction_zh.md     # 关于工具极简主义的案例研究 (中文)
+│   ├── best_practices.md                 # 工具设计实践
+│   └── architectural_reduction.md        # 工具架构精简案例
 └── scripts/
-    └── description_generator.py          # 工具描述实用程序
+    └── description_generator.py          # 工具描述生成程序
 ```
 
 ## 核心概念
 
-### 合并原则 (The Consolidation Principle)
+### 合并原则
 
 如果人类工程师无法明确说明在特定情况下应该使用哪个工具，那么就不能指望智能体做得更好。倾向于使用单一的综合工具，而不是多个功能重叠的狭窄工具。
 
-### 架构精简 (Architectural Reduction)
+### 架构精简
 
 将合并原则推向逻辑极致。生产实践证明，从 17 个专用工具减少到 2 个原始工具（Bash 命令执行 + SQL）实现了：
 
 - 执行速度快 3.5 倍
-- Token 消耗减少 37%
+- 令牌消耗减少 37%
 - 成功率达 100%（从 80% 提升）
 
 文件系统智能体模式使用标准 Unix 实用程序（grep、cat、find、ls）来代替自定义探索工具。
 
-### 工具描述工程 (Tool Description Engineering)
+### 工具描述设计
 
 工具描述是塑造智能体行为的提示词工程。有效的描述回答：
 
@@ -97,7 +94,7 @@ def search(query):
 
 1. 编写回答“是什么”、“何时用”和“返回什么”的描述
 2. 使用合并来减少歧义
-3. 实现响应格式选项以提高 Token 效率
+3. 提供响应格式选项，提高令牌使用效率
 4. 为智能体恢复设计错误消息
 5. 质疑每个工具是赋能还是约束模型
 6. 倾向于使用原始、通用的工具，而不是专用的包装器

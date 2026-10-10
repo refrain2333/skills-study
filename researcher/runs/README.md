@@ -1,53 +1,53 @@
-# Researcher Runs
+# 研究运行
 
-Each run is one trip through the research-to-skill state machine. Run directories are runtime artifacts; only the seed run is committed as a worked example.
+每次运行都会完整经过一次研究转技能状态机。运行目录属于运行时产物；仓库只提交种子运行作为完整示例。
 
-## Layout
+## 目录结构
 
 ```
-researcher/runs/<timestamp>-<slug>/
-  run-state.json              # state machine, locked surfaces, transition history
-  THREAD.md                   # human-readable thread log
+researcher/runs/<时间戳>-<名称>/
+  run-state.json              # 状态机、锁定区域和状态转换历史
+  THREAD.md                   # 供人阅读的讨论记录
   sources/
-    queue.jsonl               # source records for this run
-    evaluations/              # source-evaluation JSON (drafts allowed, completed required for publish)
+    queue.jsonl               # 本次运行的来源记录
+    evaluations/              # 来源评估 JSON（草稿可存在，发布前必须完成）
     evidence/
-      retrieval.md            # pointer log of retrieved evidence
-      raw/                    # raw fetched HTML/JSON
+      retrieval.md            # 已检索证据的指针记录
+      raw/                    # 获取的原始 HTML/JSON
   proposals/
-    skill-proposal.md         # proposal targeting a specific skill change
-    mechanism-proposal.jsonl  # candidate mechanisms for the registry
+    skill-proposal.md         # 针对特定技能变更的提案
+    mechanism-proposal.jsonl  # 待加入注册表的候选机制
   reports/
-    validation-report.json    # repo-level validation snapshot at init time
-    validation-report.md      # human summary
-    novelty-result.json       # latest novelty check (created by `research_loop.py novelty`)
-    pr-readiness.md           # PR summary, test plan, risks (created by `pr-ready`)
-    closure.json              # set by `close`
-    run-readiness.{json,md}   # set by `validate-run`
+    validation-report.json    # 初始化时的仓库验证快照
+    validation-report.md      # 人类可读摘要
+    novelty-result.json       # 最新新颖性检查（由 research_loop.py novelty 创建）
+    pr-readiness.md           # 拉取请求摘要、检查计划和风险（由 pr-ready 创建）
+    closure.json              # 由 close 写入
+    run-readiness.{json,md}   # 由 validate-run 写入
   logs/
 ```
 
-## State machine
+## 状态机
 
-```
+```text
 initialized -> retrieved -> evaluated -> proposed -> novelty_checked -> validated -> pr_ready -> closed
 ```
 
-Use `researcher/scripts/research_loop.py` subcommands rather than editing `run-state.json` directly:
+请使用 `researcher/scripts/research_loop.py` 子命令推进状态，不要直接编辑 `run-state.json`：
 
 ```bash
 python3 researcher/scripts/research_loop.py init --title "..." --url "..."
-python3 researcher/scripts/research_loop.py retrieve --run-dir <run> --file <evidence>
-python3 researcher/scripts/research_loop.py evaluate --run-dir <run>
-python3 researcher/scripts/research_loop.py propose --run-dir <run>
-python3 researcher/scripts/research_loop.py novelty --run-dir <run>
-python3 researcher/scripts/research_loop.py validate-run --run-dir <run>
-python3 researcher/scripts/research_loop.py pr-ready --run-dir <run> --summary <text> --test-plan <text> --risks <text>
-python3 researcher/scripts/research_loop.py close --run-dir <run> --status reference-only --reason <text> --reviewed-by <handle>
+python3 researcher/scripts/research_loop.py retrieve --run-dir <运行目录> --file <证据文件>
+python3 researcher/scripts/research_loop.py evaluate --run-dir <运行目录>
+python3 researcher/scripts/research_loop.py propose --run-dir <运行目录>
+python3 researcher/scripts/research_loop.py novelty --run-dir <运行目录>
+python3 researcher/scripts/research_loop.py validate-run --run-dir <运行目录>
+python3 researcher/scripts/research_loop.py pr-ready --run-dir <运行目录> --summary <摘要> --test-plan <检查计划> --risks <风险>
+python3 researcher/scripts/research_loop.py close --run-dir <运行目录> --status reference-only --reason <原因> --reviewed-by <审查者>
 ```
 
-## What is committed
+## 哪些运行会提交到仓库
 
-Only `researcher/runs/20260515-035228-executable-autonomous-research-frameworks/` is committed. It is the worked example that bootstrapped the harness-engineering skill and the mechanism registry. Its `current_state` is `closed` and `close_status` is `reference-only`.
+目前只有 `researcher/runs/20260515-035228-executable-autonomous-research-frameworks/` 会提交。它是用于建立 harness-engineering 技能和机制注册表的完整示例，当前 `current_state` 为 `closed`，`close_status` 为 `reference-only`。
 
-All other run directories are local runtime state and are excluded by `.gitignore`. PRs should not introduce new committed runs; if you need a regression fixture, add it under `researcher/fixtures/` instead.
+其他运行目录都是本地运行时状态，由 `.gitignore` 排除。拉取请求不要增加新的已提交运行；需要回归样例时，应放在 `researcher/fixtures/` 下。

@@ -1,182 +1,46 @@
-# Pairwise Compare Tool
+# 成对比较工具
 
-## Purpose
+## 用途
 
-Compare two LLM responses and determine which one better satisfies the given criteria. More reliable for subjective evaluations than direct scoring.
+比较两份大语言模型回复，判断哪份更符合标准。对于语气、说服力和文风等主观偏好，它通常比直接评分更可靠。
 
-## Tool Definition
+## 工具定义
 
 ```typescript
-import { tool } from "ai";
-import { z } from "zod";
-
 export const pairwiseCompare = tool({
-  description: `Compare two responses and select the better one.
-Use for subjective evaluations like tone, persuasiveness, or writing style.
-More reliable than direct scoring for preferences.
-Returns winner selection with detailed comparison.`,
-
+  description: "比较两份回复并选出更好的一份；适用于语气、说服力和写作风格等主观评价。",
   parameters: z.object({
-    responseA: z.string()
-      .describe("First response to compare"),
-    
-    responseB: z.string()
-      .describe("Second response to compare"),
-    
-    prompt: z.string()
-      .describe("The original prompt both responses address"),
-    
-    context: z.string().optional()
-      .describe("Additional context if relevant"),
-    
-    criteria: z.array(z.string())
-      .describe("Aspects to compare on, e.g., ['clarity', 'engagement', 'accuracy']"),
-    
-    allowTie: z.boolean().default(true)
-      .describe("Whether to allow a tie verdict"),
-    
+    responseA: z.string(),
+    responseB: z.string(),
+    prompt: z.string(),
+    context: z.string().optional(),
+    criteria: z.array(z.string()),
+    allowTie: z.boolean().default(true),
     swapPositions: z.boolean().default(true)
-      .describe("Evaluate twice with positions swapped to reduce position bias")
   }),
-
-  execute: async (input) => {
-    if (input.swapPositions) {
-      return evaluateWithPositionSwap(input);
-    }
-    return evaluatePairwise(input);
-  }
+  execute: async (input) => input.swapPositions
+    ? evaluateWithPositionSwap(input)
+    : evaluatePairwise(input)
 });
 ```
 
-## Input Schema
+## 输入字段
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| responseA | string | Yes | First response |
-| responseB | string | Yes | Second response |
-| prompt | string | Yes | Original prompt |
-| context | string | No | Additional context |
-| criteria | string[] | Yes | Comparison dimensions |
-| allowTie | boolean | No | Allow tie verdict (default: true) |
-| swapPositions | boolean | No | Swap positions to reduce bias (default: true) |
+| 字段 | 类型 | 必需 | 说明 |
+| --- | --- | --- | --- |
+| `responseA`、`responseB` | string | 是 | 两份待比较回复 |
+| `prompt` | string | 是 | 两份回复共同回答的原始提示 |
+| `context` | string | 否 | 补充上下文 |
+| `criteria` | string[] | 是 | 比较维度 |
+| `allowTie` | boolean | 否 | 是否允许平局，默认是 |
+| `swapPositions` | boolean | 否 | 是否交换位置缓解偏差，默认是 |
 
-## Output Schema
+## 输出字段
 
-```typescript
-interface PairwiseCompareResult {
-  success: boolean;
-  
-  winner: "A" | "B" | "TIE";
-  confidence: number; // 0-1
-  
-  comparison: {
-    criterion: string;
-    winner: "A" | "B" | "TIE";
-    reasoning: string;
-    aStrength: string;
-    bStrength: string;
-  }[];
-  
-  overallReasoning: string;
-  
-  differentiators: {
-    aAdvantages: string[];
-    bAdvantages: string[];
-  };
-  
-  // If swapPositions was true
-  positionConsistency?: {
-    firstPassWinner: "A" | "B" | "TIE";
-    secondPassWinner: "A" | "B" | "TIE";
-    consistent: boolean;
-  };
-  
-  metadata: {
-    evaluationTimeMs: number;
-    positionsSwapped: boolean;
-  };
-}
-```
+结果包括胜者（`A`、`B` 或 `TIE`）、置信度、逐标准比较、总体理由、双方优势，以及启用换位时的位置一致性和元数据。
 
-## Usage Example
+## 换位算法
 
-```typescript
-const result = await pairwiseCompare.execute({
-  responseA: "Exercise improves cardiovascular health, builds muscle, and boosts mental wellbeing...",
-  
-  responseB: "Working out regularly has many benefits. You'll feel better and look better...",
-  
-  prompt: "Explain the benefits of regular exercise",
-  
-  criteria: ["accuracy", "specificity", "engagement", "completeness"],
-  
-  allowTie: true,
-  swapPositions: true
-});
+先按 A、B 顺序评估，再交换位置重新评估，并把第二次胜者映射回原顺序。若一致，则合并置信度；若不一致，则返回平局或降低置信度。
 
-// Result:
-// {
-//   winner: "A",
-//   confidence: 0.85,
-//   comparison: [
-//     {
-//       criterion: "accuracy",
-//       winner: "A",
-//       reasoning: "Response A uses specific medical terminology...",
-//       aStrength: "Mentions cardiovascular, muscle, mental health",
-//       bStrength: "General but not incorrect"
-//     },
-//     ...
-//   ],
-//   ...
-// }
-```
-
-## Position Swap Algorithm
-
-To mitigate position bias:
-
-```typescript
-async function evaluateWithPositionSwap(input) {
-  // First pass: Original order
-  const pass1 = await evaluate({
-    first: input.responseA,
-    second: input.responseB,
-    ...input
-  });
-  
-  // Second pass: Swapped order
-  const pass2 = await evaluate({
-    first: input.responseB,
-    second: input.responseA,
-    ...input
-  });
-  
-  // Reconcile results
-  const pass2Adjusted = pass2.winner === "A" ? "B" : pass2.winner === "B" ? "A" : "TIE";
-  
-  if (pass1.winner === pass2Adjusted) {
-    return {
-      ...pass1,
-      positionConsistency: { consistent: true, ... }
-    };
-  } else {
-    // Inconsistent - return tie or lower confidence
-    return {
-      winner: "TIE",
-      confidence: 0.5,
-      positionConsistency: { consistent: false, ... },
-      ...
-    };
-  }
-}
-```
-
-## Implementation Notes
-
-1. **Position Bias Mitigation**: Always use `swapPositions: true` for production
-2. **Criteria Order**: Order criteria by importance for better focus
-3. **Tie Handling**: Consider domain - some tasks should rarely tie
-4. **Confidence Calibration**: Lower confidence when evaluations are close
-5. **Length Considerations**: Note if one response is significantly longer
-
+生产环境建议始终设置 `swapPositions: true`。标准应按重要性排序；差异接近时降低置信度，并记录回复长度差异。

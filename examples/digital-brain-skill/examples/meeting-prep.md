@@ -1,28 +1,20 @@
-# Example: Meeting Preparation Workflow
+# 示例：会议准备流程
 
-A complete walkthrough of using Digital Brain for meeting preparation.
+本示例展示如何用数字大脑准备会议。
 
----
+## 场景
 
-## Scenario
+你将在 30 分钟后与 Sarah Chen 通话，需要一份简短背景摘要。
 
-You have a call with "Sarah Chen" in 30 minutes and need a quick brief.
+## 第 1 步：启用技能
 
----
+**用户请求**：“帮我准备和 Sarah Chen 的通话。”
 
-## Step 1: Agent Activates Skill
+**智能体判断**：姓名加“准备通话”表示会议准备任务；加载数字大脑技能和人际网络模块。
 
-**User Input**: "Prepare me for my call with Sarah Chen"
+## 第 2 步：查找联系人
 
-**Agent Recognition**:
-- Trigger: "prepare for" + person name → meeting prep
-- Action: Load Digital Brain skill, network module
-
----
-
-## Step 2: Contact Lookup
-
-Agent searches `network/contacts.jsonl` for "Sarah Chen":
+在 `network/contacts.jsonl` 中找到 Sarah：
 
 ```json
 {
@@ -30,214 +22,61 @@ Agent searches `network/contacts.jsonl` for "Sarah Chen":
   "name": "Sarah Chen",
   "handle": "@sarahchen_ai",
   "company": "AI Ventures",
-  "role": "Partner",
+  "role": "合伙人",
   "circle": "active",
-  "how_met": "She reached out after my thread on agent systems",
+  "how_met": "她看到我关于智能体系统的串文后主动联系",
   "relationship": "potential_investor",
   "topics": ["ai_agents", "investing", "founder_market_fit"],
-  "can_help_with": ["Funding intros", "GTM strategy advice"],
-  "you_can_help_with": ["Technical due diligence", "Agent architecture insights"],
-  "notes": "Very technical for a VC. Former ML engineer at Google. Values depth over polish.",
-  "last_contact": "2024-12-15T00:00:00Z",
-  "links": {
-    "twitter": "https://twitter.com/sarahchen_ai",
-    "linkedin": "https://linkedin.com/in/sarahchen"
-  }
+  "can_help_with": ["融资引荐", "市场策略建议"],
+  "you_can_help_with": ["技术尽调", "智能体架构见解"],
+  "notes": "技术背景很强的投资人；曾在 Google 做机器学习工程师；重视内容深度而非包装。",
+  "last_contact": "2024-12-15T00:00:00Z"
 }
 ```
 
----
+## 第 3 步：查看互动历史
 
-## Step 3: Interaction History
+智能体按 `contact_id` 过滤 `network/interactions.jsonl`，发现最近一次电话讨论了合作机会、技术架构以及她的被投公司 BuildAI；待跟进事项包括发送技术方案和引荐 BuildAI 团队。
 
-Agent filters `network/interactions.jsonl` by `contact_id`:
+## 第 4 步：检查待办
 
-```json
-// Most recent interaction:
-{
-  "id": "int_20241215_100000",
-  "date": "2024-12-15T10:00:00Z",
-  "contact_id": "contact_sarahchen",
-  "type": "call",
-  "context": "Initial intro call. She's interested in our agent framework approach.",
-  "key_points": [
-    "She liked our context engineering approach",
-    "Asked about moat - I explained skill composability",
-    "She mentioned her portfolio company BuildAI might need our help"
-  ],
-  "follow_ups": [
-    "Send deck with technical architecture",
-    "Intro to BuildAI team"
-  ],
-  "sentiment": "positive"
-}
+在 `operations/todos.md` 中发现 BuildAI 引荐已超期，发送技术方案仍是 P1 任务，因此应在会议摘要中提醒。
 
-// Earlier interaction:
-{
-  "id": "int_20241201_140000",
-  "date": "2024-12-01T14:00:00Z",
-  "contact_id": "contact_sarahchen",
-  "type": "dm",
-  "context": "She DMed after my agent systems thread",
-  "key_points": ["Impressed by technical depth", "Asked about investment stage"],
-  "follow_ups": ["Schedule intro call"],
-  "sentiment": "positive"
-}
-```
+## 第 5 步：生成会前摘要
 
----
+摘要包括：会议时间、对方职位和关系状态、最后联系时间、个人背景、上次讨论要点、待跟进事项、双方可交换的价值、建议议题以及社交资料链接。
 
-## Step 4: Check Pending Items
+建议议题：
 
-Agent scans `operations/todos.md` for Sarah-related items:
+1. 为技术方案延误致歉，并提出现场讲解。
+2. 询问 BuildAI 引荐进展。
+3. 分享相关功能的近期进展。
+4. 了解对方投资计划的时间安排。
 
-```markdown
-### Waiting On
-| Task | Waiting On | Since | Follow Up |
-|------|------------|-------|-----------|
-| BuildAI intro | Sarah Chen | 2024-12-15 | 2024-12-29 |
+## 第 6 步：会后记录
 
-### P1 - This Week
-- [ ] Send technical deck to Sarah Chen
-```
+通话后，用户告知：“刚和 Sarah 通完电话，她会推进 BuildAI 引荐，希望我周五前发技术方案。”智能体应：
 
-**Insight**: Follow-up items are overdue!
+- 向 `network/interactions.jsonl` 追加一条互动记录，包含日期、主题、关键点、待跟进事项和情绪。
+- 在 `operations/todos.md` 中将技术方案列为今天或本周的优先事项。
+- 更新联系人 `last_contact` 时间。
 
----
+## 读取的文件
 
-## Step 5: Generate Brief
+| 文件 | 用途 | 令牌估算 |
+| --- | --- | ---: |
+| `SKILL.md` | 路由 | 50 |
+| `network/NETWORK.md` | 模块说明 | 60 |
+| `network/contacts.jsonl` | 查找联系人 | 80 |
+| `network/interactions.jsonl` | 互动历史 | 150 |
+| `operations/todos.md` | 待处理事项 | 50 |
 
-Agent compiles contextual brief:
+总计约 390 个令牌。
 
-```markdown
-# Meeting Brief: Sarah Chen
+## 关键经验
 
-**When**: Today, [TIME]
-**Who**: Sarah Chen, Partner @ AI Ventures
-**Relationship**: Potential Investor (active circle)
-**Days since last contact**: 14
-
----
-
-## Quick Context
-- Former ML engineer at Google (technical background)
-- Reached out after your agent systems thread
-- Values depth over polish
-
----
-
-## Last Conversation (Dec 15)
-- Initial intro call - positive sentiment
-- She liked context engineering approach
-- Asked about moat → explained skill composability
-- Mentioned BuildAI (portfolio company) might need help
-
----
-
-## Pending Follow-ups ⚠️
-1. **Send technical deck** - Still pending (P1)
-2. **BuildAI intro** - Waiting on her, follow up today
-
----
-
-## Her Interests
-- Agent architecture
-- Context engineering
-- Technical due diligence
-
----
-
-## Value Exchange
-- **She can help**: Funding intros, GTM strategy
-- **You can help**: Technical DD, agent architecture
-
----
-
-## Suggested Talking Points
-1. Apologize for delayed deck, offer to walk through live
-2. Ask about BuildAI intro status
-3. Share recent progress on [relevant feature]
-4. Ask about her investment thesis timeline
-
----
-
-## Links
-- Twitter: @sarahchen_ai
-- LinkedIn: linkedin.com/in/sarahchen
-```
-
----
-
-## Step 6: Post-Meeting Logging
-
-After the call, agent helps log to `network/interactions.jsonl`:
-
-**User**: "Just finished with Sarah. She's moving forward with intro to BuildAI and wants to see the deck by Friday."
-
-Agent appends:
-
-```json
-{
-  "id": "int_20241229_143000",
-  "date": "2024-12-29T14:30:00Z",
-  "contact_id": "contact_sarahchen",
-  "type": "call",
-  "context": "Follow-up call. Positive momentum on both fronts.",
-  "key_points": [
-    "She's proceeding with BuildAI intro",
-    "Wants technical deck by Friday",
-    "Mentioned Series A timeline is Q1"
-  ],
-  "follow_ups": [
-    "Send deck by Friday Dec 31",
-    "Expect BuildAI intro next week"
-  ],
-  "sentiment": "positive"
-}
-```
-
-Agent updates `operations/todos.md`:
-
-```markdown
-### P0 - Must Do Today
-- [ ] Send technical deck to Sarah Chen (due: Friday)
-
-### Waiting On
-| Task | Waiting On | Since | Follow Up |
-|------|------------|-------|-----------|
-| BuildAI intro | Sarah Chen | 2024-12-29 | 2025-01-05 |
-```
-
-Agent updates contact's `last_contact`:
-
-```json
-{
-  "id": "contact_sarahchen",
-  ...
-  "last_contact": "2024-12-29T14:30:00Z"
-}
-```
-
----
-
-## Files Accessed
-
-| File | Purpose | Tokens (~) |
-|------|---------|------------|
-| `SKILL.md` | Routing | 50 |
-| `network/NETWORK.md` | Module instructions | 60 |
-| `network/contacts.jsonl` | Contact lookup | 80 |
-| `network/interactions.jsonl` | History | 150 |
-| `operations/todos.md` | Pending items | 50 |
-
-**Total**: ~390 tokens
-
----
-
-## Key Takeaways
-
-1. **Context Assembly**: Agent pulls from multiple sources
-2. **Actionable Output**: Brief highlights what to discuss
-3. **Follow-up Tracking**: Pending items surfaced proactively
-4. **Complete Loop**: Meeting → Log → Update todos → Update contact
-5. **Relationship Intelligence**: Notes inform meeting approach
+1. 从多个来源拼接必要背景。
+2. 输出应便于行动，而不只是重复原始数据。
+3. 主动发现逾期待办。
+4. 完成会前准备、会后记录、更新待办和联系人信息的闭环。
+5. 使用关系备注调整会议准备方式。

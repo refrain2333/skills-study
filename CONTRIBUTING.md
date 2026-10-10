@@ -1,6 +1,6 @@
 # 中文贡献说明
 
-本文件是英文贡献指南的中文说明，遇到细节不一致时，以 [CONTRIBUTING.en.md](CONTRIBUTING.en.md) 和仓库当前的检查配置为准。
+本指南介绍本集合技能文档的维护方式。
 
 ## 报告问题或提交改进
 
@@ -8,30 +8,30 @@
 
 ## 修改或新增技能
 
-每个技能放在 skills/<技能名>/ 下，包含规范英文文件 SKILL.md，并可按需添加 references/ 和 scripts/。命名使用小写字母和连字符。正文应说明适用场景与不适用边界，并控制在 500 行以内。
+每个技能放在 `skills/<技能名>/` 下，以中文 `SKILL.md` 为唯一规范文件，并可按需添加 `references/` 和 `scripts/`。目录名使用小写字母和连字符。正文应说明适用场景与不适用边界，并控制在 500 行以内。
 
 新增或调整技能时，也要同步检查：
 
 1. 根目录 README.md、SKILL.md 和插件清单中的目录与名称。
 2. researcher/corpus/index.json 中的技能目录、适用场景、机制和主张索引。
-3. researcher/fixtures/activation-cases.jsonl 中的激活示例，以及容易混淆时的反例。
-4. 对应的中文译文。译文应跟随同提交中的英文规范版本。
+3. `researcher/fixtures/activation-cases.jsonl` 中的启用示例，以及容易混淆时的反例。
+4. 所有引用技能文件的文档、示例和配置。
 
 如果新内容来自外部研究，应先依照 researcher/ 的来源评估、技能变更标准和运行流程处理。添加新的可复用行为机制时，按规则更新机制注册表。
 
 ## 技能正文要求
 
-规范文件 SKILL.md 应包括 YAML 元数据，其中至少有 name 和 description。description 含冒号时应加引号，以便严格的 YAML 解析器正确读取。
+规范文件 `SKILL.md` 应包括 YAML 元数据，其中至少有 `name` 和 `description`。`description` 含冒号时应加引号，以便严格的 YAML 解析器正确读取。
 
 正文要包含以下部分：
 
-- When to Activate：触发条件，以及不应激活的相邻工作。
-- Core Concepts：会改变应用决策的关键机制。
-- Practical Guidance：可以照着执行的工作流或规则。
-- Examples：说明应用方式的实例。
-- Guidelines、Gotchas、Integration 和 References。
+- 何时启用：触发条件，以及不应启用的相邻工作。
+- 核心概念：会改变应用决策的关键机制。
+- 实践指导：可以照着执行的工作流或规则。
+- 示例：说明应用方式的实例。
+- 指南、易错点、集成关系和参考资料。
 
-在 Integration 中说明职责如何衔接，不要只列相似主题。只在确实有用时添加参考文件、脚本或模板。
+在集成部分说明职责如何衔接，不要只列相似主题。只在确实有用时添加参考文件、脚本或模板。
 
 ## 研究主张与数据
 
@@ -43,7 +43,7 @@
 
 对外部研究形成的新技能主张，应使用 researcher/scripts/research_loop.py 的运行状态流程；不要手动修改 run-state.json。新技能仍应经过仓库现有 CI 配置要求的前置检查和评估门槛。
 
-仓库的 GitHub Actions 配置会检查技能格式、文档、索引、数据结构、例子和技能激活案例。提交前请查看 .github/workflows/validate.yml 与英文贡献说明中的当前命令，以了解具体依赖和步骤。
+仓库的 GitHub Actions 配置会检查技能格式、文档、索引、数据结构、示例和技能启用案例。提交前请查看 `.github/workflows/validate.yml` 和本指南中的命令，了解当前依赖与步骤。
 
 ## 写作方式
 
@@ -53,4 +53,4 @@
 - 技能内容应适用于多种智能体平台。
 - 将相邻技能的适用边界写清楚。
 
-上游内容和中文译文均采用 MIT 许可证；请保留原项目与作者的署名信息。
+本仓库及来源项目采用 MIT 许可证；请保留原项目与作者的署名信息。

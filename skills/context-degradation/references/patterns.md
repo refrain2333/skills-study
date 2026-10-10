@@ -1,115 +1,115 @@
-# Context Degradation Patterns: Technical Reference
+# 上下文退化模式：技术参考
 
-This document provides technical details on diagnosing and measuring context degradation.
+本文档提供了关于诊断和测量上下文退化的详细技术细节。
 
-## Attention Distribution Analysis
+## 注意力分布分析
 
-### U-Shaped Curve Measurement
+### U 形曲线测量
 
-Measure attention distribution across context positions:
+测量跨上下文位置的注意力分布：
 
 ```python
 def measure_attention_distribution(model, context_tokens, query):
     """
-    Measure how attention varies across context positions.
-    
-    Returns distribution showing attention weight by position.
+    测量注意力如何随上下文位置变化。
+
+    返回显示按位置排列的注意力权重的分布。
     """
     attention_by_position = []
-    
+
     for position in range(len(context_tokens)):
-        # Measure model's attention to this position
+        # 测量模型对此位置的注意力
         attention = get_attention_weights(model, context_tokens, query, position)
         attention_by_position.append({
             "position": position,
             "attention": attention,
             "is_beginning": position < len(context_tokens) * 0.1,
             "is_end": position > len(context_tokens) * 0.9,
-            "is_middle": True  # Will be overwritten
+            "is_middle": True  # 将被覆盖
         })
-    
-    # Classify positions
+
+    # 对位置进行分类
     for item in attention_by_position:
         if item["is_beginning"] or item["is_end"]:
-            item["region"] = "attention_favored"
+            item["region"] = "attention_favored"  # 注意力受青睐区域
         else:
-            item["region"] = "attention_degraded"
-    
+            item["region"] = "attention_degraded" # 注意力退化区域
+
     return attention_by_position
 ```
 
-### Lost-in-Middle Detection
+### 迷失在中间 (Lost-in-Middle) 检测
 
-Detect when critical information falls in degraded attention regions:
+检测关键信息何时掉入注意力退化区域：
 
 ```python
 def detect_lost_in_middle(critical_positions, attention_distribution):
     """
-    Check if critical information is in attention-favored positions.
-    
-    Args:
-        critical_positions: List of positions containing critical info
-        attention_distribution: Output from measure_attention_distribution
-    
-    Returns:
-        Dictionary with detection results and recommendations
+    检查关键信息是否处于注意力受青睐的位置。
+
+    参数:
+        critical_positions: 包含关键信息的位置列表
+        attention_distribution: measure_attention_distribution 的输出
+
+    返回:
+        包含检测结果和建议的字典
     """
     results = {
-        "at_risk": [],
-        "safe": [],
-        "recommendations": []
+        "at_risk": [],      # 风险位置
+        "safe": [],         # 安全位置
+        "recommendations": [] # 建议
     }
-    
+
     for pos in critical_positions:
         region = attention_distribution[pos]["region"]
         if region == "attention_degraded":
             results["at_risk"].append(pos)
         else:
             results["safe"].append(pos)
-    
-    # Generate recommendations
+
+    # 生成建议
     if results["at_risk"]:
         results["recommendations"].extend([
-            "Move critical information to attention-favored positions",
-            "Use explicit markers to highlight critical information",
-            "Consider splitting context to reduce middle section"
+            "将关键信息移至注意力受青睐的位置（开头或结尾）",
+            "使用显式标记突出显示关键信息",
+            "考虑拆分上下文以减少中间部分"
         ])
-    
+
     return results
 ```
 
-## Context Poisoning Detection
+## 上下文中毒检测
 
-### Hallucination Tracking
+### 幻觉追踪
 
-Track potential hallucinations across conversation turns:
+追踪跨对话回合的潜在幻觉：
 
 ```python
 class HallucinationTracker:
     def __init__(self):
         self.claims = []
         self.verifications = []
-    
+
     def add_claims(self, text):
-        """Extract claims from text for later verification."""
+        """从文本中提取断言以供后续验证。"""
         claims = extract_claims(text)
         self.claims.extend([{"text": c, "verified": None} for c in claims])
-    
+
     def verify_claims(self, ground_truth):
-        """Verify claims against ground truth."""
+        """根据事实依据 (ground truth) 验证断言。"""
         for claim in self.claims:
             if claim["verified"] is None:
                 claim["verified"] = check_claim(claim["text"], ground_truth)
-    
+
     def get_poisoning_indicators(self):
         """
-        Return indicators of potential context poisoning.
-        
-        High ratio of unverified claims suggests poisoning risk.
+        返回潜在上下文中毒的指标。
+
+        未验证断言的高比例暗示了中毒风险。
         """
         unverified = sum(1 for c in self.claims if not c["verified"])
         verified_false = sum(1 for c in self.claims if c["verified"] == False)
-        
+
         return {
             "unverified_count": unverified,
             "false_count": verified_false,
@@ -117,21 +117,21 @@ class HallucinationTracker:
         }
 ```
 
-### Error Propagation Analysis
+### 错误传播分析
 
-Track how errors flow through context:
+追踪错误如何在上下文中流动：
 
 ```python
 def analyze_error_propagation(context, error_points):
     """
-    Analyze how errors at specific points affect downstream context.
+    分析特定点的错误如何影响下游上下文。
 
-    Returns visualization of error spread and impact assessment.
+    返回错误扩散的可视化和影响评估。
     """
     impact_map = {}
 
     for error_point in error_points:
-        # Find all references to content after error point
+        # 查找错误点之后对内容的所有引用
         downstream_refs = find_references(context, after=error_point)
 
         for ref in downstream_refs:
@@ -142,7 +142,7 @@ def analyze_error_propagation(context, error_points):
                 "type": classify_error_type(context[error_point])
             })
 
-    # Assess severity
+    # 评估严重程度
     high_impact_areas = [k for k, v in impact_map.items() if len(v) > 3]
 
     return {
@@ -152,21 +152,21 @@ def analyze_error_propagation(context, error_points):
     }
 ```
 
-## Distraction Metrics
+## 分心指标 (Distraction Metrics)
 
-### Relevance Scoring
+### 相关性评分
 
-Score relevance of context elements to current task:
+对上下文元素相对于当前任务的相关性进行评分：
 
 ```python
 def score_context_relevance(context_elements, task_description):
     """
-    Score each context element for relevance to current task.
-    
-    Returns scores and identifies high-distraction elements.
+    对每个上下文元素相对于当前任务的相关性进行评分。
+
+    返回分数并识别高分心元素。
     """
     task_embedding = embed(task_description)
-    
+
     scored_elements = []
     for i, element in enumerate(context_elements):
         element_embedding = embed(element)
@@ -176,26 +176,26 @@ def score_context_relevance(context_elements, task_description):
             "content_preview": element[:100],
             "relevance_score": relevance
         })
-    
-    # Sort by relevance
+
+    # 按相关性排序
     scored_elements.sort(key=lambda x: x["relevance_score"], reverse=True)
-    
-    # Identify potential distractors
+
+    # 识别潜在干扰因素
     threshold = calculate_relevance_threshold(scored_elements)
     distractors = [e for e in scored_elements if e["relevance_score"] < threshold]
-    
+
     return {
         "scored_elements": scored_elements,
         "distractors": distractors,
-        "recommendation": f"Consider removing {len(distractors)} low-relevance elements"
+        "recommendation": f"考虑移除 {len(distractors)} 个低相关性元素"
     }
 ```
 
-## Degradation Monitoring System
+## 退化监控系统
 
-### Context Health Dashboard
+### 上下文健康仪表板
 
-Implement continuous monitoring of context health:
+实现上下文健康的持续监控：
 
 ```python
 class ContextHealthMonitor:
@@ -203,12 +203,12 @@ class ContextHealthMonitor:
         self.model = model
         self.limit = context_window_limit
         self.metrics = []
-    
+
     def assess_health(self, context, task):
         """
-        Assess overall context health for current task.
-        
-        Returns composite score and component metrics.
+        评估当前任务的整体上下文健康状况。
+
+        返回综合得分和组成指标。
         """
         metrics = {
             "token_count": len(context),
@@ -217,98 +217,97 @@ class ContextHealthMonitor:
             "relevance_scores": score_context_relevance(context, task),
             "age_tokens": count_recent_tokens(context)
         }
-        
-        # Calculate composite health score
+
+        # 计算综合健康得分
         health_score = self._calculate_composite(metrics)
-        
+
         result = {
             "health_score": health_score,
             "metrics": metrics,
             "status": self._interpret_score(health_score),
             "recommendations": self._generate_recommendations(metrics)
         }
-        
+
         self.metrics.append(result)
         return result
-    
+
     def _calculate_composite(self, metrics):
-        """Calculate composite health score from components."""
-        # Weighted combination of metrics
+        """从组成部分计算综合健康得分。"""
+        # 指标的加权组合
         utilization_penalty = min(metrics["utilization_ratio"] * 0.5, 0.3)
         attention_penalty = self._calculate_attention_penalty(metrics["attention_distribution"])
         relevance_penalty = self._calculate_relevance_penalty(metrics["relevance_scores"])
-        
+
         base_score = 1.0
         score = base_score - utilization_penalty - attention_penalty - relevance_penalty
         return max(0, score)
-    
+
     def _interpret_score(self, score):
-        """Interpret health score and return status."""
+        """解释健康得分并返回状态。"""
         if score > 0.8:
-            return "healthy"
+            return "healthy"   # 健康
         elif score > 0.6:
-            return "warning"
+            return "warning"   # 警告
         elif score > 0.4:
-            return "degraded"
+            return "degraded"  # 退化
         else:
-            return "critical"
+            return "critical"  # 危急
 ```
 
-### Alert Thresholds
+### 警报阈值
 
-Configure appropriate alert thresholds:
+配置适当的警报阈值：
 
 ```python
 CONTEXT_ALERTS = {
-    "utilization_warning": 0.7,      # 70% of context limit
-    "utilization_critical": 0.9,     # 90% of context limit
-    "attention_degraded_ratio": 0.3, # 30% in middle region
-    "relevance_threshold": 0.3,      # Below 30% relevance
-    "consecutive_warnings": 3        # Three warnings triggers alert
+    "utilization_warning": 0.7,      # 上下文限制的 70%
+    "utilization_critical": 0.9,     # 上下文限制的 90%
+    "attention_degraded_ratio": 0.3, # 中间区域占比 30%
+    "relevance_threshold": 0.3,      # 相关性低于 30%
+    "consecutive_warnings": 3        # 连续三次警告触发警报
 }
 ```
 
-## Recovery Procedures
+## 恢复程序
 
-### Context Truncation Strategy
+### 上下文截断策略
 
-When context degrades beyond recovery, truncate strategically:
+当上下文退化到无法恢复时，进行战略性截断：
 
 ```python
 def truncate_context_for_recovery(context, preserved_elements, target_size):
     """
-    Truncate context while preserving critical elements.
-    
-    Strategy:
-    1. Preserve system prompt and tool definitions
-    2. Preserve recent conversation turns
-    3. Preserve critical retrieved documents
-    4. Summarize older content if needed
-    5. Truncate from middle if still over target
+    在保留关键元素的同时截断上下文。
+
+    策略：
+    1. 保留系统提示词和工具定义
+    2. 保留最近的对话回合
+    3. 保留关键的检索文档
+    4. 如果需要，对旧内容进行摘要
+    5. 如果仍然超过目标大小，从中间开始截断
     """
     truncated = []
-    
-    # Category 1: Critical system elements (preserve always)
+
+    # 类别 1：关键系统元素（始终保留）
     system_elements = extract_system_elements(context)
     truncated.extend(system_elements)
-    
-    # Category 2: Recent conversation (preserve more)
+
+    # 类别 2：最近的对话（保留较多）
     recent_turns = extract_recent_turns(context, num_turns=10)
     truncated.extend(recent_turns)
-    
-    # Category 3: Critical documents (preserve key ones)
+
+    # 类别 3：关键文档（保留重点）
     critical_docs = extract_critical_documents(context, preserved_elements)
     truncated.extend(critical_docs)
-    
-    # Check size and summarize if needed
+
+    # 检查大小，如有需要进行摘要
     while len(truncated) > target_size:
-        # Summarize oldest category 3 elements
+        # 对最旧的类别 3 元素进行摘要
         truncated = summarize_oldest(truncated, category="documents")
-        
-        # If still too large, truncate oldest turns
+
+        # 如果仍然太大，截断最旧的回合
         if len(truncated) > target_size:
             truncated = truncate_oldest_turns(truncated, keep_recent=5)
-    
+
     return truncated
 ```
-

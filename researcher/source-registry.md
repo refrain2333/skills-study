@@ -1,43 +1,43 @@
-# Source Registry
+# 来源注册表
 
-Use this registry to decide what an autonomous researcher should monitor, what evidence is admissible, and what should be rejected before spending evaluation tokens.
+使用本注册表决定自主研究者应监控哪些来源、哪些证据可以采纳，以及在投入评估令牌前应拒绝哪些内容。
 
-## Priority Sources
+## 来源优先级
 
-| Tier | Source Class | Examples | Use |
+| 等级 | 来源类别 | 示例 | 用途 |
 | --- | --- | --- | --- |
-| 1 | Peer-reviewed papers and major preprints | arXiv, OpenReview, conference proceedings | New mechanisms, benchmark results, ablations |
-| 1 | AI lab engineering and research posts | OpenAI, Anthropic, DeepMind, Google Research, Meta, Microsoft, Cohere, Mistral, xAI | Production patterns, model behavior, agent architecture |
-| 1 | Reproducible public code and benchmarks | GitHub repos, benchmark harnesses, leaderboards with logs | Harness design, validation methodology, implementation patterns |
-| 2 | Infrastructure and agent product teams | Cursor, Vercel, LangChain, Cognition, Ramp, Prime Intellect, Modal, Browserbase | Operational lessons and system design patterns |
-| 2 | Recognized practitioner deep dives | Maintainers, researchers, benchmark authors with public track record | Field reports and failure modes |
-| 3 | Newsletters, summaries, podcasts, videos | Technical summaries with source links | Discovery leads only; evaluate primary sources before accepting |
+| 1 | 同行评审论文和主要预印本 | arXiv、OpenReview、会议论文集 | 新机制、基准结果、消融研究 |
+| 1 | AI 实验室工程与研究文章 | OpenAI、Anthropic、DeepMind、Google Research、Meta、Microsoft、Cohere、Mistral、xAI | 生产模式、模型行为、智能体架构 |
+| 1 | 可复现的公开代码和基准 | GitHub 仓库、基准运行框架、带日志的排行榜 | 运行框架设计、验证方法、实现模式 |
+| 2 | 基础设施和智能体产品团队 | Cursor、Vercel、LangChain、Cognition、Ramp、Prime Intellect、Modal、Browserbase | 操作经验和系统设计模式 |
+| 2 | 可信实践者的深入分析 | 维护者、研究者、有公开记录的基准作者 | 一线经验和失败模式 |
+| 3 | 新闻简报、摘要、播客、视频 | 附有来源链接的技术总结 | 只作为发现线索；采纳前应评估一手来源 |
 
-## Exclusion Rules
+## 排除规则
 
-Reject or defer sources that match any of these patterns:
+符合下列任一情况时拒绝或暂缓来源：
 
-1. Anonymous or unverifiable author with no primary evidence.
-2. Vendor marketing with no mechanism, artifact, metric, or reproducible claim.
-3. Basic tutorials that restate prompt engineering or RAG fundamentals.
-4. Claims based only on screenshots, demos, or private anecdotes without enough detail to implement.
-5. Content whose main insight is already covered in the repo without new evidence, failure modes, or implementation detail.
+1. 作者匿名或身份无法核实，且没有一手证据。
+2. 厂商营销内容没有机制、产物、指标或可复现主张。
+3. 只重复提示词工程或检索增强生成基础知识的教程。
+4. 主张只依赖截图、演示或私下轶闻，细节不足以实施。
+5. 核心观点已由仓库覆盖，且没有新的证据、失败模式或实现细节。
 
-## Monitoring Queries
+## 研究检索主题
 
-Use these query families when running web or paper discovery:
+进行网页或论文检索时，可使用以下主题组合：
 
-- `context engineering agent systems tool design evaluation memory compression`
-- `harness engineering AI agents eval harness agent loop scratchpad`
-- `autonomous research agent self improving agents experiment loop`
-- `LLM agent evaluation rubric source quality citation accuracy`
-- `agent memory durable scratchpad file system state`
-- `AlphaEvolve FunSearch autoresearch autonomous experimentation`
-- `OpenAI Anthropic Cohere DeepMind agent engineering blog`
+- 上下文工程、智能体系统、工具设计、评估、记忆、压缩
+- 运行框架工程、AI 智能体评估运行框架、智能体循环、草稿区
+- 自主研究智能体、自我改进智能体、实验循环
+- 大语言模型智能体评估、评分规则、来源质量、引用准确性
+- 智能体记忆、持久草稿区、文件系统状态
+- AlphaEvolve、FunSearch、自主实验
+- OpenAI、Anthropic、Cohere、DeepMind 的智能体工程文章
 
-## Source Metadata
+## 来源元数据
 
-Every candidate source must record:
+每个候选来源都必须记录：
 
 ```yaml
 url: ""
@@ -50,16 +50,16 @@ primary_or_secondary: "primary | secondary"
 candidate_reason: ""
 ```
 
-## Refresh Cadence
+## 更新频率
 
-- Weekly: lab blogs, arXiv/OpenReview, public benchmark repos, and active engineering blogs.
-- Monthly: older source revalidation for volatile claims, especially model-specific thresholds and benchmark numbers.
-- Before PR: re-fetch every cited source and confirm the evidence still supports the proposed skill change.
+- 每周检查实验室文章、arXiv/OpenReview、公开基准仓库和活跃工程博客。
+- 每月重新核验较早来源中的易变主张，尤其是模型专属阈值和基准数值。
+- 创建拉取请求前，重新获取每个引用来源，并确认其证据仍支持拟议技能变更。
 
-## Acceptance Biases To Avoid
+## 应避免的接受偏差
 
-1. Do not accept a weak artifact because the organization is famous.
-2. Do not reject negative or failed experiments if they reveal a practical failure mode.
-3. Do not overvalue long reports. The target is implementable mechanism density.
-4. Do not accept benchmark claims without checking evaluation setup, baselines, and limitations.
-5. Do not treat secondary summaries as sources of truth when primary sources are available.
+1. 不要因为组织知名就接受产物薄弱的来源。
+2. 如果负面或失败实验揭示实用失败模式，不要拒绝它。
+3. 不要过度看重报告篇幅；目标是可实施机制的密度。
+4. 接受基准主张前，应检查评估配置、基线和限制。
+5. 有一手来源时，不要把二手摘要当作事实来源。

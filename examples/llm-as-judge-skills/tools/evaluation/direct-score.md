@@ -1,159 +1,63 @@
-# Direct Score Tool
+# 直接评分工具
 
-## Purpose
+## 用途
 
-Evaluate a single LLM response against defined criteria using a scoring rubric.
+根据评分规则和指定标准，对单份大语言模型回复进行评估。
 
-## Tool Definition
+## 工具定义
 
 ```typescript
-import { tool } from "ai";
-import { z } from "zod";
-
 export const directScore = tool({
-  description: `Evaluate a response by scoring it against specific criteria.
-Use this for objective evaluations where you need to assess quality 
-dimensions like accuracy, completeness, clarity, or task adherence.
-Returns structured scores with justifications.`,
-
+  description: "根据准确性、完整性、清晰度或任务遵循等标准对回复评分，并返回结构化分数和理由。",
   parameters: z.object({
-    response: z.string()
-      .describe("The LLM response to evaluate"),
-    
-    prompt: z.string()
-      .describe("The original prompt/instruction that generated the response"),
-    
-    context: z.string().optional()
-      .describe("Additional context like retrieved documents or conversation history"),
-    
+    response: z.string().describe("待评估回复"),
+    prompt: z.string().describe("生成该回复的原始提示或指令"),
+    context: z.string().optional().describe("补充上下文，如检索文档或对话历史"),
     criteria: z.array(z.object({
-      name: z.string().describe("Name of the criterion (e.g., 'Accuracy')"),
-      description: z.string().describe("What this criterion measures"),
+      name: z.string(),
+      description: z.string(),
       weight: z.number().min(0).max(1).default(1)
-        .describe("Relative importance, weights should sum to 1")
-    })).min(1).describe("Evaluation criteria to score against"),
-    
+    })).min(1),
     rubric: z.object({
       scale: z.enum(["1-3", "1-5", "1-10"]).default("1-5"),
       levelDescriptions: z.record(z.string(), z.string()).optional()
-        .describe("Optional descriptions for each score level")
-    }).optional().describe("Scoring rubric configuration")
+    }).optional()
   }),
-
-  execute: async (input) => {
-    // Implementation delegates to evaluator LLM
-    return evaluateWithLLM(input);
-  }
+  execute: async (input) => evaluateWithLLM(input)
 });
 ```
 
-## Input Schema
+## 输入字段
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| response | string | Yes | The response being evaluated |
-| prompt | string | Yes | Original prompt that generated the response |
-| context | string | No | Additional context (RAG docs, history) |
-| criteria | Criterion[] | Yes | List of evaluation criteria |
-| rubric | Rubric | No | Scoring scale and level descriptions |
+| 字段 | 类型 | 必需 | 说明 |
+| --- | --- | --- | --- |
+| `response` | string | 是 | 待评估回复 |
+| `prompt` | string | 是 | 原始提示词 |
+| `context` | string | 否 | 额外上下文，如检索资料或历史记录 |
+| `criteria` | Criterion[] | 是 | 评价标准列表 |
+| `rubric` | Rubric | 否 | 评分范围和等级说明 |
 
-### Criterion Object
-```typescript
-{
-  name: string;        // e.g., "Factual Accuracy"
-  description: string; // e.g., "Response contains no factual errors"
-  weight: number;      // 0-1, relative importance
-}
-```
+每项标准包括名称、衡量内容和 0—1 相对权重。
 
-### Rubric Object
-```typescript
-{
-  scale: "1-3" | "1-5" | "1-10";
-  levelDescriptions?: {
-    "1": "Poor - Major issues",
-    "2": "Below Average - Several issues",
-    "3": "Average - Some issues",
-    "4": "Good - Minor issues",
-    "5": "Excellent - No issues"
-  }
-}
-```
+## 输出字段
 
-## Output Schema
+结果包含 `success`、每项标准的分数/最高分/理由/具体例子、`overallScore`、`weightedScore`、优点/缺点/建议，以及评估耗时、标准数量和评分范围等元数据。
 
-```typescript
-interface DirectScoreResult {
-  success: boolean;
-  
-  scores: {
-    criterion: string;
-    score: number;
-    maxScore: number;
-    justification: string;
-    examples: string[];  // Specific examples from response
-  }[];
-  
-  overallScore: number;
-  weightedScore: number;
-  
-  summary: {
-    strengths: string[];
-    weaknesses: string[];
-    suggestions: string[];
-  };
-  
-  metadata: {
-    evaluationTimeMs: number;
-    criteriaCount: number;
-    rubricScale: string;
-  };
-}
-```
-
-## Usage Example
+## 使用示例
 
 ```typescript
 const result = await directScore.execute({
-  response: "Machine learning is a subset of AI that enables systems to learn from data...",
-  
-  prompt: "Explain machine learning to a beginner",
-  
+  response: "机器学习是人工智能的一个分支，使系统可以从数据中学习……",
+  prompt: "向初学者解释机器学习",
   criteria: [
-    {
-      name: "Accuracy",
-      description: "Technical correctness of explanations",
-      weight: 0.4
-    },
-    {
-      name: "Clarity",
-      description: "Understandable for a beginner",
-      weight: 0.3
-    },
-    {
-      name: "Completeness",
-      description: "Covers key concepts adequately",
-      weight: 0.3
-    }
+    { name: "准确性", description: "解释是否符合技术事实", weight: 0.4 },
+    { name: "清晰度", description: "初学者是否容易理解", weight: 0.3 },
+    { name: "完整性", description: "是否涵盖关键概念", weight: 0.3 }
   ],
-  
-  rubric: {
-    scale: "1-5",
-    levelDescriptions: {
-      "1": "Completely fails criterion",
-      "2": "Major deficiencies",
-      "3": "Acceptable but improvable",
-      "4": "Good with minor issues",
-      "5": "Excellent, no issues"
-    }
-  }
+  rubric: { scale: "1-5" }
 });
 ```
 
-## Implementation Notes
+## 实现建议
 
-1. **Chain-of-Thought**: Implementation should use CoT prompting for more reliable scoring
-2. **Calibration**: Include few-shot examples of scores at each level
-3. **Justification First**: Ask for justification before score to reduce bias
-4. **Length Normalization**: Consider response length when appropriate
-
+先要求模型给出理由，再给分，以减少偏差；用少样本示例校准各等级；必要时考虑回复长度。

@@ -1,148 +1,148 @@
-# Context Compression Evaluation Framework
+# 上下文压缩评估框架
 
-This document provides the complete evaluation framework for measuring context compression quality, including probe types, scoring rubrics, and LLM judge configuration.
+本文件提供了衡量上下文压缩质量的完整评估框架，包括探针类型、评分标准和 LLM 评委配置。
 
-## Probe Types
+## 探针类型
 
-### Recall Probes
+### 召回探针 (Recall Probes)
 
-Test factual retention of specific details from conversation history.
+测试从截断的对话历史中保留特定细节的事实保留能力。
 
-**Structure:**
+**结构：**
 ```
-Question: [Ask for specific fact from truncated history]
-Expected: [Exact detail that should be preserved]
-Scoring: Match accuracy of technical details
-```
-
-**Examples:**
-- "What was the original error message that started this debugging session?"
-- "What version of the dependency did we decide to use?"
-- "What was the exact command that failed?"
-
-### Artifact Probes
-
-Test file tracking and modification awareness.
-
-**Structure:**
-```
-Question: [Ask about files created, modified, or examined]
-Expected: [Complete list with change descriptions]
-Scoring: Completeness of file list and accuracy of change descriptions
+问题：[询问截断历史中的特定事实]
+预期：[应当保留的精确细节]
+评分：技术细节的匹配准确度
 ```
 
-**Examples:**
-- "Which files have we modified? Describe what changed in each."
-- "What new files did we create in this session?"
-- "Which configuration files did we examine but not change?"
+**示例：**
+- “启动此调试会话的原始错误消息是什么？”
+- “我们决定使用哪个版本的依赖项？”
+- “失败的确切命令是什么？”
 
-### Continuation Probes
+### 产物探针 (Artifact Probes)
 
-Test ability to continue work without re-fetching context.
+测试文件跟踪和修改感知能力。
 
-**Structure:**
+**结构：**
 ```
-Question: [Ask about next steps or current state]
-Expected: [Actionable next steps based on session history]
-Scoring: Ability to continue without requesting re-read of files
-```
-
-**Examples:**
-- "What should we do next?"
-- "What tests are still failing and why?"
-- "What was left incomplete from our last step?"
-
-### Decision Probes
-
-Test retention of reasoning chains and decision rationale.
-
-**Structure:**
-```
-Question: [Ask about why a decision was made]
-Expected: [Reasoning that led to the decision]
-Scoring: Preservation of decision context and alternatives considered
+问题：[询问创建、修改或检查过的文件]
+预期：[带有更改说明的完整列表]
+评分：文件列表的完整性和更改说明的准确性
 ```
 
-**Examples:**
-- "We discussed options for the Redis issue. What did we decide and why?"
-- "Why did we choose connection pooling over per-request connections?"
-- "What alternatives did we consider for the authentication fix?"
+**示例：**
+- “我们修改了哪些文件？描述每个文件的更改。”
+- “我们在本次会话中创建了哪些新文件？”
+- “我们检查了但未更改哪些配置文件？”
 
-## Scoring Rubrics
+### 连续性探针 (Continuation Probes)
 
-### Accuracy Dimension
+测试在不重新获取上下文的情况下继续工作的能力。
 
-| Criterion | Question | Score 0 | Score 3 | Score 5 |
+**结构：**
+```
+问题：[询问后续步骤或当前状态]
+预期：[基于会话历史的可操作后续步骤]
+评分：无需请求重新读取文件即可继续工作的能力
+```
+
+**示例：**
+- “我们下一步该做什么？”
+- “哪些测试仍然失败，为什么？”
+- “我们上一步留下了什么未完成的工作？”
+
+### 决策探针 (Decision Probes)
+
+测试推理链和决策理由的保留情况。
+
+**结构：**
+```
+问题：[询问为什么做出某个决策]
+预期：[导致该决策的推理过程]
+评分：决策背景和所考虑替代方案的保留情况
+```
+
+**示例：**
+- “我们讨论了 Redis 问题的选项。我们决定了什么，为什么？”
+- “为什么我们选择连接池而非每个请求建立连接？”
+- “对于身份验证修复，我们考虑了哪些替代方案？”
+
+## 评分标准 (Scoring Rubrics)
+
+### 准确性维度 (Accuracy Dimension)
+
+| 准则 | 问题 | 0 分 | 3 分 | 5 分 |
 |-----------|----------|---------|---------|---------|
-| accuracy_factual | Are facts, file paths, and technical details correct? | Completely incorrect or fabricated | Mostly accurate with minor errors | Perfectly accurate |
-| accuracy_technical | Are code references and technical concepts correct? | Major technical errors | Generally correct with minor issues | Technically precise |
+| 事实准确性 (accuracy_factual) | 事实、文件路径和技术细节是否正确？ | 完全错误或凭空捏造 | 基本准确但有细微错误 | 完全准确 |
+| 技术准确性 (accuracy_technical) | 代码引用和技术概念是否正确？ | 重大技术错误 | 基本正确但有细微问题 | 技术上非常精确 |
 
-### Context Awareness Dimension
+### 上下文感知维度 (Context Awareness Dimension)
 
-| Criterion | Question | Score 0 | Score 3 | Score 5 |
+| 准则 | 问题 | 0 分 | 3 分 | 5 分 |
 |-----------|----------|---------|---------|---------|
-| context_conversation_state | Does the response reflect current conversation state? | No awareness of prior context | General awareness with gaps | Full awareness of conversation history |
-| context_artifact_state | Does the response reflect which files/artifacts were accessed? | No awareness of artifacts | Partial artifact awareness | Complete artifact state awareness |
+| 对话状态 (context_conversation_state) | 响应是否反映了当前的对话状态？ | 对先前的上下文毫无感知 | 有大致感知但存在缺失 | 对对话历史有充分感知 |
+| 产物状态 (context_artifact_state) | 响应是否反映了访问过哪些文件/产物？ | 对产物毫无感知 | 部分产物感知 | 完整的产物状态感知 |
 
-### Artifact Trail Dimension
+### 产物追踪维度 (Artifact Trail Dimension)
 
-| Criterion | Question | Score 0 | Score 3 | Score 5 |
+| 准则 | 问题 | 0 分 | 3 分 | 5 分 |
 |-----------|----------|---------|---------|---------|
-| artifact_files_created | Does the agent know which files were created? | No knowledge | Knows most files | Perfect knowledge |
-| artifact_files_modified | Does the agent know which files were modified and what changed? | No knowledge | Good knowledge of most modifications | Perfect knowledge of all modifications |
-| artifact_key_details | Does the agent remember function names, variable names, error messages? | No recall | Recalls most key details | Perfect recall |
+| 创建的文件 (artifact_files_created) | 代理是否知道创建了哪些文件？ | 毫无所知 | 知道大部分文件 | 完全掌握 |
+| 修改的文件 (artifact_files_modified) | 代理是否知道修改了哪些文件以及更改了什么？ | 毫无所知 | 对大部分修改有良好了解 | 对所有修改有完全掌握 |
+| 关键细节 (artifact_key_details) | 代理是否记得函数名、变量名、错误消息？ | 无法召回 | 能召回大部分关键细节 | 完全召回 |
 
-### Completeness Dimension
+### 完整性维度 (Completeness Dimension)
 
-| Criterion | Question | Score 0 | Score 3 | Score 5 |
+| 准则 | 问题 | 0 分 | 3 分 | 5 分 |
 |-----------|----------|---------|---------|---------|
-| completeness_coverage | Does the response address all parts of the question? | Ignores most parts | Addresses most parts | Addresses all parts thoroughly |
-| completeness_depth | Is sufficient detail provided? | Superficial or missing detail | Adequate detail | Comprehensive detail |
+| 覆盖完整性 (completeness_coverage) | 响应是否回答了问题的各个部分？ | 忽略了大部分内容 | 回答了大部分内容 | 全面回答了所有部分 |
+| 深度完整性 (completeness_depth) | 是否提供了足够的细节？ | 肤浅或缺失细节 | 细节充分 | 细节详尽全面 |
 
-### Continuity Dimension
+### 连续性维度 (Continuity Dimension)
 
-| Criterion | Question | Score 0 | Score 3 | Score 5 |
+| 准则 | 问题 | 0 分 | 3 分 | 5 分 |
 |-----------|----------|---------|---------|---------|
-| continuity_work_state | Can the agent continue without re-fetching previously accessed information? | Cannot continue without re-fetching all context | Can continue with minimal re-fetching | Can continue seamlessly |
-| continuity_todo_state | Does the agent maintain awareness of pending tasks? | Lost track of all TODOs | Good awareness with some gaps | Perfect task awareness |
-| continuity_reasoning | Does the agent retain rationale behind previous decisions? | No memory of reasoning | Generally remembers reasoning | Excellent retention |
+| 工作状态 (continuity_work_state) | 代理是否能在不重新获取先前访问信息的情况下继续？ | 不重新获取所有上下文就无法继续 | 仅需极少量的重新获取即可继续 | 可以无缝继续 |
+| 待办状态 (continuity_todo_state) | 代理是否保持对待办任务的感知？ | 丢失了所有 TODO 记录 | 感知良好但有些许缺失 | 完美的任务感知 |
+| 推理性 (continuity_reasoning) | 代理是否保留了先前决策背后的理由？ | 对推理过程没有记忆 | 基本记得推理过程 | 出色的理由保留 |
 
-### Instruction Following Dimension
+### 指令遵循维度 (Instruction Following Dimension)
 
-| Criterion | Question | Score 0 | Score 3 | Score 5 |
+| 准则 | 问题 | 0 分 | 3 分 | 5 分 |
 |-----------|----------|---------|---------|---------|
-| instruction_format | Does the response follow the requested format? | Ignores format | Generally follows format | Perfectly follows format |
-| instruction_constraints | Does the response respect stated constraints? | Ignores constraints | Mostly respects constraints | Fully respects all constraints |
+| 格式遵循 (instruction_format) | 响应是否遵循了要求的格式？ | 忽略格式 | 基本遵循格式 | 完美遵循格式 |
+| 约束遵循 (instruction_constraints) | 响应是否尊重了规定的约束？ | 忽略约束 | 大部分尊重约束 | 完全尊重所有约束 |
 
-## LLM Judge Configuration
+## LLM 评委配置
 
-### System Prompt
+### 系统提示词
 
 ```
-You are an expert evaluator assessing AI assistant responses in software development conversations.
+你是一位评估软件开发对话中 AI 助手响应的专家评估员。
 
-Your task is to grade responses against specific rubric criteria. For each criterion:
-1. Read the criterion question carefully
-2. Examine the response for evidence
-3. Assign a score from 0-5 based on the scoring guide
-4. Provide brief reasoning for your score
+你的任务是根据特定的标准为响应评分。对于每个准则：
+1. 仔细阅读准则问题
+2. 检查响应中的证据
+3. 根据评分指南给出 0-5 分的分数
+4. 为你的评分提供简短的理由
 
-Be objective and consistent. Focus on what is present in the response, not what could have been included.
+请保持客观和一致。重点关注响应中呈现的内容，而非本可以包含的内容。
 ```
 
-### Judge Input Format
+### 评委输入格式
 
 ```json
 {
-  "probe_question": "What was the original error message?",
-  "model_response": "[Response to evaluate]",
-  "compacted_context": "[The compressed context that was provided]",
-  "ground_truth": "[Optional: known correct answer]",
+  "probe_question": "最初的错误消息是什么？",
+  "model_response": "[待评估的响应]",
+  "compacted_context": "[提供的压缩上下文]",
+  "ground_truth": "[可选：已知的正确答案]",
   "rubric_criteria": ["accuracy_factual", "accuracy_technical", "context_conversation_state"]
 }
 ```
 
-### Judge Output Format
+### 评委输出格式
 
 ```json
 {
@@ -150,7 +150,7 @@ Be objective and consistent. Focus on what is present in the response, not what 
     {
       "criterionId": "accuracy_factual",
       "score": 5,
-      "reasoning": "Response correctly identifies the 401 error, specific endpoint, and root cause."
+      "reasoning": "响应正确识别了 401 错误、特定端点和根本原因。"
     }
   ],
   "aggregateScore": 4.8,
@@ -165,49 +165,48 @@ Be objective and consistent. Focus on what is present in the response, not what 
 }
 ```
 
-## Benchmark Results Reference
+## 基准测试结果参考
 
-Performance across compression methods (based on 36,000+ messages):
+不同压缩方法的性能（基于 36,000+ 条消息）：
 
-| Method | Overall | Accuracy | Context | Artifact | Complete | Continuity | Instruction |
+| 方法 | 总体 | 准确性 | 上下文 | 产物 | 完整性 | 连续性 | 指令 |
 |--------|---------|----------|---------|----------|----------|------------|-------------|
-| Anchored Iterative | 3.70 | 4.04 | 4.01 | 2.45 | 4.44 | 3.80 | 4.99 |
-| Regenerative | 3.44 | 3.74 | 3.56 | 2.33 | 4.37 | 3.67 | 4.95 |
-| Opaque | 3.35 | 3.43 | 3.64 | 2.19 | 4.37 | 3.77 | 4.92 |
+| 锚定迭代 | 3.70 | 4.04 | 4.01 | 2.45 | 4.44 | 3.80 | 4.99 |
+| 再生摘要 | 3.44 | 3.74 | 3.56 | 2.33 | 4.37 | 3.67 | 4.95 |
+| 不透明压缩 | 3.35 | 3.43 | 3.64 | 2.19 | 4.37 | 3.77 | 4.92 |
 
-**Key Findings:**
+**主要发现：**
 
-1. **Accuracy gap**: 0.61 points between best and worst methods
-2. **Context awareness gap**: 0.45 points, favoring anchored iterative
-3. **Artifact trail**: Universally weak (2.19-2.45), needs specialized handling
-4. **Completeness and instruction following**: Minimal differentiation
+1. **准确性差距**：最佳和最差方法之间相差 0.61 分
+2. **上下文感知差距**：相差 0.45 分，锚定迭代方法占优
+3. **产物追踪**：普遍较弱 (2.19-2.45)，需要专门处理
+4. **完整性和指令遵循**：差异极小
 
-## Statistical Considerations
+## 统计考量
 
-- Differences of 0.26-0.35 points are consistent across task types and session lengths
-- Pattern holds for both short and long sessions
-- Pattern holds across debugging, feature implementation, and code review tasks
-- Sample size: 36,611 messages across hundreds of compression points
+- 0.26-0.35 分的差异在不同任务类型和会话长度中是一致的
+- 该模式在短期和长期会话中均成立
+- 该模式在调试、功能实现和代码审查任务中均成立
+- 样本量：涵盖数百个压缩点的 36,611 条消息
 
-## Implementation Notes
+## 实现说明
 
-### Probe Generation
+### 探针生成
 
-Generate probes at each compression point based on truncated history:
-1. Extract factual claims for recall probes
-2. Extract file operations for artifact probes
-3. Extract incomplete tasks for continuation probes
-4. Extract decision points for decision probes
+在每个压缩点根据截断的历史记录生成探针：
+1. 提取事实陈述用于**召回探针**
+2. 提取文件操作用于**产物探针**
+3. 提取未完成任务用于**连续性探针**
+4. 提取决策点用于**决策探针**
 
-### Grading Process
+### 评分过程
 
-1. Feed probe question + model response + compressed context to judge
-2. Evaluate against each criterion in rubric
-3. Output structured JSON with scores and reasoning
-4. Compute dimension scores as weighted averages
-5. Compute overall score as unweighted average of dimensions
+1. 将探针问题 + 模型响应 + 压缩上下文提供给评委
+2. 根据评分标准中的每个准则进行评估
+3. 输出包含分数和理由的结构化 JSON
+4. 将维度得分计算为加权平均值
+5. 将总体得分计算为各维度的非加权平均值
 
-### Blinding
+### 盲测 (Blinding)
 
-The judge should not know which compression method produced the response being evaluated. This prevents bias toward known methods.
-
+评委不应知道生成待评估响应的是哪种压缩方法。这可以防止对已知方法的偏见。

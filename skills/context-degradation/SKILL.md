@@ -1,129 +1,129 @@
 ---
 name: context-degradation
-description: "This skill should be used for diagnosing and mitigating context degradation: lost-in-middle failures, context poisoning, context clash, context confusion, attention-pattern issues, and agent performance degradation caused by accumulated or conflicting context."
+description: "用于诊断和缓解上下文退化，包括中间信息遗漏、上下文污染、冲突与注意力问题。"
 ---
 
-# Context Degradation Patterns
+# 上下文退化模式
 
-Diagnose and fix context failures before they cascade. Context degradation is not binary — it is a continuum that manifests through five distinct, predictable patterns: lost-in-middle, poisoning, distraction, confusion, and clash. Each pattern has specific detection signals and mitigation strategies. Treat degradation as an engineering problem with measurable thresholds, not an unpredictable failure mode.
+在上下文失效不断扩大之前，先诊断并修复它。上下文退化不是非此即彼的状态，而是一个连续变化的过程，会表现为五种不同且可预测的模式：中间位置丢失、污染、干扰、混淆和冲突。每种模式都有特定的检测信号和缓解方法。应把退化当作可测量阈值的工程问题，而不是不可预测的失效模式。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
-- Agent performance degrades unexpectedly during long conversations
-- Debugging cases where agents produce incorrect or irrelevant outputs
-- Designing systems that must handle large contexts reliably
-- Evaluating context engineering choices for production systems
-- Investigating "lost in middle" phenomena in agent outputs
-- Analyzing context-related failures in agent behavior
+遇到以下情况时启用本技能：
+- 智能体在长对话中的表现意外下降。
+- 调查智能体输出错误或无关内容的情况。
+- 设计必须可靠处理大型上下文的系统。
+- 评估生产系统中的上下文工程选择。
+- 调查智能体输出中的“信息在中间位置丢失”现象。
+- 分析智能体行为中与上下文有关的失效。
 
-Do not activate this skill for adjacent work owned by other skills:
-- Explaining foundational context mechanics without an active failure: `context-fundamentals`.
-- Applying token-efficiency tactics after the failure pattern is known: `context-optimization`.
-- Designing a compression or handoff summary strategy: `context-compression`.
-- Persisting large outputs, logs, or scratch state outside the prompt: `filesystem-context`.
+以下相邻工作由其他技能负责，不要为此启用本技能：
+- 在没有实际失效时解释上下文基础机制：`context-fundamentals`。
+- 已知失效模式后应用 token 效率技巧：`context-optimization`。
+- 设计压缩或交接摘要策略：`context-compression`。
+- 将大型输出、日志或草稿状态保存在提示词之外：`filesystem-context`。
 
-## Core Concepts
+## 核心概念
 
-Structure context placement around the attention U-curve: beginning and end positions receive reliable attention, while middle positions suffer materially reduced recall accuracy in long-context experiments (claim-context-degradation-lost-middle-ruler). This is not a model bug but a consequence of attention mechanics — the first token (often BOS) acts as an "attention sink" that absorbs disproportionate attention budget, leaving middle tokens under-attended as context grows.
+根据注意力的 U 形曲线安排上下文：在长上下文实验中，开头和末尾通常能得到更可靠的关注，而中间位置的回忆准确率会明显降低（claim-context-degradation-lost-middle-ruler）。这不是模型错误，而是注意力机制的结果：第一个 token（通常是 BOS）充当“注意力汇点”，吸收了不成比例的注意力预算；随着上下文变长，中间 token 得到的关注就不足。
 
-Treat context poisoning as a circuit breaker problem. Once a hallucination, tool error, or incorrect retrieved fact enters context, it compounds through repeated self-reference. A poisoned goals section causes every downstream decision to reinforce incorrect assumptions. Detection requires tracking claim provenance; recovery requires truncating to before the poisoning point or restarting with verified-only context.
+把上下文污染视为断路器问题。一旦幻觉、工具错误或错误的检索事实进入上下文，就可能通过反复自我引用不断累积。被污染的目标章节会导致后续每个决策都强化错误假设。检测污染需要追踪每项主张的来源；要恢复，则需截断到污染出现之前，或从只包含已核实内容的上下文重新开始。
 
-Filter aggressively before loading context — even a single irrelevant document measurably degrades performance on relevant tasks. Models cannot "skip" irrelevant context; they must attend to everything provided, creating attention competition between relevant and irrelevant content. Move information that might be needed but is not immediately relevant behind tool calls instead of pre-loading it.
+加载上下文之前要积极过滤，即使只有一份无关文档，也会明显降低模型处理相关任务的表现。模型无法简单地“跳过”无关上下文，而是必须关注所有已提供的内容，因此相关内容和无关内容会争夺注意力。把可能会用到、但眼下无关的信息放到工具调用之后再按需检索，不要预先加载。
 
-Isolate task contexts to prevent confusion. When context contains multiple task types or switches between objectives, models incorporate constraints from the wrong task, call tools appropriate for a different context, or blend requirements from multiple sources. Explicit task segmentation with separate context windows eliminates cross-contamination.
+隔离不同任务的上下文，防止混淆。上下文包含多种任务类型或在目标之间切换时，模型可能把错误任务的约束用到当前任务、调用适用于其他场景的工具，或混合多个来源的要求。明确划分任务并使用独立上下文窗口，可以消除交叉污染。
 
-Resolve context clash through priority rules, not accumulation. When multiple correct-but-contradictory sources appear in context (version conflicts, perspective conflicts, multi-source retrieval), models cannot determine which applies. Mark contradictions explicitly, establish source precedence, and filter outdated versions before they enter context.
+通过优先级规则解决上下文冲突，不要继续堆叠内容。上下文中出现多个彼此正确、却互相矛盾的来源时（版本冲突、视角冲突、多来源检索），模型无法判断应该适用哪一个。明确标记矛盾、确立来源优先级，并在内容进入上下文前过滤过期版本。
 
-## Detailed Topics
+## 详细主题
 
-### Lost-in-Middle: Detection and Placement Strategy
+### 中间位置丢失：检测与摆放策略
 
-Place critical information at the beginning and end of context, never in the middle. The U-shaped attention curve means middle-positioned information suffers 10-40% reduced recall accuracy. For contexts over 4K tokens, this effect becomes significant.
+把关键信息放在上下文开头或末尾，不要放在中间。U 形注意力曲线意味着，中间位置的信息回忆准确率会低 10% 到 40%。对于超过 4K token 的上下文，这种影响会变得显著。
 
-Use summary structures that surface key findings at attention-favored positions. Add explicit section headers and structural markers — these help models navigate long contexts by creating attention anchors. When a document must be included in full, prepend a summary of its key points and append the critical conclusions.
+使用摘要结构，把重要发现放在注意力较集中的位置。添加明确的章节标题和结构标记，帮助模型在长上下文中导航，并形成注意力锚点。必须完整纳入文档时，先加上关键点摘要，并在文档末尾补充关键结论。
 
-Monitor for lost-in-middle symptoms: correct information exists in context but the model ignores it, responses contradict provided data, or the model "forgets" instructions given earlier in a long prompt.
+留意中间位置丢失的症状：上下文中明明有正确信息，模型却忽略它；回答与已提供的数据矛盾；或模型“忘记”了长提示词早先给出的指令。
 
-### Context Poisoning: Prevention and Recovery
+### 上下文污染：预防与恢复
 
-Validate all external inputs before they enter context. Tool outputs, retrieved documents, and model-generated summaries are the three primary poisoning vectors. Each introduces unverified claims that subsequent reasoning treats as ground truth.
+所有外部输入进入上下文之前都要验证。工具输出、检索文档和模型生成的摘要是三种主要污染来源；每一种都可能带入未经核实的主张，并被之后的推理当作事实。
 
-Detect poisoning through these signals: degraded output quality on previously-successful tasks, tool misalignment (wrong tools or parameters), and hallucinations that persist despite explicit correction. When these cluster, suspect poisoning rather than model capability issues.
+通过以下信号检测污染：此前表现良好的任务输出质量下降、工具与任务不匹配（选择了错误工具或参数），以及明确纠正后幻觉仍然存在。当这些现象同时出现时，应怀疑上下文污染，而不是模型能力不足。
 
-Recover by removing poisoned content, not by adding corrections on top. Truncate to before the poisoning point, restart with clean context preserving only verified information, or explicitly mark the poisoned section and request re-evaluation from scratch. Layering corrections over poisoned context rarely works — the original errors retain attention weight.
+恢复时要移除已污染内容，而不是在其上追加纠正。可以截断到污染出现之前，保留已核实信息后用干净上下文重新开始，或明确标记受污染的部分并要求从头重新评估。在被污染的上下文上层层追加修正通常无效，因为原始错误仍会占据注意力。
 
-### Context Distraction: Curation Over Accumulation
+### 上下文干扰：整理内容，而不是累积内容
 
-Curate what enters context rather than relying on models to ignore irrelevant content. Research shows even a single distractor document triggers measurable performance degradation — the effect follows a step function, not a linear curve. Multiple distractors compound the problem.
+整理进入上下文的内容，不要指望模型忽略无关内容。研究发现，即使一份干扰文档也会造成可测量的性能下降；这种影响呈阶跃变化，而非线性变化。更多干扰文档还会让问题加剧。
 
-Apply relevance filtering before loading retrieved documents. Use namespacing and structural organization to make section boundaries clear. Prefer tool-call-based access over pre-loading: store reference material behind retrieval tools so it enters context only when directly relevant to the current reasoning step.
+加载检索文档之前先按相关性筛选。使用命名空间和结构组织，让章节边界一目了然。优先通过工具调用按需访问，而不是预加载：将参考资料放在检索工具之后，仅在与当前推理步骤直接相关时才让它进入上下文。
 
-### Context Confusion: Task Isolation
+### 上下文混淆：隔离任务
 
-Segment different tasks into separate context windows. Context confusion is distinct from distraction — it concerns the model applying wrong-context constraints to the current task, not just attention dilution. Signs include responses addressing the wrong aspect of a query, tool calls appropriate for a different task, and outputs mixing requirements from multiple sources.
+把不同任务拆分到不同的上下文窗口中。上下文混淆不同于干扰：它指模型把错误场景的约束用于当前任务，而不只是注意力被稀释。其表现包括：回答针对了查询的错误方面、调用适用于其他任务的工具，以及混合多个来源的要求。
 
-Implement clear transitions between task contexts. Use state management that isolates objectives, constraints, and tool definitions per task. When task-switching within a single session is unavoidable, use explicit "context reset" markers that signal which constraints apply to the current segment.
+在不同任务上下文之间设置明确的切换。使用状态管理机制，按任务隔离目标、约束和工具定义。不得不在同一会话中切换任务时，应使用明确的“上下文重置”标记，指出当前片段适用哪些约束。
 
-### Context Clash: Conflict Resolution Protocols
+### 上下文冲突：冲突解决协议
 
-Establish source priority rules before conflicts arise. Context clash differs from poisoning — multiple pieces of information are individually correct but mutually contradictory (version conflicts, perspective differences, multi-source retrieval with divergent facts).
+在冲突出现前确立来源优先级规则。上下文冲突不同于污染：多个信息各自正确，却互相矛盾（版本冲突、观点差异、多个检索来源给出不同事实）。
 
-Implement version filtering to exclude outdated information before it enters context. When contradictions are unavoidable, mark them explicitly with structured conflict annotations: state what conflicts, which source each claim comes from, and which source takes precedence. Without explicit priority rules, models resolve contradictions unpredictably.
+在信息进入上下文前应用版本过滤，排除过期内容。无法避免矛盾时，要使用结构化冲突标注明确指出冲突内容：说明冲突是什么、每项主张来自哪个来源，以及哪个来源优先。没有明确的优先级规则，模型解决冲突的方式就不可预测。
 
-### Empirical Benchmarks and Thresholds
+### 实证基准与阈值
 
-Use these benchmarks to set design constraints — not as universal truths. RULER-style evidence shows advertised long-context support does not guarantee satisfactory task performance at that length (claim-context-degradation-lost-middle-ruler). Near-perfect needle-in-haystack scores do not predict real-world long-context performance.
+使用这些基准设定设计约束，不要把它们当作普遍真理。RULER 类证据显示，宣称支持长上下文，并不保证模型在该长度下仍能完成令人满意的任务（claim-context-degradation-lost-middle-ruler）。针尖入海测试得分接近满分，也不能预测模型在真实场景中的长上下文表现。
 
-**Model-Specific Degradation Thresholds**
+**依模型而异的退化阈值**
 
-Degradation onset varies significantly by model family and task type. As a general rule, expect degradation to begin at 60-70% of the advertised context window for complex retrieval tasks (RULER benchmark found only 50% of models claiming 32K+ context maintain satisfactory performance at that length). Key patterns:
+退化开始点会因模型系列和任务类型显著不同。一般而言，在复杂检索任务中，预计模型会在标称上下文窗口的 60% 到 70% 处开始退化（RULER 基准发现，在宣称支持 32K 以上上下文的模型中，只有 50% 能在该长度下保持令人满意的表现）。主要规律如下：
 
-- **Models with extended thinking** reduce hallucination through step-by-step verification but at higher latency and token cost
-- **Models optimized for agents/coding** tend to have better attention management for tool-output-heavy contexts
-- **Models with very large context windows (1M+)** handle more raw context but still follow U-shaped degradation curves — bigger windows do not eliminate the problem, they delay it
+- **具备扩展思考能力的模型**通过逐步验证降低幻觉，但会增加延迟和 token 成本。
+- **面向智能体或编程优化的模型**通常更善于管理工具输出密集型上下文中的注意力。
+- **上下文窗口极大的模型（1M 以上）**可以处理更多原始上下文，但仍遵循 U 形退化曲线；更大的窗口只能推迟问题，无法消除问题。
 
-Always benchmark degradation thresholds with your specific workload rather than relying on published benchmarks. Model-specific thresholds go stale with each model update (see Gotcha 2).
+应针对自己的工作负载测试退化阈值，而不是依赖已发布的基准。模型更新后，依模型而异的阈值可能很快过时（参见“易错点”第 2 条）。
 
-### Counterintuitive Findings
+### 反直觉的发现
 
-Account for these research-backed surprises when designing context strategies:
+设计上下文策略时，应考虑以下有研究依据、但可能出乎意料的发现：
 
-**Shuffled context can outperform coherent context.** Studies found incoherent (shuffled) haystacks can outperform logically ordered ones for some retrieval tasks (claim-context-degradation-distractor-shuffled). Coherent context may create false associations that confuse retrieval; incoherent context can force exact matching. Do not assume that better-organized context always yields better results — test both arrangements.
+**打乱上下文有时优于连贯上下文。**研究发现，在某些检索任务中，杂乱无章（打乱顺序）的信息堆表现优于逻辑有序的信息堆（claim-context-degradation-distractor-shuffled）。连贯上下文可能形成错误关联，干扰检索；杂乱上下文则可能迫使模型进行精确匹配。不要假设组织得更好的上下文总会带来更好的结果，应同时测试两种排列。
 
-**Single distractors have outsized impact.** The performance hit from one irrelevant document is disproportionately large compared to adding more distractors after the first. Treat distractor prevention as binary: either keep context clean or accept significant degradation.
+**单个干扰项的影响格外大。**一份无关文档造成的性能损失，与再添加更多干扰项后造成的损失相比，比例上要大得多。应把避免干扰项视为一个二元选择：要么保持上下文干净，要么接受显著的性能下降。
 
-**Low needle-question similarity accelerates degradation.** Tasks requiring inference across dissimilar content degrade faster with context length than tasks with high surface-level similarity. Design retrieval to maximize semantic overlap between queries and retrieved content.
+**针尖与问题的相似度越低，退化越快。**需要跨越不相似内容进行推理的任务，会比表层相似度较高的任务更容易随着上下文变长而退化。设计检索时，应尽量提高查询与检索内容之间的语义重合度。
 
-### When Larger Contexts Hurt
+### 更大的上下文可能带来负面影响
 
-Do not assume larger context windows improve performance. Performance remains stable up to a model-specific threshold, then degrades rapidly — the curve is non-linear with a cliff edge, not a gentle slope. For many models, meaningful degradation begins at 8K-16K tokens even when windows support much larger sizes.
+不要假设更大的上下文窗口会提升表现。模型在特定阈值前表现稳定，之后便会快速退化；曲线是非线性的，存在断崖式下降，而非平缓下滑。许多模型即使支持更大的窗口，也会在 8K 到 16K token 时出现明显退化。
 
-Factor in cost: processing a 400K token context costs exponentially more than 200K in both time and compute, not linearly more. For many applications, this makes large-context processing economically impractical.
+还要考虑成本：处理 400K token 的上下文，在时间和计算方面的成本会比处理 200K token 高出指数级，而非线性倍增。对许多应用而言，大上下文处理在经济上难以承受。
 
-Recognize the cognitive bottleneck: even with infinite context, asking a single model to maintain quality across dozens of independent tasks creates degradation that more context cannot solve. Split tasks across sub-agents instead of expanding context.
+要认识到认知瓶颈：即使上下文无限，要求单个模型在数十个互不相关的任务上始终保持高质量，也会造成更多上下文无法解决的退化。应拆分任务并交给子智能体，而不是继续扩大上下文。
 
-## Practical Guidance
+## 实践指南
 
-### The Four-Bucket Mitigation Framework
+### 四类缓解方法
 
-Apply these four strategies based on which degradation pattern is active:
+根据当前的退化模式应用以下四种策略：
 
-**Write** — Save context outside the window using scratchpads, file systems, or external storage. Use when context utilization exceeds 70% of the window. This keeps active context lean while preserving information access through tool calls.
+**写出（Write）**——使用草稿区、文件系统或外部存储，把上下文保存在窗口之外。上下文利用率超过窗口的 70% 时使用。这样可以保持活动上下文精简，并通过工具调用继续访问保存的信息。
 
-**Select** — Pull only relevant context into the window through retrieval, filtering, and prioritization. Use when distraction or confusion symptoms appear. Apply relevance scoring before loading; exclude anything below threshold rather than including everything available.
+**筛选（Select）**——通过检索、过滤和排序，只将相关上下文拉入窗口。出现干扰或混淆症状时使用。加载前先评估相关性；低于阈值的内容应排除，而不是把所有可用内容都放进来。
 
-**Compress** — Reduce tokens while preserving information through summarization, abstraction, and observation masking. Use when context is growing but all content is relevant. Replace verbose tool outputs with compact structured summaries; abstract repeated patterns into single references.
+**压缩（Compress）**——通过摘要、抽象和观察屏蔽减少 token，同时保留信息。上下文正在增长、但所有内容仍然相关时使用。用简明的结构化摘要替代冗长工具输出；把重复模式抽象成单一引用。
 
-**Isolate** — Split context across sub-agents or sessions to prevent any single context from growing past its degradation threshold. Use when confusion or clash symptoms appear, or when tasks are independent. This is the most aggressive strategy but often the most effective for complex multi-task systems.
+**隔离（Isolate）**——跨子智能体或会话拆分上下文，防止任何单个上下文越过其退化阈值。出现混淆或冲突症状，或任务彼此独立时使用。这是最激进的策略，但往往也是应对复杂多任务系统最有效的方法。
 
-### Architectural Patterns for Resilience
+### 提高韧性的架构模式
 
-Implement just-in-time context loading: retrieve information only when the current reasoning step needs it, not preemptively. Use observation masking to replace verbose tool outputs with compact references after processing. Deploy sub-agent architectures where each agent holds only task-relevant context. Trigger compaction before context exceeds the model-specific degradation onset threshold — not after symptoms appear.
+实现即时上下文加载：只在当前推理步骤需要信息时再检索，而不是提前加载。工具输出处理完后，使用观察屏蔽将冗长内容替换成简短引用。部署子智能体架构，让每个智能体只持有与任务相关的上下文。在上下文超过模型特定的退化起点之前触发压缩，不要等到症状出现后才处理。
 
-## Examples
+## 示例
 
-**Example 1: Detecting Degradation**
+**示例 1：检测退化**
 ```yaml
 # Context grows during long conversation
 turn_1: 1000 tokens
@@ -133,7 +133,7 @@ turn_20: 60000 tokens (degradation begins)
 turn_30: 90000 tokens (significant degradation)
 ```
 
-**Example 2: Mitigating Lost-in-Middle**
+**示例 2：缓解中间位置丢失**
 ```markdown
 # Organize context with critical info at edges
 
@@ -152,7 +152,7 @@ turn_30: 90000 tokens (significant degradation)
 - Growth in Region A
 ```
 
-**Example 3: Context poisoning circuit breaker**
+**示例 3：上下文污染断路器**
 ```text
 symptom: agent keeps citing an incorrect retrieved claim after correction
 diagnosis: poisoned context, not a missing-instruction problem
@@ -163,7 +163,7 @@ action:
   4. record the rejected claim and source provenance
 ```
 
-**Example 4: Context clash annotation**
+**示例 4：上下文冲突标注**
 ```yaml
 conflict:
   topic: billing API version
@@ -173,64 +173,64 @@ conflict:
   reason: current production version
 ```
 
-## Guidelines
+## 指南
 
-1. Monitor context length and performance correlation during development
-2. Place critical information at beginning or end of context
-3. Implement compaction triggers before degradation becomes severe
-4. Validate retrieved documents for accuracy before adding to context
-5. Use versioning to prevent outdated information from causing clash
-6. Segment tasks to prevent context confusion across different objectives
-7. Design for graceful degradation rather than assuming perfect conditions
-8. Test with progressively larger contexts to find degradation thresholds
+1. 在开发过程中监控上下文长度与表现之间的关系。
+2. 把关键信息放在上下文开头或末尾。
+3. 在退化变得严重之前实现压缩触发条件。
+4. 将检索文档加入上下文之前验证其准确性。
+5. 使用版本管理，防止过时信息引发冲突。
+6. 切分任务，避免不同目标之间发生上下文混淆。
+7. 按会逐步退化来设计，而不要假设条件永远完美。
+8. 使用逐步增大的上下文进行测试，找出退化阈值。
 
-## Gotchas
+## 易错点
 
-1. **Normal variance looks like degradation**: Model output quality fluctuates naturally across runs. Do not diagnose degradation from a single drop in quality — establish a baseline over multiple runs and look for sustained, correlated decline tied to context growth. A 5-10% quality dip on one run is noise; the same dip consistently appearing after 40K tokens is signal.
+1. **正常波动看起来像退化**：模型输出质量本来就会在不同运行之间波动。不要只凭一次质量下降就判断发生了退化；应通过多次运行建立基线，并寻找与上下文增长相关的持续性下降。单次运行中质量下降 5% 到 10% 可能只是噪声；若每次达到 40K token 后都出现相同幅度的下降，就说明存在规律。
 
-2. **Model-specific thresholds go stale**: The degradation onset values in benchmark tables reflect specific model versions. Provider updates, fine-tuning changes, and infrastructure shifts can move thresholds by 20-50% in either direction. Re-benchmark quarterly and after any major model update rather than treating published thresholds as permanent.
+2. **依模型而异的阈值会过时**：基准表中的退化起点反映的是特定版本的模型。服务提供方更新、微调变化和基础设施调整，都可能让阈值上下移动 20% 到 50%。应每季度重新测试，并在任何重大模型更新后重新测试，不要把已发布阈值当作永久值。
 
-3. **Needle-in-haystack scores create false confidence**: A model scoring 99% on needle-in-haystack does not mean it handles 128K tokens well in production. Needle tests measure single-fact retrieval from passive context — real workloads require multi-fact reasoning, instruction following, and synthesis across the full window. Use task-specific benchmarks that mirror actual workload patterns.
+3. **针尖入海得分会造成虚假的信心**：模型在针尖入海测试中得分 99%，并不意味着它能在生产环境中良好处理 128K token。针尖测试衡量的是从被动上下文中检索单一事实；真实工作负载还要求跨整个窗口进行多事实推理、遵循指令和综合信息。应使用能反映实际工作负载的专用基准。
 
-4. **Contradictory retrieved documents poison silently**: When a RAG pipeline retrieves two documents that disagree on a fact, the model may silently pick one without signaling the conflict. This looks like a correct response but is effectively random. Implement contradiction detection in the retrieval layer before documents enter context.
+4. **相互矛盾的检索文档会悄悄污染上下文**：RAG 流水线检索到两份事实相互矛盾的文档时，模型可能不指出冲突而悄悄选一份。这种回答表面上看似正确，实际上选择近乎随机。应在文档进入上下文前，在检索层检测矛盾。
 
-5. **Prompt quality problems masquerade as degradation**: Poor prompt structure (ambiguous instructions, missing constraints, unclear task framing) produces symptoms identical to context degradation — inconsistent outputs, ignored instructions, wrong tool usage. Before diagnosing degradation, verify the same prompt works correctly at low context lengths. If it fails at 2K tokens, the problem is the prompt, not the context.
+5. **提示词质量问题会伪装成上下文退化**：提示词结构不佳（指令有歧义、缺少约束、任务描述不清）会产生与上下文退化相同的症状，例如输出不一致、忽略指令、工具使用错误。在诊断退化之前，先确认同一提示词在上下文较短时能否正常工作。如果它在 2K token 时也会失败，问题出在提示词，而非上下文。
 
-6. **Degradation is non-linear with a cliff edge**: Performance does not degrade gradually — it holds steady until a model-specific threshold, then drops sharply. Systems designed for "graceful degradation" often miss this pattern because monitoring checks assume linear decline. Set compaction triggers well before the cliff (at 70% of known onset), not at the onset itself.
+6. **退化不是线性变化，而是断崖式下降**：表现不会逐步缓慢下降；它会保持稳定，直到模型特定的阈值，然后急剧下滑。按“平缓退化”来设计的系统可能会漏掉这种模式，因为监控通常假设下降是线性的。压缩触发条件应远早于断崖（已知起点的 70%），不要等到退化起点才触发。
 
-7. **Over-organizing context can backfire**: Intuitively, well-structured and coherent context should outperform disorganized content. Research shows shuffled haystacks sometimes outperform coherent ones for retrieval tasks because coherent context creates false associations. Test whether heavy structural formatting actually helps for the specific task — do not assume it does.
+7. **过度组织上下文可能适得其反**：直觉上，结构良好且连贯的上下文应该优于杂乱无章的内容。研究显示，在检索任务中，打乱顺序的信息堆有时表现更好，因为连贯上下文可能形成错误关联。应针对具体任务测试复杂结构化格式是否真的有帮助，不要想当然。
 
-## Integration
+## 集成
 
-This skill owns diagnosis and mitigation of active context failures. Adjacent skills own the implementation tactics once the failure is identified:
+本技能负责诊断和缓解正在发生的上下文失效。识别出失效后，相邻技能负责具体实施手段：
 
-- `context-fundamentals`: conceptual explanation of attention and context windows before a failure exists.
-- `context-optimization`: masking, caching, partitioning, and other token-efficiency tactics after diagnosis.
-- `context-compression`: structured summaries and handoffs when accumulated context must be compacted.
-- `filesystem-context`: offloading raw outputs, logs, and scratch state so poisoned or bulky context can be inspected without staying in the prompt.
-- `multi-agent-patterns`: isolating tasks into separate contexts to prevent confusion and clash.
-- `evaluation`: degradation tests and production monitoring.
+- `context-fundamentals`：在失效发生前，解释注意力和上下文窗口的概念。
+- `context-optimization`：诊断之后应用屏蔽、缓存、分区和其他 token 效率技巧。
+- `context-compression`：需要压缩累积上下文时，设计结构化摘要和交接内容。
+- `filesystem-context`：卸载原始输出、日志和草稿状态，使受污染或臃肿的内容可以被检查，而无需一直留在提示词中。
+- `multi-agent-patterns`：将任务隔离到不同上下文中，避免混淆和冲突。
+- `evaluation`：构建退化测试和生产监控。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Degradation Patterns Reference](./references/patterns.md) - Read when: debugging a specific degradation pattern and needing implementation-level detection code (attention analysis, poisoning tracking, relevance scoring, recovery procedures)
+内部参考资料：
+- [Degradation Patterns Reference](./references/patterns.md) - 阅读时机：调试具体退化模式，并需要实现层面的检测代码（注意力分析、污染追踪、相关性评分、恢复流程）时
 
-Related skills in this collection:
-- context-fundamentals - Read when: lacking foundational understanding of context windows, token budgets, or placement mechanics
-- context-optimization - Read when: degradation is diagnosed and specific mitigation techniques (compaction, compression, masking) are needed
-- evaluation - Read when: setting up production monitoring to detect degradation before it impacts users
+本系列的相关技能：
+- context-fundamentals - 阅读时机：缺少对上下文窗口、token 预算或信息摆放机制的基础理解时
+- context-optimization - 阅读时机：已诊断出退化，需要选择具体缓解技术（压缩、摘要、屏蔽）时
+- evaluation - 阅读时机：设置生产监控，在退化影响用户之前及时发现时
 
-External resources:
-- Liu et al., 2023 "Lost in the Middle" - Read when: needing primary research backing for U-shaped attention claims or designing position-aware context layouts
-- RULER benchmark documentation - Read when: evaluating model claims about long-context support or comparing models for context-heavy workloads
-- Production engineering guides from AI labs - Read when: implementing context management in production infrastructure
+外部资源：
+- Liu 等人，2023 年，《Lost in the Middle》——需要 U 形注意力主张的原始研究依据，或设计按位置组织上下文的方案时阅读
+- RULER 基准文档——评估模型对长上下文支持的声明，或比较适合上下文密集型工作负载的模型时阅读
+- AI 实验室的生产工程指南——在生产基础设施中实现上下文管理时阅读
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 2.1.0
+**创建时间**：2025-12-20
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：2.1.0

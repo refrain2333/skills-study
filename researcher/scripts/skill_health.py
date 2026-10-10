@@ -35,16 +35,16 @@ ACTIVATION_FILE = ROOT / "researcher" / "fixtures" / "activation-cases.jsonl"
 DEFAULT_OUTPUT = ROOT / "researcher" / "reports" / "skill-health.json"
 HISTORY_FILE = ROOT / "researcher" / "reports" / "skill-health-history.jsonl"
 
-REQUIRED_SECTIONS = [
-    "## When to Activate",
-    "## Core Concepts",
-    "## Practical Guidance",
-    "## Examples",
-    "## Guidelines",
-    "## Gotchas",
-    "## Integration",
-    "## References",
-]
+REQUIRED_SECTIONS = {
+    "何时启用": r"^##\s+何时启用\s*$",
+    "核心概念": r"^##\s+核心概念\s*$",
+    "实践指南": r"^##\s+实践指南\s*$",
+    "示例": r"^##\s+示例\s*$",
+    "指南": r"^##\s+指南\s*$",
+    "易错点": r"^##\s+(?:易错点|注意事项|常见问题)\s*$",
+    "集成": r"^##\s+集成\s*$",
+    "参考资料": r"^##\s+参考资料\s*$",
+}
 
 NUMERIC_CLAIM_PATTERNS = [
     re.compile(r"\b\d+(?:\.\d+)?\s*%"),
@@ -119,7 +119,11 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], list[str]]:
 
 
 def count_gotchas(text: str) -> int:
-    match = re.search(r"^## Gotchas\s*\n(.+?)(?=\n## |\Z)", text, flags=re.DOTALL | re.MULTILINE)
+    match = re.search(
+        r"^##\s+(?:易错点|注意事项|常见问题)\s*\n(.+?)(?=\n## |\Z)",
+        text,
+        flags=re.DOTALL | re.MULTILINE,
+    )
     if not match:
         return 0
     body = match.group(1)
@@ -251,9 +255,9 @@ def evaluate_skill(
         issues.append("description may not be third person")
     record.frontmatter_valid = not issues and bool(name) and bool(description)
 
-    for section in REQUIRED_SECTIONS:
-        if section not in text:
-            record.missing_sections.append(section)
+    for label, pattern in REQUIRED_SECTIONS.items():
+        if not re.search(pattern, text, flags=re.MULTILINE):
+            record.missing_sections.append(label)
 
     record.gotcha_count = count_gotchas(text)
     record.code_example_count = count_code_examples(text)

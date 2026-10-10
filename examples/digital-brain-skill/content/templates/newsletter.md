@@ -1,92 +1,84 @@
-# Newsletter Template
+# 简报模板
 
-## Metadata
+## 元数据
+
 ```yaml
-issue_number: "[X]"
-title: "[PLACEHOLDER]"
-subtitle: "[PLACEHOLDER: One-liner preview]"
-publish_date: "[DATE]"
-pillar: "[PLACEHOLDER: Content pillar]"
+issue_number: "[期数]"
+title: "[标题]"
+subtitle: "[一句话预览]"
+publish_date: "[日期]"
+pillar: "[内容支柱]"
 ```
 
----
+## 邮件主题备选
 
-## Subject Line Options
-<!-- Test different subject lines -->
-1. [PLACEHOLDER: Option 1]
-2. [PLACEHOLDER: Option 2]
-3. [PLACEHOLDER: Option 3]
+用于测试不同主题：
 
-## Preview Text
-```
-[PLACEHOLDER: First 50-100 chars that show in email preview]
-```
+1. [备选一]
+2. [备选二]
+3. [备选三]
 
----
+## 预览文字
 
-## Opening Hook
-<!-- Personal, relatable, or intriguing opener -->
-```
-[PLACEHOLDER: 2-3 sentences that pull them in]
+```text
+[填写邮件预览中显示的前 50—100 个字符]
 ```
 
----
+## 开场
 
-## Main Content
+写个人化、易共鸣或引人好奇的开头：
 
-### Section 1: [Topic]
-```
-[PLACEHOLDER: Main insight or story]
-```
-
-### Section 2: [Topic]
-```
-[PLACEHOLDER: Supporting point or framework]
+```text
+[用 2—3 句话吸引读者]
 ```
 
-### Section 3: [Topic] (optional)
-```
-[PLACEHOLDER: Additional value]
-```
+## 正文
 
----
-
-## Key Takeaway
-<!-- The one thing they should remember -->
-```
-[PLACEHOLDER: Summarize the value in 1-2 sentences]
+### 第一部分：[主题]
+```text
+[主要见解或故事]
 ```
 
----
-
-## Action Item
-<!-- What can they do with this information? -->
-```
-[PLACEHOLDER: Specific, actionable next step]
+### 第二部分：[主题]
+```text
+[补充观点或方法框架]
 ```
 
----
-
-## Closing
-```
-[PLACEHOLDER: Personal sign-off, what's coming next]
+### 第三部分：[主题，可选]
+```text
+[额外价值]
 ```
 
----
+## 关键收获
 
-## Links & Resources
-<!-- Everything mentioned in the newsletter -->
-- [PLACEHOLDER: Resource 1](url)
-- [PLACEHOLDER: Resource 2](url)
+```text
+[用 1—2 句话概括读者应记住的内容]
+```
 
----
+## 行动建议
 
-## Pre-publish Checklist
-- [ ] Subject line is compelling (would I open this?)
-- [ ] Opening creates connection
-- [ ] Value is clear and specific
-- [ ] Formatting is mobile-friendly
-- [ ] All links work
-- [ ] CTA is clear
-- [ ] Proofread for typos
-- [ ] Voice matches brand (checked against voice.md)
+```text
+[读者可以采取的具体下一步]
+```
+
+## 结尾
+
+```text
+[个人署名，以及接下来会发布什么]
+```
+
+## 链接与资料
+
+- [资料一](网址)
+- [资料二](网址)
+
+## 发布前检查
+
+- [ ] 主题足够吸引人。
+- [ ] 开场能建立联系。
+- [ ] 价值明确具体。
+- [ ] 排版适合手机阅读。
+- [ ] 所有链接有效。
+- [ ] 行动号召明确。
+- [ ] 已检查错字。
+- [ ] 符合品牌表达风格，并对照 voice.md 检查。

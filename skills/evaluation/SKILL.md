@@ -1,164 +1,168 @@
 ---
 name: evaluation
-description: "This skill should be used when building agent evaluation systems: deterministic checks, regression suites, multi-dimensional rubrics, quality gates, production monitoring, baseline comparison, and outcome measurement for agent pipelines."
+description: "用于构建智能体评估体系，包括确定性检查、回归套件、多维评分标准、质量门槛与基线比较。"
 ---
 
-# Evaluation Methods for Agent Systems
+# 智能体系统评估方法
 
-Evaluate agent systems differently from traditional software because agents make dynamic decisions, are non-deterministic between runs, and often lack single correct answers. Build evaluation frameworks that account for these characteristics, provide actionable feedback, catch regressions, and validate that context engineering choices achieve intended effects.
+智能体会动态作出决策，不同运行轮次的结果可能不一致，而且任务往往没有唯一正确答案，因此评估智能体系统的方式应不同于传统软件。评估框架需要考虑这些特点，给出可采取行动的反馈、发现回归，并验证上下文工程方案是否达成预期效果。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
-- Testing agent performance systematically
-- Validating context engineering choices
-- Measuring improvements over time
-- Catching regressions before deployment
-- Building quality gates for agent pipelines
-- Comparing different agent configurations
-- Evaluating production systems continuously
+在以下情况下启用本技能：
 
-Do not activate this skill for adjacent work owned by other skills:
-- Designing the LLM judge itself, pairwise comparison, judge calibration, or bias mitigation: `advanced-evaluation`.
-- Designing autonomous control surfaces, novelty gates, rollback, or PR approval boundaries: `harness-engineering`.
-- Debugging a specific context failure mode before measuring it: `context-degradation`.
+- 系统化测试智能体表现
+- 验证上下文工程方案
+- 衡量长期改进情况
+- 在部署前发现回归
+- 为智能体流水线建立质量门禁
+- 比较不同的智能体配置
+- 持续评估生产系统
 
-## Core Concepts
+以下相邻工作由其他技能负责，不要为它们启用本技能：
 
-Focus evaluation on outcomes rather than execution paths, because agents may find alternative valid routes to goals. Judge whether the agent achieves the right outcome via a reasonable process, not whether it followed a specific sequence of steps.
+- 设计 LLM 判官本身、成对比较、判官校准或偏差缓解：`advanced-evaluation`。
+- 设计自主控制面、新颖性门禁、回滚或 PR 审批边界：`harness-engineering`。
+- 在衡量之前调试某种具体的上下文失效模式：`context-degradation`。
 
-Use multi-dimensional rubrics instead of single scores because one number hides critical failures in specific dimensions. Capture factual accuracy, completeness, citation accuracy, source quality, and tool efficiency as separate dimensions, then weight them for the use case.
+## 核心概念
 
-Use model-judged evaluation only after deterministic checks and rubrics are stable. When the work centers on judge prompts, pairwise comparison, calibration, or bias mitigation, switch to Advanced Evaluation.
+评估应关注结果而不是执行路径，因为智能体可能通过不同的有效路径达成目标。判断智能体是否以合理过程取得正确结果，而不是检查它是否遵循某个特定步骤顺序。
 
-Run deterministic validation before LLM judgment whenever the artifact has machine-checkable structure. Schema validity, duplicate keys, rubric math, manifest sync, retrieval status, and required evidence paths should fail fast before an evaluator spends tokens or returns a subjective score.
+使用多维评分标准，而不是单一分数，因为一个数字会掩盖特定维度上的严重问题。将事实准确性、完整性、引用准确性、来源质量和工具效率分开记录，再根据使用场景设置权重。
 
-**Performance Drivers**
+只有在确定性检查和评分标准稳定后，才使用模型判分。如果工作重点是判官提示词、成对比较、校准或偏差缓解，应改用 Advanced Evaluation。
 
-Apply browsing-agent research when designing evaluation budgets: token usage, tool calls, and model choice can dominate measured performance variance (claim-evaluation-browsecomp-variance).
+只要产物具有可由机器检查的结构，就应先进行确定性验证，再进行 LLM 判断。模式有效性、重复键、评分标准计算、清单同步、检索状态和所需证据路径等问题，都应在评估器消耗 Token 或给出主观分数之前快速失败。
 
-| Factor | Variance Explained | Implication |
-|--------|-------------------|-------------|
-| Token usage | Primary driver | More exploration can improve performance until cost or context quality collapses |
-| Number of tool calls | Secondary driver | More tool use helps only when calls retrieve useful evidence |
-| Model choice | Secondary but multiplicative | Better models often use tokens and tools more efficiently |
+**表现驱动因素**
 
-Act on these implications when designing evaluations:
-- **Set realistic token budgets**: Evaluate agents with production-realistic token limits, not unlimited resources.
-- **Compare model upgrades against token increases**: Better models may use tokens more efficiently than weaker models with larger budgets.
-- **Validate multi-agent architectures**: Extra agents add tokens and tool calls; evaluate them against single-agent baselines.
+设计评估预算时，应参考浏览型智能体研究：Token 用量、工具调用数和模型选择会显著影响测得的表现差异（claim-evaluation-browsecomp-variance）。
 
-## Detailed Topics
+| 因素 | 解释的差异 | 含义 |
+|--------|-------------|-------------|
+| Token 用量 | 主要驱动因素 | 增加探索通常能改善表现，直到成本过高或上下文质量崩塌 |
+| 工具调用次数 | 次要驱动因素 | 只有在调用能取回有用证据时，增加工具使用才有帮助 |
+| 模型选择 | 次要但有乘数效应 | 更强的模型通常能更高效地使用 Token 和工具 |
 
-### Evaluation Challenges
+设计评估时要落实这些含义：
 
-**Handle Non-Determinism and Multiple Valid Paths**
+- **设置现实的 Token 预算**：使用符合生产环境的 Token 限额评估智能体，不要提供无限资源。
+- **对比模型升级与 Token 增量**：更强的模型可能比预算更大的弱模型更有效地利用 Token。
+- **验证多智能体架构**：额外智能体会增加 Token 和工具调用；要与单智能体基线进行评估对比。
 
-Design evaluations that tolerate path variation because agents may take completely different valid paths to reach goals. One agent might search three sources while another searches ten; both may produce correct answers. Avoid checking for specific steps. Instead, define outcome criteria (correctness, completeness, quality) and score against those, treating the execution path as informational rather than evaluative.
+## 详细主题
 
-**Test Context-Dependent Failures**
+### 评估面临的挑战
 
-Evaluate across a range of complexity levels and interaction lengths because agent failures often depend on context in subtle ways. An agent might succeed on simple queries but fail on complex ones, work well with one tool set but fail with another, or degrade after extended interaction as context accumulates. Include simple, medium, complex, and very complex test cases to surface these patterns.
+**处理非确定性和多条有效路径**
 
-**Score Composite Quality Dimensions Separately**
+设计评估时要容许路径不同，因为智能体可能通过完全不同的有效路径达成目标。一个智能体可能搜索三个来源，另一个搜索十个；两者都可能给出正确答案。不要要求特定步骤，而应定义结果标准（正确性、完整性、质量）并据此评分；执行路径只作参考信息，不作为评分对象。
 
-Break agent quality into separate dimensions (factual accuracy, completeness, coherence, tool efficiency, process quality) and score each independently because an agent might score high on accuracy but low on efficiency, or vice versa. Then compute weighted aggregates tuned to use-case priorities. This approach reveals which dimensions need improvement rather than averaging away the signal.
+**测试依赖上下文的故障**
 
-### Evaluation Rubric Design
+应在多种复杂度和交互长度下评估，因为智能体故障往往会微妙地依赖上下文。智能体可能能处理简单查询，却无法处理复杂查询；可能在一组工具下表现良好，在另一组工具下失效；也可能随着长时间交互和上下文累积而退化。纳入简单、中等、复杂和非常复杂的测试用例，揭示这些模式。
 
-**Build Multi-Dimensional Rubrics**
+**分别评估复合质量维度**
 
-Define rubrics covering key dimensions with descriptive levels from excellent to failed. Include these core dimensions and adapt weights per use case:
+将智能体质量拆为多个维度（事实准确性、完整性、连贯性、工具效率、过程质量），并分别评分。智能体可能准确性高但效率低，反之亦然。之后再根据用例优先级计算加权总分。这样能看出哪些维度需要改进，避免平均分抹去有用信号。
 
-- Factual accuracy: Claims match ground truth (weight heavily for knowledge tasks)
-- Completeness: Output covers requested aspects (weight heavily for research tasks)
-- Citation accuracy: Citations match claimed sources (weight for trust-sensitive contexts)
-- Source quality: Uses appropriate primary sources (weight for authoritative outputs)
-- Tool efficiency: Uses right tools a reasonable number of times (weight for cost-sensitive systems)
+### 评估评分标准设计
 
-**Convert Rubrics to Numeric Scores**
+**建立多维评分标准**
 
-Map dimension assessments to numeric scores (0.0 to 1.0), apply per-dimension weights, and calculate weighted overall scores. Set passing thresholds based on use-case requirements, typically 0.7 for general use and 0.9 for high-stakes applications. Store individual dimension scores alongside the aggregate because the breakdown drives targeted improvement.
+为关键维度定义评分标准，并用从优秀到失败的描述性等级。应包含以下核心维度，并按使用场景调整权重：
 
-### Evaluation Methodologies
+- 事实准确性：陈述是否符合真实情况（知识类任务应重视）
+- 完整性：输出是否覆盖请求的各个方面（研究类任务应重视）
+- 引用准确性：引用是否对应所声称的来源（对可信度敏感的场景应重视）
+- 来源质量：是否使用恰当的一手来源（对权威性要求高的输出应重视）
+- 工具效率：是否以合理次数使用了恰当工具（对成本敏感的系统应重视）
 
-**Use LLM-as-Judge for Scale**
+**将评分标准转换为数值**
 
-Build LLM-based evaluation prompts that include: clear task description, the agent output under test, ground truth when available, an evaluation scale with explicit level descriptions, and a request for structured judgment with reasoning. LLM judges provide consistent, scalable evaluation across large test sets. Use a different model family than the agent being evaluated to avoid self-enhancement bias.
+将各维度评估映射到 0.0 到 1.0 的分数，应用各维度权重并计算加权总分。根据使用场景要求设置通过阈值；一般用途通常为 0.7，高风险应用通常为 0.9。除总分外，也要保存每个维度的分数，因为这些细分结果有助于针对性改进。
 
-**Supplement with Human Evaluation**
+### 评估方法
 
-Route edge cases, unusual queries, and a random sample of production traffic to human reviewers because humans notice hallucinated answers, system failures, and subtle biases that automated evaluation misses. Track patterns across human reviews to identify systematic issues and feed findings back into automated evaluation criteria.
+**用 LLM 作为判官来扩展评估规模**
 
-**Apply End-State Evaluation for Stateful Agents**
+构建基于 LLM 的评估提示词时，应包含清晰的任务说明、待评估的智能体输出、可用时提供的真实答案、带有明确等级描述的评估量表，以及要求以结构化方式给出判断和理由。LLM 判官能一致地评估大型测试集。应选用与被评估智能体不同的模型系列，避免自我增强偏差。
 
-For agents that mutate persistent state (files, databases, configurations), evaluate whether the final state matches expectations rather than how the agent got there. Define expected end-state assertions and verify them programmatically after each test run.
+**补充人工评估**
 
-### Test Set Design
+将边缘情况、异常查询和一部分随机抽样的生产流量交给人工审核，因为人工能发现自动评估遗漏的幻觉、系统故障和细微偏见。追踪人工审核中的模式，找出系统性问题，并将发现反馈到自动评估标准中。
 
-**Select Representative Samples**
+**对有状态智能体评估最终状态**
 
-Start with small samples (20-30 cases) during early development when changes have dramatic impacts and low-hanging fruit is abundant. Scale to 50+ cases for reliable signal as the system matures. Sample from real usage patterns, add known edge cases, and ensure coverage across complexity levels.
+如果智能体会修改持久状态（文件、数据库、配置），应评估最终状态是否符合预期，而不是追究智能体如何到达该状态。定义预期终态断言，并在每次测试运行后通过程序验证。
 
-**Stratify by Complexity**
+### 测试集设计
 
-Structure test sets across complexity levels to prevent easy examples from inflating scores:
-- Simple: single tool call, factual lookup
-- Medium: multiple tool calls, comparison logic
-- Complex: many tool calls, significant ambiguity
-- Very complex: extended interaction, deep reasoning, synthesis
+**选择有代表性的样本**
 
-Report scores per stratum alongside overall scores to reveal where the agent actually struggles.
+在开发早期，改动影响大且容易发现明显问题时，先用较小的样本（20–30 个用例）。系统成熟后，扩大到 50 个以上用例以获得可靠信号。样本应来自真实使用模式，加入已知边缘情况，并覆盖多种复杂度。
 
-### Context Engineering Evaluation
+**按复杂度分层**
 
-**Validate Context Strategies Systematically**
+按复杂度组织测试集，避免简单样本把总分抬高：
 
-Run agents with different context strategies on the same test set and compare quality scores, token usage, and efficiency metrics. This isolates the effect of context engineering from other variables and prevents anecdote-driven decisions.
+- 简单：一次工具调用、事实查询
+- 中等：多次工具调用、比较逻辑
+- 复杂：多次工具调用、较大歧义
+- 非常复杂：长时间交互、深入推理、综合归纳
 
-**Run Degradation Tests**
+除总分外，也要报告各层级的分数，以显示智能体实际在哪些地方遇到困难。
 
-Test how context degradation affects performance by running agents at different context sizes. Identify performance cliffs where context becomes problematic and establish safe operating limits. Feed these limits back into context management strategies.
+### 上下文工程评估
 
-### Continuous Evaluation
+**系统化验证上下文策略**
 
-**Build Automated Evaluation Pipelines**
+让智能体在相同测试集上使用不同的上下文策略运行，并比较质量分数、Token 用量和效率指标。这样可以分离上下文工程本身的影响，避免根据个别印象作决定。
 
-Integrate evaluation into the development workflow so evaluations run automatically on agent changes. Track results over time, compare versions, and block deployments that regress on key metrics.
+**运行退化测试**
 
-**Monitor Production Quality**
+在不同上下文大小下运行智能体，测试上下文退化对表现的影响。找出上下文开始产生问题时的性能断崖，并建立安全运行范围。将这些限制反馈到上下文管理策略中。
 
-Sample production interactions and evaluate them continuously. Set alerts for quality drops below warning (0.85 pass rate) and critical (0.70 pass rate) thresholds. Maintain dashboards showing trend analysis over time windows to detect gradual degradation.
+### 持续评估
 
-## Practical Guidance
+**建立自动化评估流水线**
 
-### Building Evaluation Frameworks
+将评估整合进开发流程，使评估能在智能体改动后自动运行。持续追踪结果、比较版本，并阻止会导致关键指标退化的部署。
 
-Follow this sequence to build an evaluation framework, because skipping early steps leads to measurements that do not reflect real quality:
+**监控生产质量**
 
-1. Define quality dimensions relevant to the use case before writing any evaluation code, because dimensions chosen later tend to reflect what is easy to measure rather than what matters.
-2. Create rubrics with clear, descriptive level definitions so evaluators (human or LLM) produce consistent scores.
-3. Build test sets from real usage patterns and edge cases, stratified by complexity, with at least 50 cases for reliable signal.
-4. Implement automated evaluation pipelines that run on every significant change.
-5. Establish baseline metrics before making changes so improvements can be measured against a known reference.
-6. Run evaluations on all significant changes and compare against the baseline.
-7. Track metrics over time for trend analysis because gradual degradation is harder to notice than sudden drops.
-8. Supplement automated evaluation with human review on a regular cadence.
-9. Separate deterministic validation failures from quality judgments so invalid artifacts cannot be laundered by a favorable LLM score.
+持续抽样生产交互并评估。质量低于警告阈值（通过率 0.85）和严重阈值（通过率 0.70）时设置告警。维护仪表板，显示不同时间窗口内的趋势，以发现逐步退化。
 
-### Avoiding Evaluation Pitfalls
+## 实践指南
 
-Guard against these common failures that undermine evaluation reliability:
+### 构建评估框架
 
-- **Overfitting to specific paths**: Evaluate outcomes, not specific steps, because agents find novel valid paths.
-- **Ignoring edge cases**: Include diverse test scenarios covering the full complexity spectrum.
-- **Single-metric obsession**: Use multi-dimensional rubrics because a single score hides dimension-specific failures.
-- **Neglecting context effects**: Test with realistic context sizes and histories rather than clean-room conditions.
-- **Skipping human evaluation**: Automated evaluation misses subtle issues that humans catch reliably.
+按照以下顺序构建评估框架，因为跳过前面的步骤会让测量结果偏离真实质量：
 
-## Examples
+1. 编写任何评估代码之前，先定义与用例相关的质量维度，因为事后选出的维度往往只反映哪些指标容易测量，而不是哪些真正重要。
+2. 创建清晰、描述性的等级定义，使人工或 LLM 评估者能够给出一致分数。
+3. 根据真实使用模式和边缘情况建立测试集，按复杂度分层，并至少包含 50 个用例以获得可靠信号。
+4. 实现自动化评估流水线，在每次重要改动时运行。
+5. 改动前先建立基线指标，以便与已知参考值比较。
+6. 对所有重要改动运行评估，并与基线比较。
+7. 持续追踪指标趋势，因为逐渐退化比突然下降更难发现。
+8. 定期用人工审核补充自动化评估。
+9. 将确定性验证失败与质量判断分开，防止格式无效的产物凭借有利的 LLM 评分蒙混过关。
 
-**Example 1: Simple Evaluation**
+### 避免评估陷阱
+
+避免以下常见问题，它们会削弱评估的可靠性：
+
+- **对特定路径过拟合**：评估结果而不是具体步骤，因为智能体会找到新的有效路径。
+- **忽略边缘情况**：纳入覆盖完整复杂度范围的多样化测试场景。
+- **执着于单一指标**：采用多维评分标准，因为一个分数会掩盖各维度的问题。
+- **忽略上下文影响**：使用现实的上下文大小和历史记录进行测试，不要只在干净环境中测试。
+- **跳过人工评估**：自动评估会漏掉人工能可靠发现的细微问题。
+
+## 示例
+
+**示例 1：简单评估**
 ```python
 def evaluate_agent_response(response, expected):
     rubric = load_rubric()
@@ -169,9 +173,9 @@ def evaluate_agent_response(response, expected):
     return {"passed": overall >= 0.7, "scores": scores}
 ```
 
-**Example 2: Test Set Structure**
+**示例 2：测试集结构**
 
-Test sets should span multiple complexity levels to ensure comprehensive evaluation:
+测试集应覆盖多种复杂度，以确保评估全面：
 
 ```python
 test_set = [
@@ -203,7 +207,7 @@ test_set = [
 ]
 ```
 
-**Example 3: Deterministic gate before model judgment**
+**示例 3：先执行确定性门禁，再进行模型判断**
 ```python
 def evaluate_pr_candidate(candidate):
     structure = run_validate_repo(candidate)
@@ -214,7 +218,7 @@ def evaluate_pr_candidate(candidate):
     return {"passed": quality.overall >= 0.8, "scores": quality.dimensions}
 ```
 
-**Example 4: Quality gate dimensions**
+**示例 4：质量门禁维度**
 ```yaml
 gate:
   deterministic:
@@ -227,58 +231,58 @@ gate:
     source_traceability: min 0.90
 ```
 
-## Guidelines
+## 指南
 
-1. Use multi-dimensional rubrics, not single metrics
-2. Evaluate outcomes, not specific execution paths
-3. Cover complexity levels from simple to complex
-4. Test with realistic context sizes and histories
-5. Run evaluations continuously, not just before release
-6. Supplement LLM evaluation with human review
-7. Track metrics over time for trend detection
-8. Set clear pass/fail thresholds based on use case
+1. 使用多维评分标准，不要依赖单一指标
+2. 评估结果，而不是特定的执行路径
+3. 覆盖从简单到复杂的各个层级
+4. 使用现实的上下文大小和历史记录进行测试
+5. 持续运行评估，不要只在发布前评估
+6. 用人工审核补充 LLM 评估
+7. 随时间追踪指标，以发现趋势
+8. 根据使用场景设定清晰的通过/失败阈值
 
-## Gotchas
+## 注意事项
 
-1. **Overfitting evals to specific code paths**: Tests pass but the agent fails on slight input variations. Write eval criteria against outcomes and semantics, not surface patterns, and rotate test inputs periodically.
-2. **LLM-judge self-enhancement bias**: Models rate their own outputs higher than independent judges do. Use a different model family as the evaluation judge than the model being evaluated.
-3. **Test set contamination**: Eval examples leak into training data or prompt templates, inflating scores. Keep eval sets versioned and separate from any data used in prompts or fine-tuning.
-4. **Metric gaming**: Optimizing for the metric rather than actual quality produces agents that score well but disappoint users. Cross-validate automated metrics against human judgments regularly.
-5. **Single-dimension scoring**: One aggregate number hides critical failures in specific dimensions. Always report per-dimension scores alongside the overall score, and fail the eval if any single dimension falls below its minimum threshold.
-6. **Eval set too small**: Fewer than 50 examples produces unreliable signal with high variance between runs. Scale the eval set to at least 50 cases and report confidence intervals.
-7. **Not stratifying by difficulty**: Easy examples inflate overall scores, masking failures on hard cases. Report scores per complexity stratum and weight the overall score to prevent easy-case dominance.
-8. **Treating eval as one-time**: Evaluation must be continuous, not a launch gate. Agent quality drifts as models update, tools change, and usage patterns evolve. Run evals on every change and on a regular production cadence.
+1. **针对特定代码路径过拟合评估**：测试能通过，但智能体遇到稍有变化的输入就会失败。根据结果和语义编写评估标准，不要只匹配表面模式，并定期轮换测试输入。
+2. **LLM 判官的自我增强偏差**：模型给自己的输出打分高于独立判官。使用不同模型系列作为评估判官。
+3. **测试集污染**：评估样本泄漏到训练数据或提示词模板中，导致分数虚高。对评估集进行版本管理，并与提示词或微调使用的数据分开保存。
+4. **指标投机**：优化指标而非实际质量，会让智能体得分很好却让用户失望。定期将自动指标与人工判断交叉验证。
+5. **只评一个维度**：单一总分会掩盖特定维度上的严重问题。始终同时报告各维度分数；任一维度低于最低阈值时，都应判定评估失败。
+6. **评估集过小**：少于 50 个样本时，信号不可靠，且不同运行轮次之间方差较大。将评估集扩大到至少 50 个用例，并报告置信区间。
+7. **不按难度分层**：简单样本抬高总分，掩盖困难用例上的失败。报告各复杂度层的分数，并为总分设置权重，避免简单用例占主导。
+8. **把评估当成一次性工作**：评估应持续进行，而不只是发布门槛。模型更新、工具变化和使用模式演变都会导致智能体质量漂移。每次改动时运行评估，并按固定生产周期定期评估。
 
-## Integration
+## 集成
 
-This skill owns outcome measurement and quality gates. Adjacent skills own specialized evaluator design and control-loop governance:
+本技能负责结果测量和质量门禁。相邻技能负责专门的评估器设计和控制循环治理：
 
-- `advanced-evaluation`: LLM-as-judge prompt design, pairwise comparison, calibration, and bias mitigation.
-- `harness-engineering`: locked evaluators, editable surfaces, rollback, and human approval boundaries.
-- `context-degradation`: detecting and measuring degradation patterns.
-- `context-optimization`: measuring token, cost, latency, and quality effects of optimizations.
-- `multi-agent-patterns`: evaluating coordination quality and parallelization trade-offs.
-- `tool-design`: evaluating tool selection and recovery effectiveness.
-- `memory-systems`: evaluating memory retrieval and retention quality.
+- `advanced-evaluation`：LLM 判官提示词设计、成对比较、校准和偏差缓解。
+- `harness-engineering`：锁定的评估器、可编辑界面、回滚和人工审批边界。
+- `context-degradation`：检测并衡量退化模式。
+- `context-optimization`：衡量优化对 Token、成本、延迟和质量的影响。
+- `multi-agent-patterns`：评估协作质量和并行化取舍。
+- `tool-design`：评估工具选择和故障恢复效果。
+- `memory-systems`：评估记忆检索和保留质量。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Metrics Reference](./references/metrics.md) - Read when: designing specific evaluation metrics, choosing scoring scales, or implementing weighted rubric calculations
+内部参考：
+- [指标参考](./references/metrics.md) - 在以下情况下阅读：设计具体评估指标、选择评分量表或实现加权评分标准计算。
 
-Internal skills:
-- All other skills connect to evaluation for quality measurement
+内部技能：
+- 其他所有技能都与质量测量方面的评估工作相关。
 
-External resources:
-- LLM evaluation benchmarks - Read when: selecting or building benchmark suites for agent comparison
-- Agent evaluation research papers - Read when: adopting new evaluation methodologies or validating current approach
-- Production monitoring practices - Read when: setting up alerting, dashboards, or sampling strategies for live systems
+外部资源：
+- LLM 评估基准 - 在以下情况下阅读：为智能体比较选择或构建基准套件。
+- 智能体评估研究论文 - 在以下情况下阅读：采用新的评估方法或验证现有方法。
+- 生产监控实践 - 在以下情况下阅读：为线上系统设置告警、仪表板或抽样策略。
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 1.2.0
+**创建时间**：2025-12-20
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：1.2.0

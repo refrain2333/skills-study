@@ -1,132 +1,93 @@
 ---
 name: context-engineering-collection
-description: "A comprehensive collection of Agent Skills for context engineering, harness engineering, multi-agent architectures, and production agent systems. Use when building, optimizing, evaluating, or debugging agent systems that require effective context management and reliable operating loops."
+description: "介绍上下文工程、运行框架、多智能体架构和智能体评估，适用于构建、优化、评估或排查需要有效管理上下文与可靠运行流程的智能体系统。"
 ---
 
-# Agent Skills for Context Engineering
+# 智能体上下文工程技能集
 
-This collection provides structured guidance for building production-grade AI agent systems through effective context engineering.
+本集合为构建可靠的 AI 智能体提供关于上下文工程的系统指导。
 
-## When to Activate
+## 何时启用
 
-Activate these skills when:
-- Building new agent systems from scratch
-- Optimizing existing agent performance
-- Debugging context-related failures
-- Designing multi-agent architectures
-- Creating or evaluating tools for agents
-- Implementing memory and persistence layers
-- Designing autonomous research or evaluation harnesses
+遇到以下任务时，可以查阅本集合中的相关技能：
 
-## Skill Map
+- 从头构建智能体系统
+- 优化现有智能体的表现
+- 排查上下文相关故障
+- 设计多智能体架构
+- 创建或评估智能体工具
+- 实现记忆与持久化机制
+- 设计自主研究或评估运行框架
 
-### Foundational Context Engineering
+## 技能地图
 
-**Understanding Context Fundamentals**
-Context is not just prompt text—it is the complete state available to the language model at inference time, including system instructions, tool definitions, retrieved documents, message history, and tool outputs. Effective context engineering means understanding what information truly matters for the task at hand and curating that information for maximum signal-to-noise ratio.
+### 上下文基础
 
-**Recognizing Context Degradation**
-Language models exhibit predictable degradation patterns as context grows: the "lost-in-middle" phenomenon where information in the center of context receives less attention; U-shaped attention curves that prioritize beginning and end; context poisoning when errors compound; and context distraction when irrelevant information overwhelms relevant content.
+**上下文基础知识**：上下文不仅是提示词，而是模型推理时能够访问的全部状态。先厘清任务需要哪些信息，再组织上下文。
 
-### Architectural Patterns
+**上下文退化**：了解上下文变长时可能出现的信息位置偏差、错误累积、无关信息干扰及互相冲突。
 
-**Multi-Agent Coordination**
-Production multi-agent systems converge on three dominant patterns: supervisor/orchestrator architectures with centralized control, peer-to-peer swarm architectures for flexible handoffs, and hierarchical structures for complex task decomposition. The critical insight is that sub-agents exist primarily to isolate context rather than to simulate organizational roles.
+**上下文压缩**：学习怎样缩短长期会话，同时保留文件、决定和后续步骤等有用状态。
 
-**Long-Horizon Prompting**
-Long-running autonomous agents and parallel orchestrations succeed or fail on the launch prompt. Pseudo-formal task briefs specify success predicates, non-counting outcomes, persistence rules with audit-gated return conditions, effort floors, diversity policies for parallel portfolios, and contamination guards, applying the discipline of formal verification linguistically to problems with no machine-checkable success condition.
+### 架构模式
 
-**Memory System Design**
-Memory architectures range from simple scratchpads to sophisticated temporal knowledge graphs. Vector RAG provides semantic retrieval but loses relationship information. Knowledge graphs preserve structure but require more engineering investment. The file-system-as-memory pattern enables just-in-time context loading without stuffing context windows.
+**多智能体协作**：比较监督者/编排者、点对点群体和分层架构；重点考虑上下文隔离，而不只给智能体分配不同角色。
 
-**Filesystem-Based Context**
-The filesystem provides a single interface for storing, retrieving, and updating effectively unlimited context. Key patterns include scratch pads for tool output offloading, plan persistence for long-horizon tasks, sub-agent communication via shared files, and dynamic skill loading. Agents use `ls`, `glob`, `grep`, and `read_file` for targeted context discovery, often outperforming semantic search for structural queries.
+**长任务提示**：为长时间或并行运行的任务，明确成功条件、不计入成功的情况、停止规则、审核节点和工作多样性。
 
-**Hosted Agent Infrastructure**
-Background coding agents run in remote sandboxed environments rather than on local machines. Key patterns include pre-built environment images refreshed on regular cadence, warm sandbox pools for instant session starts, filesystem snapshots for session persistence, and multiplayer support for collaborative agent sessions. Critical optimizations include allowing file reads before git sync completes (blocking only writes), predictive sandbox warming when users start typing, and self-spawning agents for parallel task execution.
+**记忆系统**：比较临时记录、向量检索和知识图谱等方案，以及它们在信息检索、关系保留和工程复杂度上的取舍。
 
-**Tool Design Principles**
-Tools are contracts between deterministic systems and non-deterministic agents. Effective tool design follows the consolidation principle (prefer single comprehensive tools over multiple narrow ones), returns contextual information in errors, supports response format options for token efficiency, and uses clear namespacing.
+**文件系统上下文**：使用文件保存临时输出、计划和共享状态，支持按需加载与智能体间协作。
 
-### Operational Excellence
+**托管智能体**：了解远程沙箱、预构建运行环境、会话持久化和多人协作等后台编程智能体基础设施。
 
-**Context Compression**
-When agent sessions exhaust memory, compression becomes mandatory. The correct optimization target is tokens-per-task, not tokens-per-request. Structured summarization with explicit sections for files, decisions, and next steps preserves more useful information than aggressive compression. Artifact trail integrity remains the weakest dimension across all compression methods.
+**工具设计**：把工具视为确定性程序与非确定性智能体之间的接口，重点关注工具合并、错误信息、输出格式和命名。
 
-**Context Optimization**
-Techniques include compaction (summarizing context near limits), observation masking (replacing verbose tool outputs with references), prefix caching (reusing KV blocks across requests), and strategic context partitioning (splitting work across sub-agents with isolated contexts).
+### 运行与评估
 
-**Self-Managed Context**
-The model, not the harness, decides what stays in its live context: the editable region is exposed as a file the model rewrites with code tools and re-parsed each turn. The harness keeps the invariants (pinned system and task prefix, role folding, edit gate, receipts, deterministic budget readouts, rollback on overflow). Edit cost scales with the text after the edit under prefix caching, so edits are batched and placed with the tail in mind; strategy can be steered by instruction, evolved as a skill, or trained with a success-gated efficiency reward.
+**上下文优化**：认识上下文压缩、观察结果遮蔽、缓存和分区等方法。
 
-**Latent Briefing (KV Memory Sharing)**
-Orchestrator-worker systems can compound tokens when supervisors accumulate long trajectories but workers see only narrow text slices. Latent Briefing compacts the orchestrator trajectory in the worker model's KV cache using task-guided attention (Attention Matching-style compaction) so workers receive relevant latent state without full-text replay when the stack exposes worker KV state and the models are compatible.
+**模型自管上下文**：了解可编辑上下文文件，以及模型读写上下文时仍须由运行框架维护的边界。
 
-**Evaluation Frameworks**
-Production agent evaluation requires deterministic checks and multi-dimensional rubrics covering factual accuracy, completeness, tool efficiency, and process quality. Use model judges only after structure, evidence, and rubric math are valid; route judge design, pairwise comparison, and bias mitigation to Advanced Evaluation.
+**潜在简报**：当运行栈暴露兼容的工作智能体 KV 状态时，研究如何把协调者轨迹中的相关信息压缩给工作智能体。
 
-**Harness Engineering**
-Reliable autonomous agents need explicit operating loops around the model: locked metrics, editable surfaces, durable logs, novelty checks, rollback rules, and human approval boundaries. Harnesses prevent agents from weakening the evaluator, losing state across compaction, or turning ambiguous goals into unreviewable changes.
+**智能体评估**：先建立确定性检查和多维评分标准，再评估准确性、完整性、工具效率和执行过程。
 
-**Self-Improvement Loops**
-When the harness itself becomes the optimization target, a different discipline applies: recursive self-improvement, meta-harness search, failure-driven bounded self-edits, evolutionary scaffold search, and context mechanism evolution. The controlling constraints are empirical two-split acceptance gates, filesystem experience archives with raw traces, runtime-enforced constraints outside every editable surface, and diversity preservation to prevent collapse.
+**高级评估**：深入学习大语言模型评分、两两比较、评分标准生成和偏差控制。
 
-### Development Methodology
+**运行框架工程**：为智能体设计日志、指标、变化审核和回退机制，避免运行过程中丢失状态或削弱评估要求。
 
-**Project Development**
-Effective LLM project development begins with task-model fit analysis: validating through manual prototyping that a task is well-suited for LLM processing before building automation. Production pipelines follow staged, idempotent architectures (acquire, prepare, process, parse, render) with file system state management for debugging and caching. Structured output design with explicit format specifications enables reliable parsing. Start with minimal architecture and add complexity only when proven necessary.
+**自我改进循环**：研究运行框架如何在边界和验收条件明确的情况下优化自身。
 
-### Cognitive Architecture
+### 项目方法
 
-**BDI Mental States**
-Belief-desire-intention modeling provides a formal way to translate structured external context into agent mental states. Use it for rational agency, explainability, and systems that need auditable links between beliefs, goals, and chosen actions.
+**项目开发**：先验证任务是否适合 LLM，再从原型构建分阶段、可追踪的处理流程。
 
-## Core Concepts
+### 认知架构
 
-The collection is organized around four core themes. First, context fundamentals establish what context is, how attention mechanisms work, and why context quality matters more than quantity. Second, architectural patterns cover the structures and coordination mechanisms that enable effective agent systems. Third, operational excellence addresses optimization, evaluation, and harness reliability. Fourth, development methodology and cognitive architecture cover project execution and formal mental-state modeling.
+**BDI 心智状态**：用信念、愿望和意图表示智能体状态，适合需要解释和追踪决策过程的系统。
 
-## Practical Guidance
+## 核心概念
 
-Each skill can be used independently or in combination. Start with fundamentals to establish context management mental models. Branch into architectural patterns based on your system requirements. Reference operational skills when optimizing production systems.
+本集合围绕四个方面组织内容：理解上下文与注意力、设计智能体架构、优化和评估运行系统，以及开发 LLM 项目和表达智能体的认知状态。
 
-The skills are platform-agnostic and work with Claude Code, Cursor, or any agent framework that supports custom instructions or skill-like constructs.
+## 实践建议
 
-## Integration
+每个技能可以单独使用，也可按任务组合。初学时先读上下文基础，再按需要选择架构或运行类技能。
 
-This collection integrates with itself—skills reference each other and build on shared concepts. The fundamentals skill provides context for all other skills. Architectural skills (multi-agent, memory, tools) can be combined for complex systems. Operational skills (optimization, evaluation) apply to any system built using the foundational and architectural skills.
+## 集成关系
 
-## References
+上下文基础知识支撑其他技能。多智能体、记忆系统和工具设计可按项目需求组合；上下文优化与评估适用于采用这些架构的系统。
 
-Internal skills in this collection:
-- [context-fundamentals](skills/context-fundamentals/SKILL.md)
-- [context-degradation](skills/context-degradation/SKILL.md)
-- [context-compression](skills/context-compression/SKILL.md)
-- [multi-agent-patterns](skills/multi-agent-patterns/SKILL.md)
-- [long-horizon-prompting](skills/long-horizon-prompting/SKILL.md)
-- [memory-systems](skills/memory-systems/SKILL.md)
-- [tool-design](skills/tool-design/SKILL.md)
-- [filesystem-context](skills/filesystem-context/SKILL.md)
-- [hosted-agents](skills/hosted-agents/SKILL.md)
-- [context-optimization](skills/context-optimization/SKILL.md)
-- [self-managed-context](skills/self-managed-context/SKILL.md)
-- [latent-briefing](skills/latent-briefing/SKILL.md)
-- [evaluation](skills/evaluation/SKILL.md)
-- [advanced-evaluation](skills/advanced-evaluation/SKILL.md)
-- [harness-engineering](skills/harness-engineering/SKILL.md)
-- [self-improvement-loops](skills/self-improvement-loops/SKILL.md)
-- [project-development](skills/project-development/SKILL.md)
-- [bdi-mental-states](skills/bdi-mental-states/SKILL.md)
+这些技能强调可迁移原则，适用于支持自定义指令或技能机制的智能体平台。
 
-External resources on context engineering:
-- Research on attention mechanisms and context window limitations
-- Production experience from leading AI labs on agent system design
-- Framework documentation for LangGraph, AutoGen, and CrewAI
+## 参考
 
----
+十八项技能的中文正文和目录均可从[技能目录](README.md#技能目录)进入。`SKILL.md` 是每项技能唯一的规范文件。
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2026-10-01
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 2.6.0
+**创建时间**：2025-12-20
+**最后更新**：2026-10-01
+**作者**：上下文工程技能集贡献者
+**版本**：2.6.0

@@ -1,33 +1,33 @@
-# Infrastructure Patterns for Hosted Agents
+# 托管智能体基础设施模式
 
-This reference provides detailed implementation patterns for building hosted agent infrastructure. These patterns are derived from production systems at scale.
+本文介绍构建托管智能体基础设施的详细实现模式，内容参考了大规模生产系统。
 
-## Sandbox Architecture
+## 沙箱架构
 
-### Modal Integration Pattern
+### Modal 集成模式
 
-Modal provides the sandbox infrastructure with near-instant startup and filesystem snapshots.
+Modal 提供沙箱基础设施，支持近乎即时启动和文件系统快照。
 
 ```python
 import modal
 
-# Define the base image with all dependencies
+# 定义包含全部依赖的基础镜像
 image = modal.Image.debian_slim().pip_install([
     "opencode",
     "gitpython",
     "psycopg2-binary",
 ])
 
-# Create the app
+# 创建应用
 app = modal.App("coding-agent")
 
-# Sandbox class with snapshot support
+# 支持快照的沙箱类
 @app.cls(image=image, timeout=3600)
 class AgentSandbox:
     def __init__(self, repo_url: str, snapshot_id: str = None):
         self.repo_url = repo_url
         self.snapshot_id = snapshot_id
-    
+
     @modal.enter()
     def setup(self):
         if self.snapshot_id:
@@ -36,33 +36,33 @@ class AgentSandbox:
         else:
             # Fresh setup from image
             self._clone_and_setup()
-    
+
     def _clone_and_setup(self):
         """Clone repo and run initial setup."""
         token = self._get_github_app_token()
         os.system(f"git clone https://x-access-token:{token}@github.com/{self.repo_url}")
         os.system("npm install")
         os.system("npm run build")
-    
+
     @modal.method()
     def execute_prompt(self, prompt: str, user_identity: dict) -> dict:
         """Execute a prompt in the sandbox."""
         # Update git config for this user
         os.system(f'git config user.name "{user_identity["name"]}"')
         os.system(f'git config user.email "{user_identity["email"]}"')
-        
+
         # Run the agent
         result = self.agent.run(prompt)
-        
+
         return {
             "result": result,
             "snapshot_id": modal.Sandbox.snapshot()
         }
 ```
 
-### Image Build Pipeline
+### 镜像构建流程
 
-Build images on a schedule to keep them fresh:
+按计划构建镜像，保持环境更新：
 
 ```python
 import schedule
@@ -73,7 +73,7 @@ class ImageBuilder:
     def __init__(self, repositories: list[str]):
         self.repositories = repositories
         self.images = {}
-    
+
     def build_all_images(self):
         """Build images for all repositories."""
         for repo in self.repositories:
@@ -87,43 +87,43 @@ class ImageBuilder:
             except Exception as e:
                 # Log but continue with other repos
                 log.error(f"Failed to build image for {repo}: {e}")
-    
+
     def _build_image(self, repo: str) -> str:
         """Build a single repository image."""
         sandbox = modal.Sandbox.create()
-        
+
         # Clone with app token
         token = get_app_installation_token(repo)
         sandbox.exec(f"git clone https://x-access-token:{token}@github.com/{repo} /workspace")
-        
+
         # Install dependencies
         sandbox.exec("cd /workspace && npm install")
-        
+
         # Run build
         sandbox.exec("cd /workspace && npm run build")
-        
+
         # Warm caches
         sandbox.exec("cd /workspace && npm run dev &")
         time.sleep(5)  # Let dev server start
         sandbox.exec("cd /workspace && npm test -- --run")
-        
+
         # Create snapshot
         return sandbox.snapshot()
-    
+
     def get_latest_image(self, repo: str) -> str:
         """Get the most recent image for a repository."""
         if repo not in self.images:
             raise ValueError(f"No image available for {repo}")
         return self.images[repo]["image"]
 
-# Schedule builds every 30 minutes
+# 每 30 分钟安排一次构建
 builder = ImageBuilder(["org/frontend", "org/backend", "org/shared"])
 schedule.every(30).minutes.do(builder.build_all_images)
 ```
 
-### Warm Pool Management
+### 预热池管理
 
-Maintain pre-warmed sandboxes for instant session starts:
+维护预热沙箱，使会话能够即时启动：
 
 ```python
 from collections import defaultdict
@@ -143,49 +143,49 @@ class WarmPoolManager:
         self.target_size = target_pool_size
         self.pools = defaultdict(list)  # repo -> [WarmSandbox]
         self.max_age = timedelta(minutes=25)  # Expire before next image build
-    
+
     def get_warm_sandbox(self, repo: str) -> WarmSandbox | None:
         """Get a pre-warmed sandbox if available."""
         pool = self.pools[repo]
-        
+
         for sandbox in pool:
             if not sandbox.is_claimed and self._is_valid(sandbox):
                 sandbox.is_claimed = True
                 return sandbox
-        
+
         return None
-    
+
     def _is_valid(self, sandbox: WarmSandbox) -> bool:
         """Check if sandbox is still valid."""
         age = datetime.utcnow() - sandbox.created_at
         current_image = self.image_builder.get_latest_image(sandbox.repo)
-        
+
         return (
             age < self.max_age and
             sandbox.image_version == current_image
         )
-    
+
     def maintain_pool(self, repo: str):
         """Ensure pool has target number of warm sandboxes."""
         # Remove expired sandboxes
         self.pools[repo] = [s for s in self.pools[repo] if self._is_valid(s)]
-        
+
         # Add new sandboxes to reach target
         current_count = len([s for s in self.pools[repo] if not s.is_claimed])
         needed = self.target_size - current_count
-        
+
         for _ in range(needed):
             sandbox = self._create_warm_sandbox(repo)
             self.pools[repo].append(sandbox)
-    
+
     def _create_warm_sandbox(self, repo: str) -> WarmSandbox:
         """Create a new warm sandbox from latest image."""
         image = self.image_builder.get_latest_image(repo)
         sandbox_id = modal.Sandbox.create(image=image)
-        
+
         # Sync to latest (runs in background)
         self._sync_to_latest(sandbox_id, repo)
-        
+
         return WarmSandbox(
             sandbox_id=sandbox_id,
             repo=repo,
@@ -194,11 +194,11 @@ class WarmPoolManager:
         )
 ```
 
-## API Layer Patterns
+## API 层模式
 
-### Cloudflare Durable Objects for Session State
+### 使用 Cloudflare Durable Objects 保存会话状态
 
-Each session gets its own Durable Object with isolated SQLite:
+为每个会话分配独立的 Durable Object 和隔离的 SQLite：
 
 ```typescript
 // Session Durable Object
@@ -223,7 +223,7 @@ export class SessionDO implements DurableObject {
         author_name TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
-      
+
       CREATE TABLE IF NOT EXISTS artifacts (
         id INTEGER PRIMARY KEY,
         type TEXT NOT NULL,
@@ -231,7 +231,7 @@ export class SessionDO implements DurableObject {
         content TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
-      
+
       CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY,
         type TEXT NOT NULL,
@@ -305,9 +305,9 @@ export class SessionDO implements DurableObject {
 }
 ```
 
-### Real-Time Event Streaming
+### 实时事件流
 
-Stream events from sandbox to all connected clients:
+将沙箱事件流式传送到所有已连接客户端：
 
 ```typescript
 class EventStream {
@@ -333,9 +333,9 @@ class EventStream {
 }
 ```
 
-## Client Integration Patterns
+## 客户端集成模式
 
-### Slack Bot with Repository Classification
+### 根据仓库分类的 Slack 机器人
 
 ```python
 from slack_bolt import App
@@ -343,7 +343,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 app = App(token=os.environ["SLACK_BOT_TOKEN"])
 
-# Repository descriptions for classification
+# 用于仓库分类的说明
 REPO_DESCRIPTIONS = [
     {
         "name": "frontend-monorepo",
@@ -380,7 +380,7 @@ Return ONLY the repository name, or "unknown" if unclear."""
         messages=[{"role": "user", "content": prompt}],
         max_tokens=50
     )
-    
+
     return response.choices[0].message.content.strip()
 
 @app.event("app_mention")
@@ -389,7 +389,7 @@ async def handle_mention(event, say, client):
     channel = event["channel"]
     message = event["text"]
     thread_ts = event.get("thread_ts", event["ts"])
-    
+
     # Get thread context if in a thread
     thread_messages = []
     if "thread_ts" in event:
@@ -398,31 +398,31 @@ async def handle_mention(event, say, client):
             ts=thread_ts
         )
         thread_messages = [m["text"] for m in result["messages"]]
-    
+
     # Get channel info for context
     channel_info = await client.conversations_info(channel=channel)
     channel_name = channel_info["channel"]["name"]
-    
+
     # Classify repository
     repo = await classify_repository(message, channel_name, thread_messages)
-    
+
     if repo == "unknown":
         await say(
             text="I'm not sure which repository you're referring to. Could you specify?",
             thread_ts=thread_ts
         )
         return
-    
+
     # Start session and process
     session = await start_session(repo, event["user"])
-    
+
     await say(
         text=f":robot_face: Starting work in `{repo}`...",
         thread_ts=thread_ts
     )
-    
+
     result = await session.process(message)
-    
+
     # Post result with Block Kit formatting
     await say(
         blocks=format_result_blocks(result),
@@ -430,9 +430,9 @@ async def handle_mention(event, say, client):
     )
 ```
 
-### Chrome Extension DOM Extraction
+### Chrome 扩展提取网页结构
 
-Extract DOM structure instead of sending screenshots:
+提取 DOM 结构，而不是发送屏幕截图：
 
 ```typescript
 // content-script.ts
@@ -494,11 +494,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 ```
 
-## Multiplayer Implementation
+## 多人协作实现
 
-### Authorship Tracking
+### 作者身份追踪
 
-Track which user made each change:
+追踪每项变更由哪个用户作出：
 
 ```python
 @dataclass
@@ -520,12 +520,12 @@ class MultiplayerSession:
         self.session_id = session_id
         self.participants: dict[str, Author] = {}
         self.prompt_queue: list[PromptContext] = []
-    
+
     def add_participant(self, author: Author):
         """Add a participant to the session."""
         self.participants[author.id] = author
         self.broadcast_event("participant_joined", author)
-    
+
     async def process_prompt(self, prompt: PromptContext):
         """Process prompt with author attribution."""
         # Update git config for this author
@@ -535,19 +535,19 @@ class MultiplayerSession:
         await self.sandbox.exec(
             f'git config user.email "{prompt.author.email}"'
         )
-        
+
         # Run agent
         result = await self.agent.run(prompt.content)
-        
+
         # If changes were made, create PR with author's token
         if result.has_changes:
             await self.create_pr(
                 branch=result.branch,
                 author=prompt.author
             )
-        
+
         return result
-    
+
     async def create_pr(self, branch: str, author: Author):
         """Create PR using the author's GitHub token."""
         async with aiohttp.ClientSession() as session:
@@ -555,7 +555,7 @@ class MultiplayerSession:
                 "Authorization": f"Bearer {author.github_token}",
                 "Accept": "application/vnd.github.v3+json"
             }
-            
+
             await session.post(
                 f"https://api.github.com/repos/{self.repo}/pulls",
                 headers=headers,
@@ -568,9 +568,9 @@ class MultiplayerSession:
             )
 ```
 
-## Metrics and Monitoring
+## 指标与监控
 
-### Key Metrics to Track
+### 需要追踪的关键指标
 
 ```python
 from dataclasses import dataclass
@@ -586,7 +586,7 @@ class SessionMetrics:
     pr_merged: bool
     prompts_count: int
     participants_count: int
-    
+
     @property
     def time_to_first_token(self) -> timedelta | None:
         if self.first_token_at:
@@ -597,10 +597,10 @@ class MetricsAggregator:
     def get_adoption_metrics(self, period: timedelta) -> dict:
         """Get adoption metrics for a time period."""
         sessions = self.get_sessions_in_period(period)
-        
+
         total_prs = sum(1 for s in sessions if s.pr_created)
         merged_prs = sum(1 for s in sessions if s.pr_merged)
-        
+
         return {
             "total_sessions": len(sessions),
             "prs_created": total_prs,
@@ -612,16 +612,16 @@ class MetricsAggregator:
                 1 for s in sessions if s.participants_count > 1
             )
         }
-    
+
     def get_repository_metrics(self) -> dict[str, dict]:
         """Get metrics broken down by repository."""
         metrics = {}
-        
+
         for repo in self.repositories:
             repo_sessions = self.get_sessions_for_repo(repo)
             total_prs = self.get_total_prs(repo)
             agent_prs = sum(1 for s in repo_sessions if s.pr_merged)
-            
+
             metrics[repo] = {
                 "agent_pr_percentage": agent_prs / total_prs * 100,
                 "session_count": len(repo_sessions),
@@ -629,18 +629,18 @@ class MetricsAggregator:
                     s.prompts_count for s in repo_sessions
                 ) / len(repo_sessions)
             }
-        
+
         return metrics
 ```
 
-## Security Considerations
+## 安全注意事项
 
-### Sandbox Isolation
+### 沙箱隔离
 
 ```python
 class SandboxSecurityConfig:
     """Security configuration for sandboxes."""
-    
+
     # Network restrictions
     allowed_hosts = [
         "github.com",
@@ -648,19 +648,19 @@ class SandboxSecurityConfig:
         "registry.npmjs.org",
         "pypi.org",
     ]
-    
+
     # Resource limits
     max_memory_mb = 4096
     max_cpu_cores = 2
     max_disk_gb = 10
     max_runtime_hours = 4
-    
+
     # Secrets handling
     secrets_to_inject = [
         "GITHUB_APP_TOKEN",
         "NPM_TOKEN",
     ]
-    
+
     # Blocked operations
     blocked_commands = [
         "curl",  # Use fetch tools instead
@@ -669,12 +669,12 @@ class SandboxSecurityConfig:
     ]
 ```
 
-### Token Handling
+### 令牌处理
 
 ```python
 class TokenManager:
     """Manage tokens for GitHub operations."""
-    
+
     def get_app_installation_token(self, repo: str) -> str:
         """Get short-lived token for repo access."""
         # Token expires in 1 hour
@@ -682,7 +682,7 @@ class TokenManager:
             installation_id=self.get_installation_id(repo),
             permissions={"contents": "write", "pull_requests": "write"}
         )
-    
+
     def get_user_token(self, user_id: str) -> str:
         """Get user's OAuth token for PR creation."""
         # Stored encrypted, decrypted at runtime
@@ -690,11 +690,11 @@ class TokenManager:
         return self.decrypt(encrypted)
 ```
 
-## References
+## 参考资料
 
-- [Modal Documentation](https://modal.com/docs)
-- [Cloudflare Durable Objects](https://developers.cloudflare.com/durable-objects/)
-- [Cloudflare Agents SDK](https://developers.cloudflare.com/agents/)
-- [GitHub Apps Authentication](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app)
-- [Slack Bolt for Python](https://slack.dev/bolt-python/)
-- [Chrome Extension APIs](https://developer.chrome.com/docs/extensions/)
+- [Modal 文档](https://modal.com/docs)
+- [Cloudflare Durable Objects 文档](https://developers.cloudflare.com/durable-objects/)
+- [Cloudflare Agents SDK 文档](https://developers.cloudflare.com/agents/)
+- [GitHub 应用身份验证文档](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app)
+- [Slack Bolt for Python 文档](https://slack.dev/bolt-python/)
+- [Chrome 扩展 API 文档](https://developer.chrome.com/docs/extensions/)

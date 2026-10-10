@@ -1,5 +1,5 @@
-# Researcher Benchmarks
+# 研究运行框架基准
 
-Benchmarks test whether the research-to-skill harness resists common failure modes. Deterministic checks always run first. Model-judged evaluation can be added later as advisory evidence, but it must not override deterministic failures.
+这些基准用于检查研究转技能运行框架能否抵御常见失败模式。始终先运行确定性检查。之后可以增加模型评审作为参考证据，但它不得覆盖确定性检查失败。
 
-Benchmark results may be appended to `researcher/reports/benchmark-history.jsonl` for longitudinal tracking.
+基准结果可以追加到 `researcher/reports/benchmark-history.jsonl`，用于长期趋势跟踪。

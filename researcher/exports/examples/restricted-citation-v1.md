@@ -1,12 +1,12 @@
-# Restricted citation projection example
+# 受限引用投影示例
 
-The adjacent generated staging tree proves that a synthetic `restricted_source` record can export allowlisted citation metadata while excluding its raw `body`. `export-manifest.json` contains output and transformation digests but no source path or private input digest.
+旁边的生成暂存目录证明：合成的 `restricted_source` 记录可以导出白名单内的引用元数据，同时排除原始 `body`。`export-manifest.json` 包含输出和转换摘要，不包含来源路径或私有输入摘要。
 
-Validate with:
+验证命令：
 
 ```bash
 python researcher/scripts/validate_export.py check \
   --staging-dir researcher/exports/examples/restricted-citation-v1
 ```
 
-The example source is intentionally synthetic and committed under `researcher/fixtures/export/`; real restricted bodies do not belong in this repository.
+示例来源是合成数据，已提交在 `researcher/fixtures/export/` 下；真实受限正文不得进入本仓库。

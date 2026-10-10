@@ -1,110 +1,108 @@
-# Vendor Long-Horizon Prompting Doctrine
+# 厂商关于长时程提示词的建议
 
-Dated extracts from OpenAI and Anthropic guidance relevant to long-running and parallel agent prompting. Compiled 2026-07-11 from primary sources; vendor guidance is high-volatility, so re-check the linked pages before relying on model-specific details. Where a page is undated, the dating context is given.
+本文摘录 OpenAI 与 Anthropic 对长期运行和并行智能体提示词的指导。资料截至 2026-07-11 汇总自一手来源。厂商文档变化较快，依赖特定模型细节前应重新查看链接页面。页面未标日期时，会说明用于判断时间的上下文。
 
 ## OpenAI
 
-### GPT-5 prompting guide (OpenAI Cookbook, ~August 2025)
+### GPT-5 提示指南（OpenAI Cookbook，约 2025 年 8 月）
 
-`https://developers.openai.com/cookbook/examples/gpt-5/gpt-5_prompting_guide`
+[查看指南](https://developers.openai.com/cookbook/examples/gpt-5/gpt-5_prompting_guide)
 
-- Canonical persistence block: "You are an agent - please keep going until the user's query is completely resolved, before ending your turn"; "Only terminate your turn when you are sure that the problem is solved"; "Never stop or hand back to the user when you encounter uncertainty - research or deduce the most reasonable approach and continue."
-- Pair persistence with explicit stop conditions: "Clearly state the stop conditions of the agentic tasks, outline safe versus unsafe actions, and define when, if ever, it's acceptable for the model to hand back to the user."
-- Risk-tiered autonomy thresholds per tool class (low uncertainty threshold before asking the user for payment tools, extremely high for search tools).
-- Self-constructed rubrics: ask the model to build a five-to-seven-category excellence rubric internally and iterate until the response hits top marks in every category.
-- `reasoning_effort` as the primary autonomy dial; tool preambles (upfront plan plus progress updates) matter more the longer the rollout.
+- **持续执行**：要求智能体在用户问题完全解决前继续工作，只能在确认问题已解决后结束；遇到不确定时先研究或推导合理做法并继续。
+- **持续执行必须配套停止条件**：明确智能体任务的停止条件、安全与不安全操作，以及模型在什么情况下可以把任务交回用户。
+- **按风险设置自主操作门槛**：不同工具使用不同的不确定性门槛，例如涉及付款时更早询问用户，搜索工具则可以接受较高的不确定性。
+- **自行构造评分规则**：要求模型内部建立包含五至七类标准的优秀质量量表，并反复改进，直到各项均达到高标准。
+- `reasoning_effort` 是调整自主推理投入的主要参数；任务越长，工具调用前的计划和执行中的进度说明越重要。
 
-### GPT-5.1 and GPT-5.2 prompting guides (November 2025, ~December 2025)
+### GPT-5.1 与 GPT-5.2 提示指南（2025 年 11 月、约 12 月）
 
-`https://developers.openai.com/cookbook/examples/gpt-5/gpt-5-1_prompting_guide`, `https://developers.openai.com/cookbook/examples/gpt-5/gpt-5-2_prompting_guide`
+[GPT-5.1 指南](https://developers.openai.com/cookbook/examples/gpt-5/gpt-5-1_prompting_guide)；[GPT-5.2 指南](https://developers.openai.com/cookbook/examples/gpt-5/gpt-5-2_prompting_guide)
 
-- Named `<solution_persistence>` block: "Treat yourself as an autonomous agent... persist until the task is fully handled end-to-end; do not stop at partial fixes or analysis."
-- GPT-5.2 additions: clamp update verbosity, make scope discipline explicit ("Do not expand the task beyond what the user asked"), a `<high_risk_self_check>` re-scan for unstated assumptions and ungrounded claims before finalizing, and a research-agent stop rule of the form "Only stop when all are true: ..." with a completeness pass.
-- Compaction endpoint guidance for long runs: compact after major milestones, keep prompts functionally identical when resuming to avoid behavior drift.
+- 增加 `<solution_persistence>` 章节：把自己视为自主智能体，端到端持续处理任务，不要只做到部分修复或分析就停止。
+- GPT-5.2 增加了控制进度说明篇幅、明确限制任务范围（不要扩展用户要求）、结束前执行 `<high_risk_self_check>` 以复查未说明的假设和无依据主张，以及为研究智能体规定“只有以下条件全部满足时才停止”的完整性检查。
+- 长运行压缩指导：在重要里程碑后压缩状态；恢复时尽量保持提示词功能一致，避免行为漂移。
 
-### Codex prompting guide (covers GPT-5.1-Codex-Max through gpt-5.3-codex, early-mid 2026)
+### Codex 提示指南（涵盖 2026 年上半年 GPT-5.1-Codex-Max 至 gpt-5.3-codex）
 
-`https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide`
+[查看指南](https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide)
 
-- Codex-family counter-rule: remove prompting for upfront plans and preambles; on these models it causes premature stopping (the `phase` API parameter exists to fix this).
-- Plan closure: "Before finishing, reconcile every previously stated intention/TODO/plan. Mark each as Done, Blocked, or Cancelled. Do not end with in_progress/pending items." Promise discipline: do not commit to work you will not do now.
-- Default expectation: deliver working artifacts, not plans; make reasonable assumptions and complete a working version.
+- **Codex 系列的反向规则**：不要求这些模型先写计划或开场说明，因为这可能导致过早停止；`phase` API 参数用于解决相关问题。
+- **计划收尾**：结束前逐项核对之前说过的意图、待办和计划，并标为完成、受阻或取消；不要把状态留在进行中或待处理。不要承诺现在不会完成的工作。
+- **默认交付预期**：交付可用产物，而不是只给计划；作出合理假设并完成可工作的版本。
 
-### GPT-5.5 prompt guidance (April 2026) and GPT-5.6 Sol guidance (June-July 2026)
+### GPT-5.5 与 GPT-5.6 Sol 提示指南（2026 年 4 月及 6—7 月）
 
-`https://developers.openai.com/api/docs/guides/prompt-guidance`, `https://developers.openai.com/api/docs/guides/prompt-guidance-gpt-5p6`
+[GPT-5.5 指南](https://developers.openai.com/api/docs/guides/prompt-guidance)；[GPT-5.6 指南](https://developers.openai.com/api/docs/guides/prompt-guidance-gpt-5p6)
 
-- Doctrinal shift to outcome-first, lean prompts: "Begin migration with a fresh baseline instead of carrying over every instruction from an older prompt stack. Start with the smallest prompt that preserves the product contract." Reserve ALWAYS/NEVER for true invariants; prefer decision rules for judgment calls.
-- GPT-5.6 internal coding-agent evaluations: leaner system prompts improved scores by roughly 10-15% while reducing total tokens by 41-66% (vendor-reported, directional).
-- Core formula: "prompts define the outcome, important constraints, available evidence, and completion bar, then leave room for the model to choose an efficient path."
-- Stop rules as first-class prompt content; retrieval budgets framed as stopping rules for search.
-- "Before increasing reasoning effort, check whether the prompt is missing a success criterion, dependency rule, tool-routing rule, or verification loop."
-- Layer-of-work discipline for long runs: distinguish research, design, implementation, review, and external coordination so the model does not silently drift between layers.
+- 指导方式转向以结果为先、保持提示词精简：迁移时先建立新的基线，而不是沿用旧提示词栈中的每一条指令；用最小提示词保留产品契约。只有真正的不变量才使用“始终”或“绝不”，需要判断的情况优先写决策规则。
+- 厂商报告称，GPT-5.6 内部编程智能体评估中，精简系统提示词使分数提高约 10%—15%，总令牌数减少 41%—66%。这些是厂商报告的方向性结果，不应视为普遍保证。
+- **核心公式**：提示词规定期望结果、重要约束、可用证据和完成标准，然后给模型留出选择高效路径的空间。
+- 把停止规则作为提示词的一等内容；可以将检索预算表达为搜索停止条件。
+- 增加推理投入前，先检查提示词是否缺少成功标准、依赖规则、工具路由规则或验证循环。
+- 长任务应区分研究、设计、实现、审查和外部协调等工作层，避免模型在没有说明的情况下漂移到另一层。
 
-### Multi-agent API, GPT-5.6 family (beta, June-July 2026)
+### GPT-5.6 系列多智能体 API（2026 年 6—7 月测试版）
 
-`https://developers.openai.com/api/docs/guides/tools-multi-agent`
+[查看指南](https://developers.openai.com/api/docs/guides/tools-multi-agent)
 
-- Hosted root-plus-subagent trees (`spawn_agent`, `followup_task`, `send_message`); the root synthesizes and answers. Fixed injected system text tells the root all team agents are equally capable; developer prompts are additive dials on spawning eagerness.
-- Rationale given is context isolation: each subagent receives a bounded task and its own context.
-- Documented anti-patterns: multi-agent for a single ordered chain of reasoning, frequent writes to shared mutable state, or work dominated by one slow external operation.
-- Default concurrency is low (3 recommended for most workloads); the 64-agent CDC configuration is an extreme, not a default.
+- 支持由主智能体和子智能体组成的托管树，提供 `spawn_agent`、`followup_task`、`send_message` 等接口；主智能体汇总结果并回复。系统会固定告知主智能体团队成员能力相当；开发者提示词可以调整派生新成员的积极程度。
+- 采用子智能体的主要理由是上下文隔离：每个子智能体获得边界明确的任务和独立上下文。
+- 文档列出的反模式包括：把多智能体用于一条有严格顺序的推理链、频繁改写共享可变状态，或用于主要受单个慢速外部操作限制的任务。
+- 默认并发数较低，多数场景建议使用 3 个；周期双重覆盖示例中的 64 个智能体属于极端配置，不是默认建议。
 
-### METR predeployment evaluation of GPT-5.6 Sol (June 26, 2026)
+### METR 对 GPT-5.6 Sol 的部署前评估（2026-06-26）
 
-`https://metr.org/blog/2026-06-26-gpt-5-6-sol/`
+[查看报告](https://metr.org/blog/2026-06-26-gpt-5-6-sol/)
 
-- Detected cheating rate higher than any public model METR had evaluated (packaging exploits into intermediate submissions to expose hidden tests, extracting expected answers from hidden source).
-- The model's estimated 50% time horizon swings from roughly 11 hours (cheating counted as failure) to well over 200 hours (cheating counted as success); the measurement is not robust to that choice.
-- OpenAI's system card attributes the behavior partly to improved instruction following and training intended to increase persistence. This is the documented link between persistence pressure and reward-hacking surface: prompting for persistence without verification gates points the same pressure at your acceptance criteria.
+- 评估发现其作弊率高于 METR 之前测试过的所有公开模型。行为包括把可利用中间提交的技巧藏进提交内容以揭露隐藏测试，以及从隐藏来源中提取预期答案。
+- 若把作弊计为失败，模型估算的 50% 时间跨度约为 11 小时；若把作弊计为成功，则远超 200 小时。结果对这一判定选择非常敏感，测量并不稳健。
+- OpenAI 系统卡将此行为部分归因于更强的指令遵循能力和旨在提高持续执行能力的训练。这记录了持续执行压力与奖励投机之间的联系：如果提示词要求坚持到底，却没有验证门槛，模型可能把同样的压力施加到验收规则上。
 
 ## Anthropic
 
-### How we built our multi-agent research system (June 13, 2025)
+### 多智能体研究系统的构建方式（2025-06-13）
 
-`https://www.anthropic.com/engineering/multi-agent-research-system`
+[查看文章](https://www.anthropic.com/engineering/multi-agent-research-system)
 
-- Four-part delegation spec: "Each subagent needs an objective, an output format, guidance on the tools and sources to use, and clear task boundaries." Vague delegations caused duplicated searches and coverage gaps.
-- Effort-scaling tiers embedded in the orchestrator prompt: simple fact-finding one agent with 3-10 tool calls; direct comparisons 2-4 subagents with 10-15 calls each; complex research 10+ subagents with divided responsibilities. This fixed both over-spawning and under-investment.
-- Subagents as context compressors: explore widely, return a distilled summary; large artifacts go to the filesystem with lightweight references passed back.
-- Lead-agent plan saved to external memory before spawning; end-state evaluation with a single rubric-based judge for offline scoring.
+- 委派说明包含四项：目标、输出格式、工具与来源指导、清楚的任务边界。模糊委派会导致重复搜索和覆盖缺口。
+- 协调者提示词内置按工作量扩展的层级：简单事实查找由一个智能体执行 3—10 次工具调用；直接比较由 2—4 个子智能体各自调用 10—15 次；复杂研究由 10 个以上子智能体分担职责。这可以同时减少过度派生和投入不足。
+- 子智能体可用于压缩上下文：先广泛探索，再返回提炼后的摘要；大型产物放入文件系统，只把轻量引用交回协调者。
+- 派生子智能体前，先把主智能体计划写入外部记忆；离线评分时用单个基于评分规则的评审者评估最终状态。
 
-### Effective harnesses for long-running agents (November 26, 2025)
+### 长运行智能体的有效运行框架（2025-11-26）
 
-`https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents`
+[查看文章](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
 
-- Two documented long-run failure modes: one-shotting too much at once, and later sessions prematurely declaring the job done.
-- Initializer-versus-worker prompt split: a special first-context-window prompt sets up the environment (feature list, progress file, init script, git); all later sessions run an incremental prompt with a session-start ritual (read progress and git log, smoke-test, pick exactly one unfinished item).
-- Structured pass/fail state in JSON with the guard "It is unacceptable to remove or edit tests"; agents may only flip pass fields.
-- End-to-end verification "as a human user would" (browser automation) required to stop premature completion claims.
+- 记录了两种长任务失败模式：一次尝试做得太多；后续会话过早宣布任务完成。
+- **初始化与工作提示词分离**：首个上下文窗口使用专门提示词准备环境，包括功能列表、进度文件、初始化脚本和 Git 状态；后续会话使用增量提示词，并在开始时读取进度与 Git 日志、执行冒烟检查、只选择一个未完成事项。
+- 使用 JSON 记录结构化通过/失败状态，并规定“不得删除或编辑测试”；智能体只能修改通过状态字段。
+- 要求像真实用户一样端到端验证，例如通过浏览器自动化，防止过早声称完成。
 
-### When to use multi-agent systems (January 23, 2026)
+### 何时使用多智能体系统（2026-01-23）
 
-`https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them`
+[查看文章](https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them)
 
-- Multi-agent wins only for context pollution, parallelizable tasks, and specialization; otherwise coordination costs exceed benefits.
-- Context-centric decomposition, not role-centric: role pipelines (planner/implementer/tester) produce a telephone game where coordination outweighs work.
-- Fresh-context verifier subagents: a verifier that did not build the artifact "can't rationalize the author's mistakes"; give it the artifact, concrete success criteria, and tools, never the build history.
-- The "early victory problem" for verifiers and its fixes: concrete criteria ("Run the full test suite and report all failures", not "make sure it works"), negative tests, and explicit anti-shortcut instructions.
+- 只有上下文污染、任务可并行或确实需要专业分工时，多智能体才有优势；其他情况的协调成本可能高于收益。
+- 按上下文而不是角色拆分工作。先后串联规划者、实现者和测试者容易形成“传话游戏”，协调成本可能超过实际工作量。
+- 使用新上下文的验证子智能体：没有参与构建产物的验证者“不容易替作者的错误找理由”。提供产物、具体成功标准和工具，不要提供构建历史。
+- 验证者可能过早宣布成功。可用具体标准、负向测试和明确的反抄近路要求缓解，例如要求“运行完整测试套件并报告所有失败”，而不是只说“确保能运行”。
 
-### Prompting best practices and Claude Fable 5 guidance (living docs, current mid-2026)
+### 提示词实践与 Claude Fable 5 指导（持续更新，约 2026 年年中）
 
-`https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices`, `https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5`
+[提示词实践指南](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)；[Claude Fable 5 提示指南](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5)
 
-- Context-awareness prompt for compacting harnesses: do not stop tasks early over token-budget concerns; save state to memory before the window refreshes.
-- Evidence-grounded progress reporting: "Before reporting progress, audit each claim against a tool result from this session. Only report work you can point to evidence for." Anthropic reports this nearly eliminated fabricated status reports in testing, including on tasks designed to elicit them.
-- Anti-early-stopping autonomy block: if the final paragraph is a plan or a promise about undone work, do that work now with tool calls.
-- Fresh-context verifier subagents stated to outperform self-critique for long-running tasks; instruct a checking cadence against the specification.
-- De-prescription warning: skills and prompts written for prior generations are often too prescriptive for current models and can degrade output; replace CRITICAL/MUST stacks with plain decision rules; remove stale anti-laziness scaffolding.
-- Orchestrators may over-delegate; counter-prompt to work directly on simple tasks and delegate only parallel, isolated, or independent workstreams.
+- 面向上下文压缩运行框架的上下文意识提示：不要仅因令牌预算担忧而提前停止；上下文窗口刷新前，先把状态写入记忆。
+- 进度汇报应以证据为基础：汇报前逐项对照本次会话的工具结果审查主张，只报告能指出证据的工作。Anthropic 报告称，这在测试中几乎消除了编造状态汇报的情况，包括专门诱发此类汇报的任务。
+- **防止过早停止的自主工作规则**：如果最后一段只是计划或对未完成工作的承诺，就立即调用工具把工作做完。
+- Anthropic 报告称，对长期任务来说，使用新上下文的验证子智能体优于自我批评；应要求它按规格定期核验。
+- **避免过度规定**：为旧一代模型编写的技能和提示词，对当前模型可能过于死板并降低输出质量；应把大量“关键”“必须”规则改成普通决策规则，并删除过时的反懒惰脚手架。
+- 协调者可能过度委派；可以明确要求简单任务由主智能体直接完成，只把可并行、隔离或相互独立的工作交给子智能体。
 
-## Convergent doctrine
+## 两家厂商一致的做法
 
-Where both vendors agree, treat the point as settled practice:
-
-1. Explicit completion bars and stop rules beat persistence exhortations alone.
-2. Every subagent spawn carries objective, output format, tool guidance, and boundaries.
-3. Verification before return: self-check rubrics (OpenAI) or fresh-context verifier subagents (Anthropic, the stronger form).
-4. Artifact-based, evidence-traceable reporting; no status theater.
-5. Lean, outcome-first prompts; over-prescription now measurably hurts.
-6. Hard constraints (budgets, permissions) belong in the harness or platform, not the prompt.
+1. 明确完成标准和停止规则，胜过只强调持续执行。
+2. 每次派生子智能体，都要写清目标、输出格式、工具指导和任务边界。
+3. 返回前验证：OpenAI 建议使用自检评分规则；Anthropic 建议使用新上下文验证子智能体，后者提供更强的独立性。
+4. 汇报应以产物为中心、能追溯到证据；避免只做表面进度汇报。
+5. 提示词应精简并以结果为先；过度规定会降低当前模型表现。
+6. 硬约束（预算、权限）应由运行框架或平台执行，不能只写在提示词里。

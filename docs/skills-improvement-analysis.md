@@ -1,160 +1,81 @@
-# Skills Improvement Analysis: Lessons from Anthropic's "Building Claude Code" Article
+# 技能改进分析：从 Anthropic 的 Claude Code 文章得到的经验
 
-*Analysis date: 2026-03-17*
-*Source: "Lessons from Building Claude Code: How We Use Skills" — Anthropic Team*
+> 历史记录：本文分析于 2026-03-17 完成，针对当时的 13 项技能和 2.3.x 之前的版本。文中的数量及“待解决”事项只描述旧版状态，不代表当前仓库情况。当前数量以 `researcher/generated/corpus-summary.md` 为准。
 
-> Historical note: this analysis predates the current 15-skill v2.3.x corpus. Counts such as "12/13" and "13 skills" describe the older baseline and should not be used as current production inventory.
+## 当时已经做好的部分
 
----
+- **用描述说明启用条件**：当时每项技能都采用“在某种情况下使用”的描述格式。
+- **通过文件系统渐进加载**：按 `SKILL.md`、`references/`、`scripts/` 分层，按需加载详细信息。
+- **提供可组合脚本**：多数技能带有可调用的 Python 代码，但当时仍偏向演示实现。
+- **补充超越默认能力的知识**：例如注意力位置偏差、观察屏蔽和 KV 缓存技巧。
 
-## What We're Already Doing Well
+## 当时发现的主要缺口
 
-**Description field as trigger conditions** — 100% compliance. Every SKILL.md uses the "use when X" format the article recommends.
+### 技能偏重知识讲解，操作能力不足
 
-**Progressive disclosure via filesystem** — Our 3-level hierarchy (SKILL.md → references/ → scripts/) is textbook progressive disclosure. The article calls this out as a best practice.
+当时的技能主要教授上下文工程概念，少有可直接执行的验证、脚手架、自动化、操作手册和部署能力。文章指出，能在运行时组合的代码往往比仅供阅读的知识更有操作价值。
 
-**Composable scripts** — 12/13 skills include Python scripts with callable classes and functions.
+**改进方向**：除解释原理外，技能还应提供智能体可以直接使用的工作流和工具。
 
-**Not stating the obvious** — Skills focus on pushing Claude beyond defaults (e.g., U-shaped attention curves, observation masking, KV-cache tricks).
+### 易错点和失败案例覆盖不足
 
----
+早期模板没有要求记录实际失败模式，因此不少技能缺少易错点章节。后来该缺口已通过更新技能规范和模板处理；本文保留原分析作为历史依据。
 
-## The Big Gaps (Ordered by Impact)
+### 缺少按需防护、设置和效果度量
 
-### 1. Skills are knowledge-first, not action-first
+旧版分析还指出：
 
-The Anthropic team's 9 skill categories are overwhelmingly **operational** — verification, scaffolding, automation, runbooks, deployment. Our 13 skills are overwhelmingly **conceptual** — teaching Claude about context engineering principles.
+- 可加入命令执行前的风险提示或目录保护等按需防护。
+- 依赖不同框架的技能可能需要设置文件，保存用户选择。
+- 可记录技能启用情况，识别未被正确触发的技能。
+- 可使用持久数据，让技能跨会话积累状态。
 
-The article says the most powerful thing you can give Claude is **code it can compose at runtime**, not knowledge it reads and internalizes. Our `scripts/` directories contain reference implementations (demonstration code), not composable helper libraries Claude would actually import and use during a task.
+这些属于当时提出的方向，不表示现有技能已经实现相关机制。
 
-**The shift**: Our skills teach Claude *about* context engineering. The article suggests skills should help Claude *do* context engineering.
+## 当时的建议
 
-### 2. ~~No Gotchas sections (69% of skills)~~ — RESOLVED
+### 低成本改进
 
-> **Status**: Fixed in commit c847b20. All 13 skills now have standardized Gotchas sections (5-9 gotchas each). Template updated with canonical Gotchas section.
+- 在模板和技能中加入有真实依据的易错点。
+- 为实验性技能建立隔离目录，再根据使用效果决定是否纳入正式集合。
+- 在模板中明确设置要求、相关脚本和状态保存方式。
 
-~~The article is unambiguous: *"The highest-signal content in any skill is the Gotchas section."* Only 4 of 13 skills had one. The root cause was our `template/SKILL.md` didn't include a Gotchas section — so new skills never got one by default.~~
+### 结构调整
 
-### 3. No on-demand hooks
+可增加面向排错、项目脚手架或技能创建的操作型技能；把演示脚本改成可复用函数；为大输出、质量评估或长对话压缩增加按需检查。
 
-The article highlights on-demand hooks as a differentiator. Examples like `/careful` (blocks destructive commands) and `/freeze` (blocks edits outside a directory) show how hooks transform a knowledge skill into a guardrail. None of our skills use this.
+### 长期完善
 
-For a context engineering marketplace, natural fits include:
-- `/budget` — warns when context usage exceeds a threshold
-- `/trace` — logs every tool call with token counts for post-hoc analysis
-- `/compress` — auto-triggers compression when conversation gets long
+可以记录技能启用效果、为依赖框架的技能增加配置流程、提供技能组合示例，并在经过审核的前提下保留跨会话状态。
 
-### 4. No setup/config pattern
+## 核心观察
 
-The article recommends a `config.json` pattern for skills needing user context. None of our skills use this. For example, `memory-systems` could ask which framework the user is using and store that preference.
+技能集合既可以是“教材”，解释如何理解上下文工程；也可以是“工具箱”，直接帮助智能体完成任务。较好的设计会结合两者：原理解释提供判断依据，实际工作流、脚本和检查机制让这些知识能在任务中发挥作用。
 
-### 5. No measurement infrastructure
+## 旧版审查指标
 
-The article describes using `PreToolUse` hooks to track which skills are popular and which are undertriggering. We have no way to know if skills are actually being activated correctly.
+下表是旧版 13 项技能的历史统计，不能用来描述当前语料：
 
-### 6. No `${CLAUDE_PLUGIN_DATA}` usage
+| 项目 | 旧版状态 | 当时的观察 |
+| --- | --- | --- |
+| 易错点章节 | 4/13 | 当时覆盖不足，后续已纳入统一规范 |
+| 启用描述 | 13/13 | 使用条件较明确 |
+| 可组合脚本 | 12/13 | 多数仍是参考实现 |
+| 按需防护 | 0/13 | 有扩展空间 |
+| 配置模式 | 0/13 | 依赖特定框架的技能可能需要 |
+| 持久状态 | 3/13 | 当时尚无统一方案 |
+| 渐进加载 | 13/13 | 采用技能正文、参考资料和脚本分层 |
 
-The article emphasizes persistent data storage so skills can learn over time. Our skills are stateless — they forget everything between sessions.
+## 旧版技能分类观察
 
----
-
-## Strategic Recommendations
-
-### Tier 1: Quick wins (high impact, low effort)
-
-**A. Add Gotchas to template and all 9 missing skills**
-
-Update `template/SKILL.md` to include a `## Gotchas` section. Then add gotchas to the 9 skills that lack them. These should capture real failure modes, not theoretical ones. Examples:
-- `context-compression`: "Don't compress tool definitions — models need exact schemas"
-- `multi-agent-patterns`: "Sub-agents sharing context via message passing doubles token cost vs. filesystem coordination"
-- `context-optimization`: "Prefix caching breaks when system prompts change between turns"
-
-**B. Add a marketplace curation flow**
-
-Add a `sandbox/` directory for experimental skills. Update CONTRIBUTING.md to describe sandbox → traction → marketplace flow.
-
-**C. Update SKILL.md template with article best practices**
-
-Add sections for: Gotchas, Setup Requirements, Related Scripts, Storage Expectations.
-
-### Tier 2: Structural enhancements (medium effort, high differentiation)
-
-**D. Create 2-3 operational skills to complement knowledge skills**
-
-| Proposed Skill | Category | What It Does |
-|---|---|---|
-| `context-debugger` | Runbook | Symptom → investigation → diagnosis for context failures |
-| `agent-scaffolding` | Code Scaffolding | Generates boilerplate for new agent projects |
-| `skill-creator` | Code Scaffolding | Meta-skill that helps create new skills following conventions |
-
-**E. Make scripts composable, not demonstrative**
-
-Transform scripts from "here's how you'd implement this" to "import this and use it":
-
-```python
-# Before (reference): Shows how compaction works
-class ContextCompactor:
-    """Example implementation..."""
-
-# After (composable): Claude actually uses this
-def compact_observation(output: str, max_tokens: int = 500) -> str:
-    """Compact a tool observation to fit within token budget."""
-```
-
-**F. Add on-demand hooks to 2-3 skills**
-
-Start with:
-- `context-optimization` → hook that warns on large tool outputs
-- `evaluation` → hook that auto-evaluates Claude's output quality
-- `context-compression` → hook that monitors conversation length
-
-### Tier 3: Ecosystem maturity (higher effort, long-term value)
-
-**G. Add a usage measurement skill** — `PreToolUse` hook logging skill activations.
-
-**H. Add config.json setup** to framework-dependent skills (memory-systems, multi-agent-patterns).
-
-**I. Create a "skill composition" example** — showing how skills invoke each other.
-
-**J. Add persistent learning via `${CLAUDE_PLUGIN_DATA}`** — skills that get better over time.
-
----
-
-## The Meta-Insight
-
-Our repository is currently a **textbook** — it teaches Claude how to think about context engineering. The Anthropic article reveals that the most impactful skills at Anthropic are **toolboxes** — they give Claude things to do, not things to know.
-
-The strongest version of this repo is both: **knowledge skills that also include operational capabilities**. The knowledge foundation is what got us cited in academic papers. Layering actionable tooling on top (gotchas, hooks, composable scripts, persistent state) would make the skills dramatically more useful in practice.
-
----
-
-## Audit Summary Table
-
-| Criterion | Status | Score | Notes |
-|-----------|--------|-------|-------|
-| Gotchas Sections | CRITICAL GAP | 31% (4/13) | Highest-signal content per article |
-| Description Format | PERFECT | 100% (13/13) | Trigger-condition format |
-| Composable Scripts | STRONG | 92% (12/13) | Present but reference-grade |
-| On-Demand Hooks | NOT IMPLEMENTED | 0% (0/13) | High differentiation opportunity |
-| Config/Setup Pattern | NOT IMPLEMENTED | 0% (0/13) | Needed for framework-dependent skills |
-| Persistent Storage | MINIMAL | 23% (3/13) | No `${CLAUDE_PLUGIN_DATA}` usage |
-| Progressive Disclosure | COMPREHENSIVE | 100% (13/13) | SKILL.md → references/ → scripts/ |
-| Templates/Assets | COMPREHENSIVE | 100% (13/13) | All have reference docs |
-
-**Overall compliance: 65%** — Closing the Gotchas gap alone raises this to ~85%.
-
----
-
-## Anthropic's 9 Skill Categories vs. Our Coverage
-
-| Category | Coverage | Our Skills |
-|----------|----------|------------|
-| Library & API Reference | Moderate | memory-systems, tool-design |
-| Product Verification | Moderate | evaluation, advanced-evaluation |
-| Data Fetching & Analysis | Light | (interleaved-thinking example only) |
-| Business Process & Automation | Light | (digital-brain example only) |
-| Code Scaffolding & Templates | Light | project-development |
-| Code Quality & Review | Moderate | evaluation, advanced-evaluation |
-| CI/CD & Deployment | Light | hosted-agents |
-| Runbooks | Light | context-degradation |
-| Infrastructure Operations | Light | hosted-agents |
+| 技能方向 | 当时覆盖情况 | 示例 |
+| --- | --- | --- |
+| 库与接口参考 | 中等 | 记忆系统、工具设计 |
+| 产品验证 | 中等 | 评估、高级评估 |
+| 数据获取与分析 | 较少 | 思考轨迹示例 |
+| 业务流程与自动化 | 较少 | 数字工作台示例 |
+| 代码脚手架与模板 | 较少 | 项目开发 |
+| 代码质量与审查 | 中等 | 评估、高级评估 |
+| 持续集成、交付和部署 | 较少 | 托管智能体 |
+| 操作手册 | 较少 | 上下文退化 |
+| 基础设施运维 | 较少 | 托管智能体 |

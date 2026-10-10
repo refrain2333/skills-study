@@ -1,7 +1,7 @@
-Your task takes place in the current working directory.
+任务在当前工作目录中进行。
 
-You are processing the output of a long-running diagnostic tool. The output is in `tool_output.txt`. Somewhere inside the output there is a line of the form `API_RATE_LIMIT=<value>`. Find that value and report it back to the user.
+你正在处理一项长期诊断工具的输出。输出保存在 `tool_output.txt` 中，其中某一行格式为 `API_RATE_LIMIT=<值>`。请找到该值并告诉用户。
 
-You may create scratch files if helpful. When you have the answer, respond with a short message that includes the exact line `API_RATE_LIMIT=<value>` and nothing else important.
+如有帮助，可以创建临时文件。找到答案后，简短回复，并包含精确行 `API_RATE_LIMIT=<值>`，不要添加其他重要内容。
 
-Do not modify `tool_output.txt`.
+不要修改 `tool_output.txt`。

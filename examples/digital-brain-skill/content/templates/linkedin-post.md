@@ -1,102 +1,90 @@
-# LinkedIn Post Template
+# LinkedIn 帖子模板
 
-## Metadata
+## 元数据
+
 ```yaml
-topic: "[PLACEHOLDER]"
-pillar: "[PLACEHOLDER: Content pillar]"
+topic: "[主题]"
+pillar: "[内容支柱]"
 format: "story|lesson|hot_take|how_to|list"
 ```
 
----
+## 开头（前 2—3 行）
 
-## Hook (First 2-3 lines)
-<!-- Must work before "see more" click -->
-```
-[PLACEHOLDER: Strong opening that makes them click "see more"]
-```
+必须在读者点击“查看更多”之前就能吸引注意：
 
----
-
-## Body
-
-### Format: Story
-```
-The setup:
-[PLACEHOLDER: Situation/context]
-
-The challenge:
-[PLACEHOLDER: What happened/the problem]
-
-The turning point:
-[PLACEHOLDER: What changed]
-
-The lesson:
-[PLACEHOLDER: What you learned]
+```text
+[写一个让读者愿意继续阅读的开场]
 ```
 
-### Format: Lesson/How-To
-```
-Here's how [PLACEHOLDER: outcome]:
+## 正文
 
-1. [Step/Point]
-[PLACEHOLDER: Brief explanation]
+### 故事格式
 
-2. [Step/Point]
-[PLACEHOLDER: Brief explanation]
+```text
+背景：
+[情境或背景]
 
-3. [Step/Point]
-[PLACEHOLDER: Brief explanation]
+挑战：
+[发生了什么或遇到了什么问题]
 
-The key insight:
-[PLACEHOLDER]
-```
+转折：
+[什么发生了变化]
 
-### Format: Hot Take
-```
-[PLACEHOLDER: Controversial statement]
-
-Here's why:
-
-[PLACEHOLDER: Supporting argument 1]
-
-[PLACEHOLDER: Supporting argument 2]
-
-[PLACEHOLDER: Nuance or caveat]
+经验：
+[学到了什么]
 ```
 
----
+### 经验/教程格式
 
-## Closing
-```
-[PLACEHOLDER: Summary or call to discussion]
-```
+```text
+以下是如何实现[目标]：
 
----
+1. [步骤或要点]
+[简要说明]
 
-## Engagement Hook
-<!-- Encourage comments -->
-```
-[PLACEHOLDER: Question for the audience]
+2. [步骤或要点]
+[简要说明]
 
-Examples:
-- "What's your take?"
-- "Have you experienced this?"
-- "What would you add?"
+3. [步骤或要点]
+[简要说明]
+
+关键见解：
+[填写]
 ```
 
----
+### 观点格式
 
-## Hashtags (3-5 max)
+```text
+[有争议但有依据的观点]
+
+理由：
+[支持理由一]
+[支持理由二]
+[限定条件或补充说明]
 ```
-#[PLACEHOLDER] #[PLACEHOLDER] #[PLACEHOLDER]
+
+## 收尾
+
+```text
+[总结或邀请讨论]
 ```
 
----
+## 互动问题
 
-## Pre-publish Checklist
-- [ ] Hook works in first 2-3 lines
-- [ ] Uses line breaks for readability
-- [ ] Value is professional but personal
-- [ ] Ends with engagement prompt
-- [ ] Voice matches brand (slightly more professional for LinkedIn)
-- [ ] Not overly self-promotional
+```text
+[向读者提问]
+例如：“你怎么看？”、“你遇到过这种情况吗？”、“你还会补充什么？”
+```
+
+## 话题标签
+
+最多 3—5 个：`#[标签] #[标签] #[标签]`
+
+## 发布前检查
+
+- [ ] 前 2—3 行足够吸引人。
+- [ ] 使用换行提升可读性。
+- [ ] 内容专业但有人情味。
+- [ ] 以互动问题结尾。
+- [ ] 符合个人品牌；LinkedIn 风格可以稍正式。
+- [ ] 没有过度自我推销。

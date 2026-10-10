@@ -1,57 +1,57 @@
-# Research Evidence for Long-Horizon Brief Elements
+# 长时程任务简报的研究证据
 
-Dated academic findings backing each element of the pseudo-formal task brief. Compiled 2026-07-11. Each entry states what was measured and what it implies for prompt design. arXiv identifiers are given where known; treat 2026 preprints as unreviewed.
+带日期的研究结果支持伪形式化任务简报中的各项设计。整理于 2026-07-11。每条记录说明研究测量了什么，以及它对提示词设计意味着什么。已知时列出 arXiv 编号；2026 年的预印本尚未经过同行评审。
 
-## Give-up drift and premature termination
+## 放弃漂移与过早终止
 
-- **Diagnosing and Mitigating Context Rot in Long-horizon Search** (arXiv 2606.29718, June 2026). As trajectory length grows, the dominant error type shifts from confident-wrong answers to uncertain answers and outright giving up. Rot depends on the content of accumulated context, not just its length; deleting context removes rot but leaves tasks unfinished, so summarize rather than truncate. Implication: solvability framing and effort floors target a real, measured drift, not a hypothetical.
-- **Push Your Agent / PushBench** (arXiv 2605.23574, May 2026). Agents make plausible local tool calls but stop before the requested quantity of work is verifiably complete; failure modes include duplicate submissions, false completion claims, and progress drift. Externally maintained verified-progress ledgers with backlog tracking reached 69-78% task success on configurations where standard and even completion-gated controllers scored 0%. Verifier gating alone prevents false "done" claims but does not repair stuck loops. Implication: the stopping condition must be externally checkable, and verified-progress state should be re-injected each round from outside the prompt.
-- **BudgetThinker** (arXiv 2508.17196, August 2025). A budget stated once in the prompt does not reliably control effort; periodic reminders of remaining budget substantially improve adherence. Implication: one-time budget statements at the top of a long prompt decay; re-injection is a harness job.
-- **METR time-horizon line** (arXiv 2503.14499, March 2025; Time Horizon 1.1, January 2026). Model 50% time horizons have doubled roughly every seven months since 2019, driven primarily by reliability and mistake-recovery rather than raw reasoning. Implication: harness and brief effort should go to checkpointing, recovery, and externally verified progress, the reliability margin, rather than more elaborate reasoning instructions.
+- **长时程搜索中的上下文腐化：诊断与缓解**（arXiv `2606.29718`，2026 年 6 月）：随着执行轨迹变长，主要错误会从“自信但错误”转为“不确定”乃至直接放弃。腐化取决于累积上下文的内容，不只是长度；删除上下文可以减少腐化，却会让任务未完成，因此应总结，而不是直接截断。**启示**：可解性框定和最低投入要求针对的是实测到的漂移，而非假设性问题。
+- **推动智能体完成任务 / PushBench**（arXiv `2605.23574`，2026 年 5 月）：智能体可能合理地调用工具，却在所需工作量还没有经过验证前停止；常见失败包括重复提交、虚报完成和进度漂移。由外部维护、追踪待办的已验证进度账本，在一些配置中把任务成功率提高到 69%—78%；同一配置下，普通控制器甚至带完成门槛的控制器得分为 0%。仅靠验证器门槛可以阻止虚报完成，却不能修复卡住的循环。**启示**：停止条件必须能由外部检查；每轮都应从提示词之外重新注入经验证的进度状态。
+- **BudgetThinker**（arXiv `2508.17196`，2025 年 8 月）：只在提示词开头声明一次预算，不能可靠控制投入；定期提醒剩余预算能明显改善遵守情况。**启示**：长提示词中的一次性预算会逐渐失效，重新注入预算应由运行框架负责。
+- **METR 时间跨度研究**（arXiv `2503.14499`，2025 年 3 月；Time Horizon 1.1，2026 年 1 月）：自 2019 年以来，模型达到 50% 成功率时可完成的任务时间跨度大约每七个月翻倍；主要驱动因素是可靠性和错误恢复，而不是纯推理能力。**启示**：运行框架和任务简报应优先投入检查点、恢复和外部进度核验，这些做法能提高可靠性余量。
 
-## The verification bottleneck
+## 验证瓶颈
 
-- **Large Language Monkeys** (arXiv 2407.21787, July 2024). Coverage (any-sample success) scales log-linearly with sample count across four orders of magnitude, but majority voting and reward-model selectors plateau after a few hundred samples. Gains convert to realized performance only where verification is automatic.
-- **Benchmark Test-Time Scaling of General LLM Agents** (arXiv 2602.18998, February 2026). Names the verification gap directly: pass@K rises with K while self-selection accuracy lags and can fall as K grows; sequential scaling hits a model-specific context ceiling. Implication: adding parallel workers without strengthening selection wastes compute.
-- **QEDBench** (arXiv 2602.20629, February 2026). Across a judge-solver matrix with expert human baselines, frontier LLM judges of mathematical proofs are systematically lenient and susceptible to "proof by intimidation" (rewarding rigorous-looking setups without complete deduction). Stricter rubrics, deterministic decoding, and binary prompts did not fix it. Implication: a generic adversarial-audit instruction is insufficient; auditors need enumerated failure modes, and high-stakes claims need a verification chain outside the run.
-- **Pseudo-Formalization for Automatic Proof Verification** (arXiv 2605.20531, May 2026). Translating a natural-language proof into self-contained modules (premises, conclusion, proof stated locally) and verifying each module independently Pareto-dominates whole-proof LLM judging on error-finding precision and recall. Implication: require the generator to produce modular, independently checkable output so verification decomposes.
-- **ProofBench / ProofGrader** (arXiv 2510.13888, October 2025). Judges given a rubric, reference material, and a graded (not binary) scale approach expert grading and, used as a best-of-N selector, close most of the gap to a human oracle. Implication: graded audit criteria beat binary verdicts for candidate selection.
-- **Prover-Verifier Games** (arXiv 2407.13692, July 2024, and successors). Adversarial prover-verifier training increases output checkability; optimizing for correctness alone makes reasoning less legible. Implication at prompt level: dedicated adversarial checkers and legibility requirements on the generator are complements, not alternatives.
+- **大语言模型猴子测试**（arXiv `2407.21787`，2024 年 7 月）：跨越四个数量级的样本量后，“任意一个样本成功”的覆盖率随样本数呈对数线性增长；但多数投票和奖励模型筛选器在几百个样本后就趋于平台。只有能自动验证的任务，采样收益才会转化为实际表现。
+- **大语言模型智能体基准测试时扩展**（arXiv `2602.18998`，2026 年 2 月）：研究明确指出验证差距：随着 `K` 增加，`pass@K` 上升，但模型自选准确率落后，甚至会下降；顺序扩展还会碰到因模型而异的上下文上限。**启示**：增加并行工作者却不加强筛选，会浪费计算资源。
+- **QEDBench**（arXiv `2602.20629`，2026 年 2 月）：在包含专家人工基准的评审者—解题者矩阵中，前沿大语言模型对数学证明的评审系统性偏宽松，并容易受“以气势压人式证明”影响——即使没有完整推导，也会因开头看似严谨而给高分。更严格的评分规则、确定性解码和二元提示都没能解决问题。**启示**：笼统要求“对抗性审查”还不够；要列出具体失败模式，高风险主张还需要运行之外的验证链。
+- **自动证明验证的伪形式化方法**（arXiv `2605.20531`，2026 年 5 月）：把自然语言证明拆成自足模块（局部陈述前提、结论和证明），再逐模块独立核验，在错误定位精确率和召回率两方面都优于整体大语言模型评审。**启示**：要求生成器输出模块化、可独立检查的成果，使验证可以拆分。
+- **ProofBench / ProofGrader**（arXiv `2510.13888`，2025 年 10 月）：评审者获得评分规则、参考资料和分级而非二元评分时，表现可接近专家；将其作为多样本筛选器时，也能缩小与人工选择结果的差距。**启示**：用分级审查标准筛选候选成果，通常优于简单的通过/不通过判断。
+- **证明者—验证者博弈**（arXiv `2407.13692`，2024 年 7 月及后续研究）：对抗训练能提高输出的可检查性；只优化正确性，可能使推理过程更难读懂。**启示**：专门的对抗检查者和生成器的可读性要求相辅相成，不能互相替代。
 
-## Diversity collapse in parallel search
+## 并行搜索中的多样性坍塌
 
-- **Diversity Collapse in Multi-Agent LLM Systems** (arXiv 2604.18005, Findings of ACL 2026). Dense communication topologies accelerate premature convergence; authority-driven hierarchies suppress semantic diversity. Collapse comes from interaction structure, not model insufficiency. Implication: early-round independence and sparse communication are structural requirements the orchestration policy must state.
-- **Representational Collapse in Multi-Agent LLM Committees** (arXiv 2604.03809, April 2026). Committees converge more tightly on harder problems; unanimous agreement under collapse reflects shared bias, not corroboration. Implication: never use inter-agent agreement alone as a halting or confidence signal.
-- **ParaThinker** (arXiv 2509.04475, September 2025) and **OPE** (arXiv 2602.08344, February 2026). Early imperfect steps lock a sequential reasoner into a bad path ("tunnel vision"); parallel width beats sequential depth at equal budget, and explicitly partitioning the solution space (diverse outlines first) beats independent draws. Implication: the orchestrator should assign distinct formulations, not just multiple attempts.
-- **Scaling Test-time Compute for LLM Agents** (arXiv 2506.12928, June 2025). Simple best-of-N was the strongest parallel method tested; list-wise comparison of all candidates together beat pairwise voting for selection; reflection helped only when triggered by poor performance rather than on a fixed cadence. Implication: conditional reflection triggers and list-wise audits belong in the verification policy.
+- **多智能体大语言模型系统中的多样性坍塌**（arXiv `2604.18005`，ACL 2026 研究结果）：密集通信会加速过早收敛；由权威中心控制的层级会压低语义多样性。坍塌来自交互结构，而不一定是模型能力不足。**启示**：编排策略必须明确要求早期独立探索和稀疏通信。
+- **多智能体大语言模型委员会中的表征坍塌**（arXiv `2604.03809`，2026 年 4 月）：问题越难，委员会成员越容易趋同；坍塌情况下的一致意见反映共享偏差，而非相互印证。**启示**：不能只用智能体之间是否一致来决定停止或评估置信度。
+- **ParaThinker**（arXiv `2509.04475`，2025 年 9 月）和 **OPE**（arXiv `2602.08344`，2026 年 2 月）：顺序推理者会被早期错误步骤锁在坏路线中，形成“隧道视野”；预算相同的情况下，并行搜索宽度优于顺序推理深度；先明确划分解答空间（例如先产出不同提纲）优于随机独立尝试。**启示**：协调者应安排不同的问题表述，而不是只增加尝试次数。
+- **扩展智能体测试时计算**（arXiv `2506.12928`，2025 年 6 月）：简单的多样本优选是研究中最强的并行方法；把所有候选放在一起逐项比较，比两两投票更利于筛选；只有在表现较差时触发反思才有帮助，固定周期反思没有同样效果。**启示**：验证策略应包含按需反思触发条件和列表式审查。
 
-## Orchestration and delegation
+## 编排与任务委派
 
-- **AOrchestra** (arXiv 2602.03786, February 2026). Modeling each subagent as an (instruction, context, tools, model) tuple synthesized per subtask at runtime, with the orchestrator taking no environment actions itself, gave a 16% relative improvement over the strongest static-role baseline across agentic benchmarks. Implication: the orchestrator's core job is writing precise, per-spawn task specs; static role prompts are the weaker pattern.
-- **DeLM** (arXiv 2606.10662, June 2026). Decentralized agents coordinating through shared verified context, where findings, failures, and falsified hypotheses are written into shared state, prevent parallel workers from re-exploring dead ends. Implication: blocked-route bookkeeping should be durable and shared, not implicit in the orchestrator's context.
-- **RL for LLM-based Multi-Agent Systems through Orchestration Traces** (arXiv 2605.02801, May 2026). Survey observation: as of its writing, no published RL method learns the stopping decision; when to stop is entirely prompt and harness territory. Implication: the return condition in the brief is load-bearing because nothing in training supplies it.
+- **AOrchestra**（arXiv `2602.03786`，2026 年 2 月）：把每个子智能体表示为 `(指令、上下文、工具、模型)` 元组，由协调者按子任务即时生成；协调者自身不直接操作环境。与最强的静态角色基线相比，这种方法在智能体基准中的相对表现提高了 16%。**启示**：协调者的核心工作是为每次派生编写精确任务说明；静态角色提示是较弱的做法。
+- **DeLM**（arXiv `2606.10662`，2026 年 6 月）：分布式智能体通过共享的已验证上下文协作，把发现、失败和已证伪假设写入共享状态，可避免并行工作者重复探索死路。**启示**：受阻路线记录应持久保存并共享，不能只依赖协调者当前上下文中的隐式记忆。
+- **通过编排轨迹强化学习多智能体系统**（arXiv `2605.02801`，2026 年 5 月）：该综述指出，截至撰写时，没有已发表的强化学习方法能够学会停止决策；何时停止完全由提示词和运行框架决定。**启示**：任务简报中的返回条件至关重要，因为训练本身没有提供它。
 
-## Frontier-model open-problem record (2026)
+## 2026 年前沿模型解决开放问题的记录
 
-Verification infrastructure, not generation, separates claims from results:
+把主张变成结果的关键是验证基础设施，而不只是生成能力：
 
-- October 2025: a claim that GPT-5 solved ten Erdős problems collapsed within about 48 hours because the "solutions" were already in the literature.
-- May 2026: an OpenAI internal reasoning model disproved the Erdős unit-distance conjecture; the result stands because nine external mathematicians verified it and a companion paper followed. The prompt was reportedly minimal: the problem statement plus the question of whether Erdős was wrong.
-- April 2026: GPT-5.4 Pro produced proof sketches resolving two 1966 primitive-set conjectures; mathematicians repaired gaps and one main theorem was formalized in Lean.
-- July 2026: the Cycle Double Cover candidate proof (GPT-5.6 Sol Ultra, 64 subagents, under one hour) was published with its prompt but without peer review or formalization; at publication it is a plausible-looking proof humans had not yet checked.
+- 2025 年 10 月，一项声称 GPT-5 解决了十个埃尔德什问题的结果在约 48 小时内被推翻，因为所谓“解答”早已存在于文献中。
+- 2026 年 5 月，OpenAI 的一款内部推理模型推翻了埃尔德什单位距离猜想。该结果能够站住脚，是因为九位外部数学家进行了验证，随后还发表了配套论文。据称当时提示词很简短，只包含问题陈述和“埃尔德什是否错了？”这一问题。
+- 2026 年 4 月，GPT-5.4 Pro 给出了两项 1966 年原始集猜想的证明草稿；数学家修复了缺口，其中一个主要定理还在 Lean 中形式化。
+- 2026 年 7 月，周期双重覆盖候选证明由 GPT-5.6 Sol Ultra 使用 64 个子智能体在不到一小时内完成。发布时提供了提示词，但没有同行评审或形式化验证；这是一份看起来可信、但尚未经过人工核查的证明。
 
-Implication: a long-horizon brief maximizes the chance of a strong candidate; the pipeline that converts candidates into results is external verification, and the brief should be written knowing its output enters that pipeline (modular structure, checkable claims, no laundered sources).
+**启示**：长时程简报提高生成有力候选结果的概率；把候选结果转变为可靠结论的流程仍是外部验证。简报应假设产物将进入该流程，因此应模块化、主张可核验，并避免把未证来源包装成事实。
 
-## Mapping evidence to brief elements
+## 证据与简报要素的对应关系
 
-| Brief element | Primary evidence |
+| 简报要素 | 主要证据 |
 | --- | --- |
-| Solvability framing, effort floor | Context rot give-up drift (2606.29718); PushBench premature stopping (2605.23574) |
-| Return condition as artifact predicate | PushBench verifier gating; orchestration survey stopping gap (2605.02801) |
-| Non-counting outcomes | Erdős/CDC record: near misses and unverified claims dominate failures |
-| Adversarial audit with enumerated failure modes | QEDBench judge leniency (2602.20629); block verification (2605.20531); ProofBench rubrics (2510.13888) |
-| Early independence, late cross-pollination | Diversity collapse (2604.18005); representational collapse (2604.03809); OPE (2602.08344) |
-| Approach registry and blocked routes | DeLM shared falsified hypotheses (2606.10662) |
-| Per-spawn task specs | AOrchestra tuple synthesis (2602.03786); Anthropic delegation spec |
-| External progress ledger, budget re-injection | PushBench state-tracking controllers; BudgetThinker (2508.17196) |
-| Verifier investment parity | Large Language Monkeys selector plateau (2407.21787); verification gap (2602.18998) |
+| 可解性框定、最低投入 | 上下文腐化导致的放弃漂移（`2606.29718`）；PushBench 的过早停止（`2605.23574`） |
+| 将返回条件定义为产物判定 | PushBench 的验证门槛；编排研究对停止机制缺口的总结（`2605.02801`） |
+| 不计为完成的结果 | 埃尔德什问题和周期双重覆盖记录：大量失败来自近似成果和未验证主张 |
+| 列举失败模式的对抗审查 | QEDBench 的评审宽松（`2602.20629`）；模块化验证（`2605.20531`）；ProofBench 评分规则（`2510.13888`） |
+| 早期独立、后期交叉融合 | 多样性坍塌（`2604.18005`）；表征坍塌（`2604.03809`）；OPE（`2602.08344`） |
+| 方案登记与受阻路线 | DeLM 中共享已证伪假设的做法（`2606.10662`） |
+| 每位工作者的独立任务说明 | AOrchestra 的任务元组生成（`2602.03786`）；Anthropic 的委派规范 |
+| 外部进度账本、重新注入预算 | PushBench 的状态追踪控制器；BudgetThinker（`2508.17196`） |
+| 为验证投入与生成相称的资源 | 大语言模型猴子测试的筛选平台期（`2407.21787`）；验证差距研究（`2602.18998`） |

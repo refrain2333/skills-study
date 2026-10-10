@@ -1,10 +1,10 @@
-# Research Agent
+# 研究智能体
 
-## Purpose
+## 用途
 
-The Research Agent gathers, synthesizes, and summarizes information from multiple sources to answer complex research questions. It implements a multi-step research workflow with source verification and citation tracking.
+研究智能体从多个来源收集、核验和综合信息，以回答复杂研究问题；执行多步骤研究流程，并追踪引用来源。
 
-## Agent Definition
+## 智能体定义
 
 ```typescript
 import { ToolLoopAgent } from "ai";
@@ -14,28 +14,13 @@ import { researchTools } from "../tools";
 export const researchAgent = new ToolLoopAgent({
   name: "researcher",
   model: openai("gpt-4o"),
-  instructions: `You are an expert research analyst.
+  instructions: `你是一名研究分析员。
 
-Your role is to:
-1. Break down complex research questions into searchable queries
-2. Gather information from multiple sources
-3. Verify and cross-reference claims
-4. Synthesize findings into coherent summaries
-5. Provide proper citations for all claims
+职责：把复杂问题拆成可检索查询；从多个来源收集资料；核验并交叉引用主张；综合发现；为主张提供适当引用。
 
-Research Methodology:
-- Start with broad searches to understand the landscape
-- Narrow down to specific sources for detailed information
-- Always verify facts from multiple sources when possible
-- Distinguish between facts, claims, and opinions
-- Note the recency and authority of sources
+研究方法：先用宽泛搜索了解领域，再深入具体来源；尽可能从多个来源核验事实；区分事实、主张和观点；记录来源时效与权威性。
 
-Quality Standards:
-- Never fabricate information or sources
-- Clearly indicate when information is uncertain
-- Provide direct quotes when precision matters
-- Include source URLs/references for verification`,
-  
+质量要求：不得编造信息或来源；明确说明不确定性；精确性重要时引用原文；为可核验的主张提供来源网址或引用。`,
   tools: {
     webSearch: researchTools.webSearch,
     readUrl: researchTools.readUrl,
@@ -46,138 +31,43 @@ Quality Standards:
 });
 ```
 
-## Capabilities
+## 能力
 
-### Web Search
-Search the web for relevant information.
+- **网页搜索**：输入查询和可选日期/来源类别筛选；返回相关结果、摘要、网址和来源元数据。
+- **读取网址**：输入网址和内容类别；返回正文、关键章节及发布元数据。
+- **提取主张**：输入来源文本和目标主张类别；返回主张列表、置信度和支持上下文。
+- **核验主张**：输入待核验主张及原始来源；返回核验状态、支持/反对来源和置信度。
+- **综合研究**：输入研究发现、目标格式和关键问题；返回综合摘要、洞见和引用。
 
-**Input:**
-- Search query
-- Optional filters (date, source type)
-
-**Output:**
-- List of relevant results
-- Snippets and URLs
-- Source metadata
-
-### URL Reading
-Extract content from a specific URL.
-
-**Input:**
-- URL to read
-- Content type (article, paper, documentation)
-
-**Output:**
-- Extracted text content
-- Key sections identified
-- Publication metadata
-
-### Claim Extraction
-Identify distinct claims from a source.
-
-**Input:**
-- Source text
-- Claim types to extract
-
-**Output:**
-- List of claims
-- Confidence level
-- Supporting context
-
-### Claim Verification
-Cross-reference a claim against other sources.
-
-**Input:**
-- Claim to verify
-- Original source
-
-**Output:**
-- Verification status
-- Supporting/contradicting sources
-- Confidence assessment
-
-### Synthesis
-Combine findings into a coherent summary.
-
-**Input:**
-- Research findings
-- Target format
-- Key questions to answer
-
-**Output:**
-- Synthesized summary
-- Key insights
-- Source citations
-
-## Configuration
+## 配置
 
 ```typescript
 interface ResearchConfig {
-  // Search configuration
   maxSearchResults: number;
   preferredSources: string[];
   excludedDomains: string[];
-  
-  // Verification settings
   minSourcesForVerification: number;
   requireRecentSources: boolean;
   maxSourceAge: "1month" | "6months" | "1year" | "any";
-  
-  // Output configuration
   citationStyle: "inline" | "footnote" | "endnote";
   summaryLength: "brief" | "standard" | "comprehensive";
   includeSourceQuality: boolean;
 }
-
-const defaultConfig: ResearchConfig = {
-  maxSearchResults: 10,
-  preferredSources: [],
-  excludedDomains: [],
-  minSourcesForVerification: 2,
-  requireRecentSources: false,
-  maxSourceAge: "any",
-  citationStyle: "inline",
-  summaryLength: "standard",
-  includeSourceQuality: true
-};
 ```
 
-## Usage Example
+默认最多取 10 条结果，至少两个来源用于核验；不强制来源必须近期；引用采用行内格式；摘要使用标准长度，并纳入来源质量评估。
 
-```typescript
-import { researchAgent } from "./agents/research-agent";
+## 使用示例
 
-const research = await researchAgent.generate({
-  prompt: `Research the current state of LLM evaluation methods.
+研究 LLM 评估实践时，可依次回答：主要评估方法有哪些？人工评估有哪些限制？LLM 评估器与人类相比有多可靠？实施 LLM-as-a-Judge 的最佳实践是什么？最终提供带引用的综合摘要。
 
-I need to understand:
-1. What are the main approaches to evaluating LLM outputs?
-2. What are the limitations of human evaluation?
-3. How reliable are LLM-based evaluators compared to humans?
-4. What are best practices for implementing LLM-as-a-Judge?
+## 研究流程
 
-Provide a comprehensive summary with citations.`
-});
+```text
+研究问题 → 拆分查询 → 初步搜索 → 选择来源 → 深入阅读
+        → 提取主张 → 交叉核验 → 综合 → 最终报告
 ```
 
-## Research Workflow
+## 集成场景
 
-```mermaid
-graph TD
-    A[Research Question] --> B[Query Decomposition]
-    B --> C[Initial Search]
-    C --> D[Source Selection]
-    D --> E[Deep Reading]
-    E --> F[Claim Extraction]
-    F --> G[Cross-Verification]
-    G --> H[Synthesis]
-    H --> I[Final Report]
-```
-
-## Integration Points
-
-- **Knowledge Base Building**: Populate internal knowledge stores
-- **Fact Checking**: Verify claims in generated content
-- **Market Research**: Gather competitive intelligence
-- **Technical Documentation**: Research implementation approaches
-
+用于构建知识库、事实核验、市场研究和技术实现方案调查。

@@ -1,90 +1,76 @@
 ---
 name: comprehensive-research-agent
-description: "Ensure thorough validation, error recovery, and transparent reasoning in research tasks with multiple tool calls"
+description: "用于多工具研究任务，确保来源验证、错误恢复、推理透明和结论可靠。"
 ---
 
-# Comprehensive Research Agent Best Practices
+# 综合研究智能体最佳实践
 
-This skill addresses common failures in multi-step research tasks: unhandled tool errors, missing validation, opaque reasoning, and premature conclusions. It provides structured protocols for source validation, error recovery, and thinking transparency that significantly improves research quality and reliability.
+本技能处理多步骤研究中的常见问题：工具错误未处理、缺少验证、推理过程不透明和过早下结论。它规定来源验证、错误恢复和过程记录步骤，以提高研究质量与可靠性。
 
-## When to Activate
+## 何时启用
 
-- Task involves web research with search, read_url, or fetch operations
-- Task requires gathering information from multiple sources
-- Task has explicit requirements for completeness or verification
-- Task includes file operations that need validation (save, write, read)
-- Any research or information-gathering workflow with 3+ tool interactions
+- 需要通过搜索、`read_url` 或抓取操作进行网络研究。
+- 需要从多个来源收集信息。
+- 任务明确要求完整性或验证。
+- 文件操作需要检查结果，例如保存、写入或读取。
+- 研究或信息收集流程包含三次以上工具交互。
 
-## Core Concepts
+## 核心概念
 
-- Validation Checkpoints: Explicit verification steps at phase transitions to confirm tool outputs, source relevance, and information completeness before proceeding
-- Error Recovery Protocols: Mandatory acknowledgment and handling of tool failures with fallback strategies rather than silent continuation
-- Source Traceability: Maintaining clear tracking of which sources were actually retrieved vs. referenced from prior knowledge to prevent hallucination
-- Substantive Thinking Blocks: Detailed reasoning traces that document insights, connections, gaps, and decision rationale at each step
-- Cross-Source Validation: Verifying key claims against multiple sources and explicitly noting consensus, contradictions, and information gaps
+- **验证检查点**：在阶段转换时核验工具输出、来源相关性和信息完整性。
+- **错误恢复协议**：工具失败后必须承认并处理，采用备用方案，不得静默继续。
+- **来源可追溯性**：明确区分实际获取的来源和已有知识中提到的来源，防止幻觉。
+- **有实质内容的思考记录**：记录洞见、联系、缺口和每一步的决策理由。
+- **跨来源核验**：用多个来源验证关键主张，并说明共识、矛盾和信息缺口。
 
-## Patterns to Avoid
+## 应避免的模式
 
-- **Silent Tool Failure**: A tool call returns an error (404, timeout, invalid URL) but the agent proceeds without acknowledging it, potentially missing critical information. Always log failures and attempt recovery or document the gap.
-- **Vague Completion Claims**: Agent declares 'I have enough information' or 'research is comprehensive' without specifying what was learned, what sources support claims, or what gaps remain. Replace with specific summaries of coverage.
-- **Unvalidated Source Selection**: Agent reads URLs from search results without evaluating relevance, credibility, or recency first. This wastes tool calls on low-quality sources. Always rank and prioritize sources before deep reading.
-- **Generic Thinking Blocks**: Thinking contains only next-action descriptions ('Now I will search for X') without analysis of what was learned, how it connects to the goal, or what questions remain. Thinking should be substantive and reflective.
-- **Verification Method Error**: Using list_directory to verify file creation can produce false negatives due to caching. Always use read_file for actual content verification.
-- **Citation Without Retrieval**: Citing sources (URLs, paper titles) in the final report that were never successfully fetched or read. Track sources explicitly and prohibit citing unretrieved content.
-- **Redundant Tool Calls**: Making overlapping searches or reading sources without tracking what has already been obtained. Maintain a 'found resources' tracker to avoid duplication.
+- **工具静默失败**：工具返回 404、超时或无效网址后，智能体不承认问题就继续。应记录失败并尝试恢复，或说明缺口。
+- **含糊地宣布完成**：只说“信息足够”或“研究全面”，却不说明发现、证据和缺口。应明确总结覆盖范围。
+- **未经评估就选择来源**：直接打开搜索结果，不先核对相关性、可信度和时效性。应先排序来源，再深入阅读。
+- **空洞的思考记录**：只写“现在我会搜索 X”，不分析发现与目标的关系，也不记录未解决问题。思考记录应包含实质分析。
+- **错误的验证方式**：用 `list_directory` 检查文件可能因缓存误报。确认实际内容时使用 `read_file`。
+- **引用未获取来源**：最终报告引用了从未成功获取的网页或论文。应显式追踪来源，禁止引用未获取内容。
+- **重复工具调用**：重复搜索或重读已获取来源。维护已发现资源清单，避免重复。
 
-## Recommended Practices
+## 推荐做法
 
-- **Implement Pre-Reading Source Evaluation**: Before reading URLs, rank search results by relevance, credibility, recency, and authority. Document selection rationale in thinking blocks.
-- **Use Structured Thinking Blocks**: Each thinking block must include: (a) what was learned from the source/action, (b) how it connects to the research goal, (c) any contradictions/gaps identified, (d) strategic decisions made. Avoid generic next-action statements.
-- **Add Mandatory Error Acknowledgment**: When any tool fails, the next thinking block must explicitly address it: note the failure type, propose a recovery strategy (retry, alternative source, or documented gap), and explain the chosen approach.
-- **Create Pre-Completion Validation Checklist**: Before declaring research complete, verify: all required sections have specific evidence, all sources were successfully retrieved, key claims are cross-validated, and gaps are documented.
-- **Implement Cross-Source Validation**: After gathering information from multiple sources, explicitly compare findings. Note where sources agree, where they contradict, and what remains unverified. Use this to assess overall confidence.
-- **Maintain Source Tracking Table**: Create a simple table in thinking showing which URLs were fetched, which failed, and which were used for specific claims. Never cite unretrieved sources.
-- **Use Read_File for Verification**: When confirming file writes, use read_file to verify actual content rather than list_directory, which can have caching issues causing false negatives.
-- **Add Explicit Validation Phase**: After reading sources, write a brief synthesis that confirms usefulness, notes relevance to research goals, and identifies remaining gaps before proceeding to the next phase.
+- **阅读前先评估来源**：按相关性、可信度、时效性和权威性排序，并记录选择理由。
+- **采用结构化思考记录**：每条记录包括从来源或操作中学到了什么、与目标的关系、矛盾或缺口、下一步决策。
+- **强制承认工具错误**：工具失败后的下一条思考记录必须写明错误类型、恢复方案（重试、替代来源或记录缺口）及选择理由。
+- **完成前执行核对清单**：确认所有要求都有具体证据、来源均成功获取、关键主张已交叉核验、缺口已记录。
+- **交叉验证来源**：比较多来源发现，指出一致、矛盾和未验证部分，并据此判断总体置信度。
+- **维护来源追踪表**：记录已获取、失败和支持哪些主张的链接；不得引用未获取来源。
+- **使用 `read_file` 验证写入**：检查文件实际内容，不要只依赖可能产生缓存误报的 `list_directory`。
+- **增加明确的验证阶段**：阅读资料后先写简短综合，说明资料是否有用、是否符合研究目标以及还有哪些缺口，再进入下一阶段。
 
-## Guidelines
+## 指南
 
-1. After each tool call, explicitly check for errors in the response and acknowledge failures in the next thinking block with recovery strategy
-2. Before reading URLs, rank sources by relevance/credibility and document selection rationale - never read results without evaluation
-3. Thinking blocks must be 3-5+ sentences minimum and include: what was learned, connections to goal, gaps/contradictions, and next steps
-4. Create a pre-completion checklist verifying: all requirements covered, sources retrieved, claims validated, gaps documented
-5. Maintain source tracking - only cite URLs that were successfully fetched; prohibit citing unretrieved sources
-6. When writing final reports, include 'Limitations & Gaps' section documenting what was attempted but failed or what remains unverified
-7. Use read_file (not list_directory) to verify file content after save operations
-8. Cross-validate key claims across at least 2 sources when possible; explicitly note consensus or contradictions
-9. Track gathered information to avoid redundant searches - implement 'found resources' tracker for multi-phase research
-10. Replace vague 'comprehensive' statements with specific summaries: 'Covered X sources on Y topic; missing Z aspects'
+1. 每次工具调用后检查错误；若失败，下一条思考记录应说明恢复方案。
+2. 阅读网址前先按相关性和可信度排序，不要未经评估就读取所有结果。
+3. 思考记录至少包含：新发现、与目标的关系、缺口或矛盾、下一步。
+4. 宣布研究完成前，检查所有要求、来源、主张验证和缺口。
+5. 只引用成功获取的链接；不要引用未读取的来源。
+6. 最终报告包含“限制与缺口”章节，说明失败尝试和未经验证事项。
+7. 保存文件后用 `read_file` 核对实际内容。
+8. 尽可能用至少两个来源交叉验证关键主张，并说明是否一致。
+9. 跟踪已收集信息，避免多阶段研究中的重复搜索。
+10. 用具体覆盖情况替代“研究全面”等说法，例如：“阅读了 X 个关于 Y 的来源，Z 方面仍缺资料”。
 
-## Examples
+## 示例
 
-- ***Before (Anti-Pattern)**: 'I searched for context engineering and found several results. Now I'll read some URLs and then write the report. I have enough information to proceed.'
+**反例**：只说搜索了上下文工程、将继续阅读网页、目前信息足够。
 
-**After (Pattern)**: 'Search returned 15 results on context engineering. Evaluating relevance: Liu et al. (2024) appears most authoritative on 'lost in the middle' phenomenon; Anthropic documentation likely has current context window specs; Patel (2023) covers RAG best practices. Ranking these as top 3 priorities. Reading top result first. If the primary source fails (URL error), will try backup search for correct documentation URL and note the gap in final report.'
-- ***Before (Anti-Pattern)**: Tool returns 404 error for Anthropic context windows URL. Agent continues without acknowledgment. Later cites 'Claude has 200K context window' without showing source. Final report cites Google Research paper that was never fetched.
+**改进**：说明搜索得到了多少结果，按权威性选择优先来源，先阅读一手研究；若主要来源打不开，则查找备用链接，并在最终报告中记录缺口。
 
-**After (Pattern)**: Tool returned 404 for Anthropic URL. Thinking: 'Primary source failed. Fallback: search for alternative Anthropic documentation URL or find archived version. If unavailable, note context window data from secondary sources only and add disclaimer about verification status.' Then: 'Cross-validated Claude context window: Anthropic blog (successfully read) and two developer documentation sources agree on 200K. Confident in this claim.' Source tracking table shows: Anthropic URL (failed, backup used), Blog (success), Dev docs (success).
+工具返回 404 时，应立即记录来源失败，尝试替代官方文档；若仍不可用，则说明结论只由二手来源支持。交叉核验关键数字，并在来源表中标明哪些链接成功、失败及被用于支持哪些主张。
 
----
+## 分数预期
 
-## Score Expectations
+包含多工具和多步骤推理的复杂研究任务，常见得分为 65—75 分。这不一定说明提示词失败，也可能来自工具输出变化、多个有效解法和长任务执行的随机性。
 
-Complex research tasks with multiple tools (6+) and multi-step reasoning chains typically achieve scores in the **65-75 range**. This is not a limitation of the prompt but reflects:
+应关注相对改进和失败模式是否减少，而不是只追求某个绝对分数。
 
-- Inherent variability in tool outputs affecting reasoning paths
-- Multiple valid approaches leading to different intermediate scores
-- Stochastic nature of long-horizon agent execution
+## 技能元数据
 
-**Focus on relative improvement and pattern elimination** rather than absolute scores. A 5-10% improvement from optimization is significant for complex tasks.
-
----
-
-## Skill Metadata
-
-**Generated**: 2026-01-11
-**Source**: Reasoning Trace Optimizer
-**Optimization Iterations**: 10
-**Best Score Achieved**: 72/100 (iteration 4)
-**Final Score**: 70.0/100
-**Score Improvement**: 67.6 → 70.0 (+3.6%)
+生成日期：2026-01-11；来源：Reasoning Trace Optimizer；优化迭代：10；最高分：72/100（第 4 轮）；最终分：70.0/100；分数由 67.6 提升至 70.0（+3.6%）。

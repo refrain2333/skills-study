@@ -1,34 +1,34 @@
-# Deep Research Evidence Summary
+# 深度研究证据摘要
 
-## Run Metadata
+## 运行元数据
 
-- Run ID: `trun_64f5be03055a4b52adf17481e4b865bc`
-- Interaction ID: `trun_64f5be03055a4b52adf17481e4b865bc`
-- Local metadata: `raw/autonomous-research-frameworks-executable.json`
-- Related raw evidence: `raw/autonomous-research-harness-evolution.json`
-- Status: completed
+- 运行编号：`trun_64f5be03055a4b52adf17481e4b865bc`
+- 交互编号：`trun_64f5be03055a4b52adf17481e4b865bc`
+- 本地元数据：`raw/autonomous-research-frameworks-executable.json`
+- 相关原始证据：`raw/autonomous-research-harness-evolution.json`
+- 状态：completed
 
-## Executive Summary
+## 执行摘要
 
-Parallel deep research produced a concrete architecture for an autonomous research system that maintains an AI skills encyclopedia inside a file-based open-source repository. The recommended architecture aligns with the repo implementation:
+Parallel 深度研究提出了一种自主研究系统架构，用于在文件化开源仓库中维护 AI 技能百科。建议架构与本仓库实现方向一致：
 
-- Deterministic validation harnesses are the locked evaluator.
-- Durable scratchpads and `THREAD.md`-style logs preserve auditability and recovery.
-- Novelty gates prevent redundant or trivial skill revisions.
-- Pairwise skill revision evaluation compares candidate skill changes under controlled conditions.
-- Auto-PR workflows can prepare reviewable changes, but human review and merge remain mandatory.
+- 将确定性验证运行框架作为锁定的评估器。
+- 使用持久草稿区和 `THREAD.md` 式日志支持审计与恢复。
+- 使用新颖性门槛阻止重复或微不足道的技能修订。
+- 在受控条件下进行技能修订成对评估，比较候选变更。
+- 自动流程可以准备可审查变更，但仍必须由人审查和合并。
 
-## Implementable Patterns To Carry Forward
+## 后续可采用的实现模式
 
-1. **Deterministic validation first**: Freeze repo structure checks and schema validation before adding model-judged gates.
-2. **Durable run directories**: Every research loop should create a directory with `THREAD.md`, source queue, evaluations, proposals, reports, and logs.
-3. **Novelty gate**: Compare proposed skill deltas against accepted mechanisms, existing skills, fixtures, and rejected ideas before drafting.
-4. **Pairwise revisions**: When two skill drafts compete, evaluate both with the same rubric, same source evidence, and a simplicity tie-breaker.
-5. **Human-controlled merge**: Agents may prepare PR content after checks pass, but merge authority remains outside the autonomous loop.
+1. **先做确定性验证**：加入模型评审门槛前，先固定仓库结构检查和数据结构验证。
+2. **使用持久运行目录**：每次研究循环都创建目录，保存 `THREAD.md`、来源队列、评估、提案、报告和日志。
+3. **设置新颖性门槛**：起草前将拟议技能差异与已接受机制、现有技能、样例和被拒绝想法比较。
+4. **修订成对比较**：两个技能草稿竞争时，使用相同评分规则和来源证据评估，并以简洁度打破平局。
+5. **由人控制合并**：检查通过后，智能体可以准备拉取请求内容，但合并权限始终位于自主循环之外。
 
-## Candidate Follow-Up Changes
+## 候选后续变更
 
-- Add a mechanism registry so novelty checks compare accepted behavior changes before broad corpus overlap.
-- Add a pairwise skill revision rubric or script that compares two candidate skill files.
-- Add a CI workflow once the repo is ready to run deterministic validation on every PR.
-- Add model-judged evaluation only after fixtures and deterministic gates are stable.
+- 增加机制注册表，使新颖性检查先比较已接受的行为变化，再判断宽泛语料重叠。
+- 增加技能修订成对评分规则或脚本，用于比较两个候选技能文件。
+- 仓库准备好后，增加持续集成工作流，在每个拉取请求上执行确定性验证。
+- 样例和确定性门槛稳定后，再加入模型评审。

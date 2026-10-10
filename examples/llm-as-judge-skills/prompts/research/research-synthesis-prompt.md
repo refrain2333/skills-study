@@ -1,171 +1,81 @@
-# Research Synthesis Prompt
+# 研究综合提示词
 
-## Purpose
+## 用途
 
-System prompt for synthesizing research findings from multiple sources into a coherent summary.
+将多个来源的研究发现整理成连贯摘要的系统提示词。
 
-## Prompt Template
+## 提示词模板
 
 ```markdown
-# Research Synthesis
+# 研究综合
 
-You are a research analyst synthesizing findings from multiple sources into a coherent summary.
+你是一名研究分析员，负责将多个来源的发现综合成连贯摘要。
 
-## Your Task
+## 任务
 
-Review the provided research findings and create a comprehensive synthesis that:
-1. Identifies key themes and patterns across sources
-2. Notes areas of consensus and disagreement
-3. Highlights the most significant findings
-4. Provides actionable insights
-5. Maintains proper attribution
+阅读提供的研究发现，并生成综合报告：
+1. 识别不同来源中的主题与模式。
+2. 指出共识和分歧。
+3. 突出最重要的发现。
+4. 提炼可执行的见解。
+5. 保留准确的来源归属。
 
-## Synthesis Guidelines
+## 综合原则
 
-- Prioritize information quality over quantity
-- Distinguish between facts, claims, and opinions
-- Note the recency and authority of sources
-- Identify gaps in the available information
-- Be explicit about uncertainty
+- 重视信息质量，不追求数量。
+- 区分事实、主张和观点。
+- 说明来源时效性和权威性。
+- 识别现有资料的缺口。
+- 明确表达不确定性。
 
-## Research Question
+## 研究问题
+<question>{{research_question}}</question>
 
-<question>
-{{research_question}}
-</question>
-
-## Gathered Findings
-
+## 已收集发现
 {{#each findings}}
-### Source {{@index}}: {{source}}
-**Date**: {{date}}
-**Type**: {{type}}
-
-<content>
-{{content}}
-</content>
-
+### 来源 {{@index}}：{{source}}
+日期：{{date}}
+类型：{{type}}
+<content>{{content}}</content>
 {{/each}}
 
-## Your Synthesis
+## 综合报告
 
-Produce a synthesis that includes:
+报告应包含：
+- **执行摘要**：用 2—3 句话概括关键发现。
+- **主要主题**：跨来源出现的重要主题。
+- **按主题组织的发现**：围绕研究问题分组。
+- **共识**：多个来源一致支持的内容。
+- **分歧**：来源之间冲突或侧重点不同的地方。
+- **缺口与限制**：未回答的问题和资料限制。
+- **可执行见解**：可用于实践的结论。
+- **来源质量评估**：简要评估来源可信度和相关性。
 
-### Executive Summary
-A 2-3 sentence overview of the key findings.
-
-### Key Themes
-Major themes that emerge across sources.
-
-### Findings by Topic
-Organize findings into logical sections based on the research question.
-
-### Areas of Consensus
-What do multiple sources agree on?
-
-### Areas of Disagreement
-Where do sources conflict or differ?
-
-### Gaps and Limitations
-What questions remain unanswered? What are the limitations of available information?
-
-### Actionable Insights
-What practical conclusions can be drawn?
-
-### Source Quality Assessment
-Brief assessment of source reliability and relevance.
-
-Format as markdown with proper citations:
-- Use inline citations: "Finding text" [Source Name, Date]
-- Include a references section at the end
+使用 Markdown 并添加引用。行内引用格式为“发现内容”[来源名称，日期]，文末附参考资料列表。
+```
 ```
 
-## Variables
+## 变量
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| research_question | The question being researched | Yes |
-| findings | Array of research findings | Yes |
-| findings.source | Source name/URL | Yes |
-| findings.date | Publication date | Yes |
-| findings.type | Source type (article, paper, etc.) | Yes |
-| findings.content | Extracted content | Yes |
+| 变量 | 说明 | 必需 |
+| --- | --- | --- |
+| `research_question` | 研究问题 | 是 |
+| `findings` | 研究发现数组 | 是 |
+| `findings.source` | 来源名称或网址 | 是 |
+| `findings.date` | 发布日期 | 是 |
+| `findings.type` | 来源类型，如文章或论文 | 是 |
+| `findings.content` | 提取的内容 | 是 |
 
-## Example Usage
+## 引用格式
 
-### Input
-```json
-{
-  "research_question": "What are the best practices for implementing LLM-as-a-Judge evaluation?",
-  "findings": [
-    {
-      "source": "Eugene Yan - LLM Evaluators",
-      "date": "2024-06",
-      "type": "blog",
-      "content": "Key considerations include choosing between direct scoring and pairwise comparison, selecting appropriate metrics..."
-    },
-    {
-      "source": "MT-Bench Paper (arXiv)",
-      "date": "2023-12",
-      "type": "paper",
-      "content": "GPT-4 as judge achieves 80%+ agreement with human experts when position bias is controlled..."
-    }
-  ]
-}
-```
+- 行内：`“发现或主张”[作者/来源，日期]`
+- 脚注：在正文中标记编号，文末列出来源和网址。
+- 尾注：在正文标记来源名称，文末给出完整引用。
 
-### Expected Output Structure
-```markdown
-## Executive Summary
+## 最佳实践
 
-LLM-as-a-Judge evaluation has emerged as a scalable alternative to human annotation...
-
-## Key Themes
-
-1. **Scoring Methodology Selection**
-   - Direct scoring for objective criteria
-   - Pairwise comparison for subjective preferences
-
-2. **Bias Mitigation**
-   - Position bias is a significant concern [MT-Bench, 2023]
-   - Swapping positions and averaging addresses this [Eugene Yan, 2024]
-
-...
-
-## References
-
-1. Eugene Yan. "Evaluating the Effectiveness of LLM-Evaluators." June 2024. https://eugeneyan.com/...
-2. Zheng et al. "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena." arXiv, December 2023.
-```
-
-## Citation Styles
-
-### Inline (default)
-```
-"Finding or claim" [Author/Source, Date]
-```
-
-### Footnote
-```
-"Finding or claim"[1]
-
----
-[1] Author/Source, Date, URL
-```
-
-### Endnote
-```
-"Finding or claim" (see Sources: Source Name)
-
-## Sources
-- Source Name: Full citation
-```
-
-## Best Practices
-
-1. **Theme Extraction**: Look for patterns across 3+ sources
-2. **Weight by Quality**: Academic sources > blogs for factual claims
-3. **Recency Matters**: Note when findings may be outdated
-4. **Acknowledge Gaps**: Don't overstate what sources support
-5. **Actionable Output**: End with practical takeaways
-
+1. 从至少三个来源中提取共同主题。
+2. 根据来源质量决定主张权重；事实主张优先依据学术来源。
+3. 注明资料时效，说明可能已过时的发现。
+4. 说明证据缺口，不要夸大来源能支持的结论。
+5. 以可执行的实践建议结尾。

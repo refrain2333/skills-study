@@ -1,82 +1,77 @@
-# Book SFT Pipeline
+# 书籍 SFT 管道
 
-A standalone example skill for training language models to write in any author's style. It is not published as a separate Claude Code marketplace plugin from this repository.
+一个用于训练语言模型以任何作者风格写作的独立技能。这是主上下文工程集合中的**独立插件**。
 
-## Installation
+## 安装
 
-### Claude Code / Cursor / Codex
-
-Agent Skills hosts expect a directory containing `SKILL.md`, not a flat copied markdown file. From the repository root, copy the whole example directory into the target skill root:
+### Claude Code
 
 ```bash
-# Claude Code project-scoped install
-mkdir -p .claude/skills
-cp -R examples/book-sft-pipeline .claude/skills/book-sft-pipeline
+# 先添加市场
+/plugin marketplace add muratcankoylan/Agent-Skills-for-Context-Engineering
 
-# Cursor project-scoped install
-mkdir -p .cursor/skills
-cp -R examples/book-sft-pipeline .cursor/skills/book-sft-pipeline
-
-# Codex / OpenAI Agent Skills install
-mkdir -p .agents/skills
-cp -R examples/book-sft-pipeline .agents/skills/book-sft-pipeline
+# 安装 book-sft-pipeline 插件
+/plugin install book-sft-pipeline@context-engineering-marketplace
 ```
 
-### Manual
+### Cursor / Codex / IDE
 
-Reference the `examples/book-sft-pipeline/SKILL.md` file directly only if your agent does not support the Agent Skills directory layout.
+将 `SKILL.md` 复制到你的 `.rules` 或项目技能文件夹中。
 
-## What's Included
+### 手动
+
+直接在你的代理上下文中引用 `SKILL.md` 文件。
+
+## 包含内容
 
 ```
 book-sft-pipeline/
-├── README.md                 # This file
-├── SKILL.md                  # Complete skill documentation (standalone)
+├── README.md                 # 本文件
+├── SKILL.md                  # 完整技能文档（独立）
 ├── examples/
-│   └── gertrude-stein/       # Complete case study with real outputs
-│       ├── README.md         # Results and analysis
-│       ├── sample_outputs.md # Raw model outputs
+│   └── gertrude-stein/       # 完整案例研究，包含真实输出
+│       ├── README.md         # 结果和分析
+│       ├── sample_outputs.md # 原始模型输出
 │       ├── training_config.json
 │       ├── dataset_sample.jsonl
-│       └── pangram/          # AI detector screenshots
+│       └── pangram/          # AI 检测器截图
 ├── scripts/
-│   └── pipeline_example.py   # Conceptual implementation
+│   └── pipeline_example.py   # 概念实现
 └── references/
     ├── segmentation-strategies.md
     ├── tinker-format.md
     └── tinker.txt
 ```
 
-## Key Results
+## 关键结果
 
-Trained Qwen3-8B-Base on Gertrude Stein's "Three Lives" (1909):
+在格特鲁德·斯坦因的《三个女人》（1909 年）上训练 Qwen3-8B-Base：
 
-| Metric | Value |
+| 指标 | 数值 |
 |--------|-------|
-| Training examples | 592 |
-| Loss reduction | 97% |
-| Pangram AI detector | 70% Human |
-| Training time | 15 minutes |
-| Total cost | $2 |
+| 训练样本数 | 592 |
+| 损失降低 | 97% |
+| Pangram AI 检测器 | 70% 人类 |
+| 训练时间 | 15 分钟 |
+| 总成本 | $2 |
 
-## Related Context Engineering Skills
+## 相关上下文工程技能
 
-This skill applies patterns from the [Agent Skills for Context Engineering](../../README.md) collection:
+本技能应用了[代理上下文工程技能](../../README.md)集合中的模式：
 
-| Skill | Application |
+| 技能 | 应用 |
 |-------|-------------|
-| [project-development](../../skills/project-development/) | Staged pipeline architecture |
-| [context-compression](../../skills/context-compression/) | Segmentation strategy |
-| [multi-agent-patterns](../../skills/multi-agent-patterns/) | Orchestrator pattern |
-| [evaluation](../../skills/evaluation/) | Modern scenario testing |
-| [context-fundamentals](../../skills/context-fundamentals/) | Prompt diversity |
+| [project-development](../../skills/project-development/) | 分阶段管道架构 |
+| [context-compression](../../skills/context-compression/) | 分段策略 |
+| [multi-agent-patterns](../../skills/multi-agent-patterns/) | 协调器模式 |
+| [evaluation](../../skills/evaluation/) | 现代场景测试 |
+| [context-fundamentals](../../skills/context-fundamentals/) | 提示多样性 |
 
-## Resources
+## 资源
 
-- [Dataset on Hugging Face](https://huggingface.co/datasets/MuratcanKoylan/gertrude-stein-style-sft)
-- [Research Paper](https://arxiv.org/pdf/2510.13939) (Chakrabarty et al. 2025)
+- [Hugging Face 上的数据集](https://huggingface.co/datasets/MuratcanKoylan/gertrude-stein-style-sft)
+- [研究论文](https://arxiv.org/pdf/2510.13939)（Chakrabarty et al. 2025）
 
-## License
+## 许可证
 
 MIT
-

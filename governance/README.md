@@ -1,10 +1,10 @@
-# Governance policy
+# 权限治理规则
 
-`constitution.yaml` is the machine-readable authority model for the research organization. It is intentionally conservative: an unlisted operation is denied, explicit denies override allows, and only an authenticated human maintainer may merge or activate production.
+`constitution.yaml` 是研究组织可由机器读取的权限模型。规则采用保守策略：未列出的操作默认拒绝，显式拒绝优先于允许；只有经过认证的人工维护者可以合并变更或启用生产环境。
 
-The file uses YAML because it is reviewed by humans and parsed with `yaml.safe_load`. Its executable semantics live in `researcher/scripts/governance_policy.py`; the JSON Schema describes the public interchange shape. Domain validation remains in the executable policy checker so authorization behavior never depends on a schema implementation detail.
+文件采用 YAML，便于人工审查，并通过 `yaml.safe_load` 解析。可执行语义由 `researcher/scripts/governance_policy.py` 定义；JSON Schema 说明公开交换格式。领域规则由可执行的权限检查器负责，以免授权行为受某个数据结构实现细节影响。
 
-Run:
+运行以下命令进行检查或输出诊断结果：
 
 ```bash
 python researcher/scripts/validate_governance.py --check
@@ -15,6 +15,6 @@ python researcher/scripts/validate_governance.py --decision \
   --context-json '{"automated_identity_disclosed":true,"human_review_path":"pull_request"}'
 ```
 
-`effective_commit: "$SELF"` means the commit containing the constitution. This avoids a self-referential hash while still pinning the policy to immutable Git history. Runtimes pin the SHA-256 digest returned by the checker, not a mutable path.
+`effective_commit: "$SELF"` 表示包含章程的提交。这样既避免自引用哈希，又能将规则固定在不可变的 Git 历史上。运行环境应固定检查器返回的 SHA-256 摘要，而不是固定一个可变路径。
 
-The generated authority view is derived from the policy. Do not edit it manually.
+权限视图由规则生成，请勿手工编辑生成文件。

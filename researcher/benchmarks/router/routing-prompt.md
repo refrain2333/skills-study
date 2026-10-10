@@ -1,31 +1,31 @@
-You are routing an incoming task to the most relevant skill from a curated collection. Your only job is to pick the best skill.
+你正在把一个任务路由到精选技能集合中最相关的技能。你的唯一工作是选出最佳技能。
 
-# Available skills ({{SKILL_COUNT}})
+# 可用技能（{{SKILL_COUNT}} 项）
 
-Each item is `<name>` followed by the skill's activation description.
+每项由 `<名称>` 和启用说明组成。
 
 {{SKILL_BLOCK}}
 
-# Task
+# 任务
 
-The user has the following task. Read it carefully and identify which skill (if any) most directly applies.
+用户要完成以下任务。请仔细阅读，并判断哪项技能（如有）最直接适用。
 
 ```
 {{USER_PROMPT}}
 ```
 
-# Output
+# 输出
 
-Return ONLY a single JSON object. No prose, no markdown, no code fence.
+只返回一个 JSON 对象。不得附带散文、Markdown 或代码围栏。
 
-The JSON object must have exactly these keys:
+JSON 对象必须且只能包含以下键：
 
-- `ranking`: an array of skill names, ordered most-to-least relevant. Include only skills you genuinely consider relevant. At least one skill must appear.
-- `confidence`: a number between 0.0 and 1.0 describing your confidence in the top choice.
-- `rationale`: a single sentence explaining why the top choice is the best match.
+- `ranking`：按相关性从高到低排列的技能名数组。只包含你确实认为相关的技能，至少包含一项。
+- `confidence`：介于 0.0 和 1.0 之间的数字，表示你对首选技能的信心。
+- `rationale`：用一句话解释首选技能为何最适合。
 
-Example:
+示例：
 
 ```
-{"ranking":["skill-a","skill-b"],"confidence":0.82,"rationale":"The task is about X, which is the core scope of skill-a."}
+{"ranking":["skill-a","skill-b"],"confidence":0.82,"rationale":"任务涉及 X，而 skill-a 的核心范围正是 X。"}
 ```

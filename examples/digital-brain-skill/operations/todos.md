@@ -1,76 +1,71 @@
-# Task List
+# 任务清单
 
-## Today's Focus
+## 今日重点
 
-### P0 - Must Do Today
-<!-- Blocking, urgent, non-negotiable -->
-- [ ] [PLACEHOLDER: Critical task]
+### P0 — 今天必须完成
 
-### P1 - Do This Week
-<!-- Important, needs attention soon -->
-- [ ] [PLACEHOLDER: Important task]
-- [ ] [PLACEHOLDER]
+阻塞其他工作、紧急且不可协商：
 
----
+- [ ] [关键任务]
 
-## Active Tasks
+### P1 — 本周完成
 
-### P2 - This Month
-<!-- Valuable, schedule when possible -->
-- [ ] [PLACEHOLDER: Monthly task]
-- [ ] [PLACEHOLDER]
+重要，需要尽快处理：
 
-### P3 - Backlog
-<!-- Nice to have, get to when P0-P2 clear -->
-- [ ] [PLACEHOLDER: Backlog item]
-- [ ] [PLACEHOLDER]
+- [ ] [重要任务]
+- [ ] [填写]
 
----
+## 当前任务
 
-## By Area
+### P2 — 本月完成
 
-### Building (Product/Business)
-- [ ] [PLACEHOLDER]
+有价值，适合排入日程：
 
-### Content
-- [ ] [PLACEHOLDER]
+- [ ] [本月任务]
 
-### Network/Relationships
-- [ ] [PLACEHOLDER]
+### P3 — 待办
 
-### Learning
-- [ ] [PLACEHOLDER]
+P0—P2 清空后再处理：
 
-### Personal
-- [ ] [PLACEHOLDER]
+- [ ] [待办事项]
 
----
+## 按领域分类
 
-## Waiting On
-<!-- Tasks blocked by others -->
+### 产品或业务建设
+- [ ] [填写]
 
-| Task | Waiting On | Since | Follow Up |
-|------|------------|-------|-----------|
-| [PLACEHOLDER] | [Person/Thing] | [DATE] | [DATE] |
+### 内容
+- [ ] [填写]
 
----
+### 人际网络与关系
+- [ ] [填写]
 
-## Completed This Week
-<!-- Move here when done, clear weekly -->
-- [x] [PLACEHOLDER: Completed task] _(completed: DATE)_
+### 学习
+- [ ] [填写]
 
----
+### 个人事务
+- [ ] [填写]
 
-## Notes
+## 等待他人处理
 
-```
-[PLACEHOLDER: Any context, blockers, or notes about current priorities]
+| 任务 | 等待对象 | 开始日期 | 跟进日期 |
+| --- | --- | --- | --- |
+| [填写] | [人员或事项] | [日期] | [日期] |
+
+## 本周已完成
+
+完成后移到这里，每周清理：
+
+- [x] [已完成任务] _(完成日期：日期)_
+
+## 备注
+
+```text
+[记录当前优先事项的背景、阻塞因素或补充说明]
 ```
 
----
-
-*Priority Guide:*
-- *P0: Do today, everything else waits*
-- *P1: Must complete this week*
-- *P2: Target this month*
-- *P3: Backlog, no deadline*
+优先级说明：
+- P0：今天完成，其他工作暂缓。
+- P1：本周必须完成。
+- P2：本月计划完成。
+- P3：没有截止日期的待办。

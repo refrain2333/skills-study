@@ -38,11 +38,16 @@ STOPWORDS = {
     "can",
     "should",
 }
+CJK_STOPWORDS = {"智能体", "任务", "系统", "内容", "信息", "进行", "这个", "相关", "工作", "使用", "可以", "需要", "例如"}
 
 
 def tokens(text: str) -> set[str]:
     raw = re.findall(r"[a-zA-Z][a-zA-Z0-9_-]{2,}", text.lower())
-    return {token.replace("_", "-") for token in raw if token not in STOPWORDS}
+    result = {token.replace("_", "-") for token in raw if token not in STOPWORDS}
+    for run in re.findall(r"[\u3400-\u9fff]+", text):
+        result.update(run[index:index + 2] for index in range(len(run) - 1))
+        result.update(run[index:index + 3] for index in range(len(run) - 2))
+    return result - CJK_STOPWORDS
 
 
 def parse_frontmatter(text: str) -> dict[str, str]:
@@ -53,7 +58,7 @@ def parse_frontmatter(text: str) -> dict[str, str]:
 def activation_text(text: str) -> str:
     frontmatter = parse_frontmatter(text)
     parts = [frontmatter.get("description", "")]
-    match = re.search(r"## When to Activate\n(.+?)(?:\n## |\Z)", text, flags=re.DOTALL)
+    match = re.search(r"^##\s+何时启用\s*\n(.+?)(?:\n## |\Z)", text, flags=re.DOTALL | re.MULTILINE)
     if match:
         parts.append(match.group(1))
     return "\n".join(parts)

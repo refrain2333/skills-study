@@ -1,171 +1,56 @@
-# Delegate to Agent Tool
+# 委派给智能体工具
 
-## Purpose
+## 用途
 
-Route a task to a specialized agent for execution. Handles context passing, result collection, and error management.
+将任务分配给专用智能体，并处理上下文传递、结果收集和错误管理。
 
-## Tool Definition
+## 工具定义
 
 ```typescript
-import { tool } from "ai";
-import { z } from "zod";
-
 export const delegateToAgent = tool({
-  description: `Delegate a task to a specialized agent.
-Use when a subtask requires specific capabilities.
-Pass complete context needed for the agent to succeed.`,
-
+  description: "将子任务交给具备相应能力的智能体，并传递其所需的完整上下文。",
   parameters: z.object({
-    agentName: z.enum(["evaluator", "researcher", "writer", "analyst"])
-      .describe("Name of the agent to delegate to"),
-    
-    task: z.string()
-      .describe("Clear description of what the agent should do"),
-    
+    agentName: z.enum(["evaluator", "researcher", "writer", "analyst"]),
+    task: z.string(),
     context: z.object({
-      previousOutputs: z.array(z.string()).optional()
-        .describe("Outputs from prior steps this agent needs"),
-      
-      documents: z.array(z.string()).optional()
-        .describe("Relevant documents or data"),
-      
+      previousOutputs: z.array(z.string()).optional(),
+      documents: z.array(z.string()).optional(),
       constraints: z.array(z.string()).optional()
-        .describe("Requirements or limitations to observe")
     }).optional(),
-    
     expectedOutput: z.object({
-      format: z.enum(["text", "json", "markdown", "structured"])
-        .describe("Expected output format"),
-      
-      schema: z.string().optional()
-        .describe("JSON schema if format is structured"),
-      
+      format: z.enum(["text", "json", "markdown", "structured"]),
+      schema: z.string().optional(),
       maxLength: z.number().optional()
-        .describe("Maximum length constraint")
     }).optional(),
-    
     timeout: z.number().default(60000)
-      .describe("Timeout in milliseconds")
   }),
-
-  execute: async (input) => {
-    return executeAgentDelegation(input);
-  }
+  execute: async (input) => executeAgentDelegation(input)
 });
 ```
 
-## Input Schema
+## 输入字段
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| agentName | enum | Yes | Target agent |
-| task | string | Yes | Task description |
-| context | object | No | Context and dependencies |
-| expectedOutput | object | No | Output requirements |
-| timeout | number | No | Timeout ms (default: 60000) |
+包含目标智能体、任务说明、可选上下文及依赖、输出格式要求和超时时间（默认 60,000 毫秒）。
 
-## Output Schema
+## 输出字段
 
-```typescript
-interface DelegationResult {
-  success: boolean;
-  
-  agentName: string;
-  task: string;
-  
-  output: {
-    content: string | object;
-    format: string;
-  };
-  
-  execution: {
-    startTime: string;
-    endTime: string;
-    durationMs: number;
-    tokenUsage: {
-      prompt: number;
-      completion: number;
-    };
-  };
-  
-  error?: {
-    code: string;
-    message: string;
-    retryable: boolean;
-  };
-}
-```
+返回成功状态、智能体名称、任务、输出内容及格式、执行起止时间/耗时/令牌使用；失败时返回错误代码、说明和是否可重试。
 
-## Available Agents
+## 可委派对象
 
-### Evaluator Agent
-```typescript
-await delegateToAgent.execute({
-  agentName: "evaluator",
-  task: "Evaluate the quality of this response against accuracy and clarity criteria",
-  context: {
-    documents: [responseToEvaluate],
-    constraints: ["Use 1-5 scale", "Include justification"]
-  },
-  expectedOutput: { format: "structured" }
-});
-```
+- `evaluator`：按准确性和清晰度评估回复。
+- `researcher`：研究主题、注明来源和范围。
+- `writer`：根据研究资料写执行摘要，并遵守篇幅和受众要求。
+- `analyst`：分析数据并尽可能提供定量权衡。
 
-### Researcher Agent
-```typescript
-await delegateToAgent.execute({
-  agentName: "researcher",
-  task: "Research current best practices for LLM evaluation",
-  context: {
-    constraints: ["Focus on 2024 publications", "Include citations"]
-  },
-  expectedOutput: { format: "markdown" }
-});
-```
+## 错误处理
 
-### Writer Agent
-```typescript
-await delegateToAgent.execute({
-  agentName: "writer",
-  task: "Write an executive summary of these research findings",
-  context: {
-    previousOutputs: [researchFindings],
-    constraints: ["Maximum 500 words", "Non-technical audience"]
-  },
-  expectedOutput: { format: "text", maxLength: 2500 }
-});
-```
+错误代码包括 `AGENT_NOT_FOUND`、`TIMEOUT`、`CONTEXT_TOO_LARGE`、`INVALID_OUTPUT` 和 `AGENT_ERROR`。
 
-### Analyst Agent
-```typescript
-await delegateToAgent.execute({
-  agentName: "analyst",
-  task: "Analyze the trade-offs between direct scoring and pairwise comparison",
-  context: {
-    documents: [evaluationData],
-    constraints: ["Quantitative where possible"]
-  },
-  expectedOutput: { format: "structured" }
-});
-```
+## 实现建议
 
-## Error Handling
-
-```typescript
-const errorCodes = {
-  "AGENT_NOT_FOUND": "Specified agent does not exist",
-  "TIMEOUT": "Agent did not complete within timeout",
-  "CONTEXT_TOO_LARGE": "Context exceeds agent's capacity",
-  "INVALID_OUTPUT": "Agent output did not match expected format",
-  "AGENT_ERROR": "Agent encountered an error during execution"
-};
-```
-
-## Implementation Notes
-
-1. **Context Optimization**: Compress context if needed before passing
-2. **Timeout Handling**: Set realistic timeouts per agent type
-3. **Retry Logic**: Implement retries for transient failures
-4. **Audit Trail**: Log all delegations for traceability
-5. **Resource Management**: Track token usage across delegations
-
+1. 委派前按需压缩上下文。
+2. 根据智能体类型设置合理超时。
+3. 为临时失败实现重试。
+4. 记录所有委派以供追踪。
+5. 统计委派过程中的令牌用量。

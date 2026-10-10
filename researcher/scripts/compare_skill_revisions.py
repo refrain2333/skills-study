@@ -27,8 +27,8 @@ def candidate_metrics(path: Path) -> dict[str, Any]:
     sections = section_set(text)
     words = re.findall(r"[A-Za-z0-9_-]+", text)
     gotchas = 0
-    if "Gotchas" in sections:
-        gotchas_match = re.search(r"## Gotchas\n(.+?)(?:\n## |\Z)", text, flags=re.DOTALL)
+    if sections & {"易错点", "注意事项", "常见问题"}:
+        gotchas_match = re.search(r"^##\s+(?:易错点|注意事项|常见问题)\s*\n(.+?)(?:\n## |\Z)", text, flags=re.DOTALL | re.MULTILINE)
         if gotchas_match:
             gotchas = len(re.findall(r"^\d+\.", gotchas_match.group(1), flags=re.MULTILINE))
     return {
@@ -39,9 +39,9 @@ def candidate_metrics(path: Path) -> dict[str, Any]:
         "word_count": len(words),
         "sections": sorted(sections),
         "gotcha_count": gotchas,
-        "has_references": "References" in sections,
-        "has_integration": "Integration" in sections,
-        "has_guidelines": "Guidelines" in sections,
+        "has_references": "参考资料" in sections,
+        "has_integration": "集成" in sections,
+        "has_guidelines": "指南" in sections,
     }
 
 

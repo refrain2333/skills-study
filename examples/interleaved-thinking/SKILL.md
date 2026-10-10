@@ -1,115 +1,94 @@
 ---
 name: reasoning-trace-optimizer
-description: "Debug and optimize AI agents by analyzing reasoning traces, context degradation, tool confusion, instruction drift, repeated task failures, and performance regressions."
+description: "用于分析智能体推理轨迹、上下文退化、工具混淆、指令漂移、重复任务失败和性能退化，以调试并优化 AI 智能体。"
 ---
 
-# Reasoning Trace Optimizer
+# 推理轨迹优化器
 
-Debug and optimize AI agents by analyzing their reasoning traces. This skill uses MiniMax M2.1's interleaved thinking to provide deep insight into agent decision-making and generate concrete improvements.
+通过分析智能体的推理轨迹来调试和优化智能体。本技能利用 MiniMax M2.1 的交错思考，深入观察决策过程并生成具体改进建议。
 
-## When to Activate
+## 何时启用
 
-- Agent reasoning traces need debugging, analysis, or prompt optimization
-- Agent task fails and user wants to understand why
-- User mentions "context degradation", "tool confusion", or "instruction drift"
-- Request to improve agent performance or reduce errors
-- User wants to generate shareable learnings from debugging sessions
-- After repeated failures on similar tasks
+- 需要调试或分析智能体推理轨迹，或优化提示词。
+- 智能体任务失败，用户想了解原因。
+- 用户提到上下文退化、工具混淆或指令漂移。
+- 用户希望提高智能体表现或减少错误。
+- 用户希望把调试经验整理为可分享的技能。
+- 相似任务反复失败。
 
-## Core Concepts
+## 核心概念
 
-### Interleaved Thinking
+### 交错思考
 
-Unlike standard reasoning models that think once at the start, interleaved thinking allows reasoning BETWEEN each tool interaction. This is critical because:
+传统推理模型通常只在任务开始时思考；交错思考允许模型在每次工具交互之间继续推理。这对长时程任务、处理外部变化和调试决策过程都很重要。
 
-1. **Long-horizon tasks** require maintaining focus across many turns
-2. **External perturbations** (tool outputs, environment changes) need real-time adaptation
-3. **Debugging** requires seeing HOW decisions were made, not just WHAT was output
+### 优化循环
 
-### The Optimization Loop
-
-```
-Execute Agent → Capture Traces → Analyze Patterns → Optimize Prompt → Re-run
-                                                          ↑____________|
+```text
+执行智能体 → 捕获轨迹 → 分析模式 → 优化提示词 → 重新运行
 ```
 
-Each iteration improves the prompt based on detected patterns until convergence.
+每轮根据检测到的问题改进提示词，直到收敛。
 
-### Pattern Detection
+### 失败模式
 
-Common failure patterns the analyzer detects:
+| 模式 | 说明 |
+| --- | --- |
+| `context_degradation` | 模型在长上下文中丢失信息 |
+| `tool_confusion` | 模型误解工具能力或输出 |
+| `instruction_drift` | 模型逐步偏离原始指令 |
+| `goal_abandonment` | 模型放弃最初目标 |
+| `circular_reasoning` | 模型重复相似动作却没有进展 |
+| `premature_conclusion` | 任务未完成就下结论 |
 
-| Pattern | Description |
-|---------|-------------|
-| `context_degradation` | Model loses track of information over long contexts |
-| `tool_confusion` | Model misunderstands tool capabilities or outputs |
-| `instruction_drift` | Model gradually deviates from original instructions |
-| `goal_abandonment` | Model stops pursuing the original goal |
-| `circular_reasoning` | Model repeats similar actions without progress |
-| `premature_conclusion` | Model concludes before completing the task |
+## 使用方式
 
-## Usage Modes
-
-### Mode 1: M2.1 Agent Debugging
-
-Run a task through M2.1 and analyze its reasoning:
+### 模式一：调试 M2.1 智能体
 
 ```python
 from reasoning_trace_optimizer import TraceCapture, TraceAnalyzer
 
 capture = TraceCapture()
 trace = capture.run(
-    task="Search for Python tutorials and summarize them",
-    system_prompt="You are a research assistant.",
+    task="搜索 Python 教程并总结",
+    system_prompt="你是一名研究助理。",
     tools=[search_tool],
     tool_executor=execute_search
 )
 
 analyzer = TraceAnalyzer()
 analysis = analyzer.analyze(trace)
-
 print(f"Score: {analysis.overall_score}/100")
-for pattern in analysis.patterns:
-    print(f"Found: {pattern.type.value} - {pattern.suggestion}")
 ```
 
-### Mode 2: Full Optimization Loop
+### 模式二：完整优化循环
 
-Automatically iterate until the prompt is optimized:
+使用 `OptimizationLoop` 自动迭代至提示词达到目标分数或收敛：
 
 ```python
 from reasoning_trace_optimizer import OptimizationLoop, LoopConfig
 
-config = LoopConfig(
-    max_iterations=5,
-    min_score_threshold=80.0,
-)
-
+config = LoopConfig(max_iterations=5, min_score_threshold=80.0)
 loop = OptimizationLoop(config=config)
 result = loop.run(
-    task="Analyze this codebase and suggest improvements",
-    initial_prompt="You are a code reviewer.",
+    task="分析代码库并提出改进建议",
+    initial_prompt="你是一名代码审查员。",
     tools=[read_file_tool, search_tool],
     tool_executor=execute_tool
 )
-
-print(f"Improved: {result.initial_score} → {result.final_score}")
-print(f"Final prompt:\n{result.final_prompt}")
 ```
 
-### Mode 3: Universal Session Analysis
+### 模式三：分析已有会话
 
-Analyze any agent's previous thinking (works with Claude, GPT, etc.):
+在 Claude Code 中启用后，可分析当前会话的思考内容并给出建议：
 
-When this skill is activated in Claude Code, it can analyze the current session's thinking blocks to identify issues and suggest improvements.
-
-```
+```text
 /reasoning-trace-optimizer analyze-session
 ```
 
-### Mode 4: Generate Shareable Skills
+### 模式四：生成可分享技能
 
-Convert optimization learnings into reusable Agent Skills:
+将优化经验转换为可复用 Agent Skills：
 
 ```python
 from reasoning_trace_optimizer import SkillGenerator
@@ -122,27 +101,20 @@ skill_path = generator.generate(
 )
 ```
 
-## CLI Commands
+## 命令行
 
 ```bash
-# Capture reasoning trace
-rto capture "Search for Python tutorials" -s "You are a helpful assistant."
-
-# Analyze a task
-rto analyze "Debug this code" -o analysis.txt
-
-# Run optimization loop
-rto optimize "Research AI papers" --max-iterations 5 --generate-skill
-
-# Generate skill from artifacts
+rto capture "搜索 Python 教程" -s "你是一名乐于助人的助手。"
+rto analyze "调试这段代码" -o analysis.txt
+rto optimize "研究 AI 论文" --max-iterations 5 --generate-skill
 rto generate-skill my-skill-name --artifacts-dir ./optimization_artifacts
 ```
 
-## Integration with Claude Code
+## 与 Claude Code 集成
 
-### Auto-trigger on Failure
+### 失败时自动触发
 
-Add to your hooks to automatically analyze failures:
+可以在钩子中配置任务失败后的自动分析：
 
 ```json
 {
@@ -154,68 +126,34 @@ Add to your hooks to automatically analyze failures:
 }
 ```
 
-### On-demand Analysis
+### 按需分析
 
-Use the slash command to analyze current session:
-
-```
+```text
 /reasoning-trace-optimizer
 ```
 
-This will:
-1. Extract thinking blocks from the current session
-2. Identify patterns and issues
-3. Suggest prompt improvements
-4. Optionally update the system prompt
+此命令会提取当前会话的思考轨迹、识别问题模式、提出提示词改进建议，并可选择更新系统提示词。
 
-## Guidelines
+## 指南
 
-1. **Preserve full context**: M2.1 requires full response history including thinking blocks for optimal performance
-2. **Use appropriate tools**: Define tools clearly with unambiguous descriptions
-3. **Set realistic convergence thresholds**: 5-10% improvement per iteration is typical
-4. **Review generated skills**: Auto-generated skills should be reviewed before sharing
-5. **Monitor token usage**: Each optimization iteration uses significant tokens
+1. **保留完整上下文**：M2.1 需要完整会话历史（包括思考块）才能获得最佳效果。
+2. **明确工具定义**：工具描述应清楚且无歧义。
+3. **设置合理收敛目标**：每轮提升 5%—10% 是常见情况。
+4. **审查生成技能**：分享前先审核自动生成内容。
+5. **监控令牌用量**：每次优化迭代都可能使用较多令牌。
 
-## Examples
+## 示例
 
-### Before Optimization
+优化前，智能体可能调用错误工具，并在三轮后忘记目标；得分为 45/100，出现 `tool_confusion` 和 `goal_abandonment`。
 
-```
-System: You are a helpful assistant.
+优化后，提示词明确要求验证搜索结果、处理工具错误、持续追踪原始目标，并尽可能交叉核验多个来源；示例得分为 85/100，未检测到模式。
 
-Issue: Agent called wrong tools, lost track of goal after 3 turns
-Score: 45/100
-Patterns: tool_confusion, goal_abandonment
-```
+## 参考资料
 
-### After Optimization
+- MiniMax M2.1 文档：https://platform.minimax.io/docs
+- 交错思考指南：见 `docs/interleavedthinking.md`
+- 智能体泛化：见 `docs/agentthinking.md`
 
-```
-System: You are a research assistant focused on finding accurate information.
+## 技能元数据
 
-IMPORTANT GUIDELINES:
-- Always verify search results before summarizing
-- If a tool returns an error, try an alternative approach
-- Keep track of your original goal throughout the task
-- Validate findings against multiple sources when possible
-
-Issue: None
-Score: 85/100
-Patterns: None detected
-```
-
-## References
-
-- MiniMax M2.1 Documentation: https://platform.minimax.io/docs
-- Interleaved Thinking Guide: See `docs/interleavedthinking.md`
-- Agent Generalization: See `docs/agentthinking.md`
-
----
-
-## Skill Metadata
-
-**Created**: 2025-01-11
-**Author**: Muratcan Koylan
-**Version**: 0.1.0
-**Powered by**: MiniMax M2.1
-**Partnership**: Built in collaboration with MiniMax AI
+创建时间：2025-01-11；作者：Muratcan Koylan；版本：0.1.0；使用模型：MiniMax M2.1；与 MiniMax AI 合作构建。

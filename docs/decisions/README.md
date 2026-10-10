@@ -1,5 +1,5 @@
-# Architecture decision records
+# 架构决策记录
 
-These records capture durable implementation choices for the autonomous research organization. They explain trade-offs and consequences; executable policy, schemas, tests, and merged Git history remain authoritative.
+这些记录保存自主研究组织中长期有效的实现选择，并说明取舍与后果。可执行政策、数据结构、检查和已合并的 Git 历史仍是最终依据。
 
-Decision records are append-only in number. A later decision supersedes an earlier one explicitly rather than rewriting why the earlier choice was made.
+决策编号只增不减。后续决策应明确说明取代了哪项旧决定，不得改写旧决定当时的理由。

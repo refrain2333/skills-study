@@ -1,10 +1,10 @@
-# Orchestrator Agent
+# 协调者智能体
 
-## Purpose
+## 用途
 
-The Orchestrator Agent manages complex workflows by delegating tasks to specialized agents, coordinating their outputs, and ensuring coherent end-to-end execution. It serves as the primary interface for multi-agent operations.
+协调者智能体通过委派给专用智能体、协调各方输出并管理依赖，完成复杂工作流，是多智能体操作的主要入口。
 
-## Agent Definition
+## 智能体定义
 
 ```typescript
 import { ToolLoopAgent } from "ai";
@@ -14,33 +14,15 @@ import { orchestrationTools } from "../tools";
 export const orchestratorAgent = new ToolLoopAgent({
   name: "orchestrator",
   model: anthropic("claude-sonnet-4-20250514"),
-  instructions: `You are a workflow orchestration expert.
+  instructions: `你是一名工作流协调专家。
 
-Your role is to:
-1. Analyze complex tasks and break them into subtasks
-2. Assign subtasks to appropriate specialized agents
-3. Coordinate agent outputs and handle dependencies
-4. Synthesize results into coherent final outputs
-5. Handle errors and retries gracefully
+职责：分析复杂任务并拆分子任务；把子任务交给合适的专用智能体；协调输出和依赖；综合结果；妥善处理错误和重试。
 
-Orchestration Principles:
-- Decompose tasks by capability requirements
-- Parallelize independent operations when possible
-- Maintain context continuity across agent handoffs
-- Validate intermediate outputs before proceeding
-- Provide clear status updates during long operations
+原则：按能力要求拆分；可能时并行执行独立工作；交接时保持必要上下文；继续之前检查中间结果；长任务中提供状态；出错时恢复，不要直接放弃整体流程。
 
-Available Agents:
-- evaluator: Assesses quality of LLM outputs
-- researcher: Gathers and synthesizes information
-- writer: Generates and refines content
-- analyst: Performs data analysis and insights
+可用智能体：evaluator 评估输出；researcher 收集和综合信息；writer 创作并润色内容；analyst 分析数据和洞见。
 
-When delegating:
-- Provide complete context the agent needs
-- Specify expected output format
-- Set clear success criteria`,
-  
+委派时提供完整上下文、预期输出格式和明确的成功标准。`,
   tools: {
     delegateToAgent: orchestrationTools.delegateToAgent,
     parallelExecution: orchestrationTools.parallelExecution,
@@ -51,76 +33,24 @@ When delegating:
 });
 ```
 
-## Capabilities
+## 能力
 
-### Task Delegation
-Route a task to a specialized agent.
+- **任务委派**：输入智能体名称、任务、上下文/依赖和输出格式；返回智能体回复、执行元数据和状态。
+- **并行执行**：输入多个（智能体、任务）组合及超时；返回各任务结果、状态和错误。
+- **结果综合**：输入多智能体输出、综合指令和目标格式；返回综合结果、来源归属和置信度。
+- **错误处理**：输入失败任务、错误详情和重试规则；返回重试结果、平稳降级方案或升级处理。
 
-**Input:**
-- Agent name
-- Task description
-- Context/dependencies
-- Expected output format
-
-**Output:**
-- Agent response
-- Execution metadata
-- Status
-
-### Parallel Execution
-Execute multiple independent tasks simultaneously.
-
-**Input:**
-- List of (agent, task) pairs
-- Timeout configuration
-
-**Output:**
-- Results array
-- Completion status per task
-- Any errors encountered
-
-### Result Synthesis
-Combine outputs from multiple agents into coherent result.
-
-**Input:**
-- Agent outputs
-- Synthesis instructions
-- Target format
-
-**Output:**
-- Synthesized result
-- Source attribution
-- Confidence assessment
-
-### Error Handling
-Manage failures and implement retry logic.
-
-**Input:**
-- Failed task
-- Error details
-- Retry policy
-
-**Output:**
-- Retry result or
-- Graceful degradation or
-- Error escalation
-
-## Configuration
+## 配置
 
 ```typescript
 interface OrchestratorConfig {
-  // Execution settings
   maxParallelTasks: number;
-  defaultTimeout: number; // ms
+  defaultTimeout: number;
   retryPolicy: RetryPolicy;
-  
-  // Quality settings
   validateIntermediateOutputs: boolean;
   evaluateBeforeDelivery: boolean;
-  
-  // Reporting
   enableProgressUpdates: boolean;
-  updateFrequency: number; // ms
+  updateFrequency: number;
 }
 
 interface RetryPolicy {
@@ -128,78 +58,20 @@ interface RetryPolicy {
   backoffMultiplier: number;
   retryableErrors: string[];
 }
-
-const defaultConfig: OrchestratorConfig = {
-  maxParallelTasks: 5,
-  defaultTimeout: 60000,
-  retryPolicy: {
-    maxRetries: 3,
-    backoffMultiplier: 2,
-    retryableErrors: ["RATE_LIMIT", "TIMEOUT", "TEMPORARY_ERROR"]
-  },
-  validateIntermediateOutputs: true,
-  evaluateBeforeDelivery: false,
-  enableProgressUpdates: true,
-  updateFrequency: 5000
-};
 ```
 
-## Usage Example
+默认并行任务数为 5，超时 60,000 毫秒，最多重试 3 次，退避倍率为 2；对 `RATE_LIMIT`、`TIMEOUT` 和 `TEMPORARY_ERROR` 重试。默认验证中间输出、开启进度更新，每 5,000 毫秒更新一次。
 
-```typescript
-import { orchestratorAgent } from "./agents/orchestrator-agent";
+## 使用示例
 
-const result = await orchestratorAgent.generate({
-  prompt: `Complete the following research and analysis task:
+用户要求研究 LLM 评估实践、分析方法权衡、撰写建议报告并评估报告质量时，协调者可依次或并行委派研究、分析、写作和评估任务。
 
-1. Research current best practices for LLM evaluation
-2. Analyze the trade-offs between different evaluation methods
-3. Generate a recommendation report
-4. Evaluate the quality of the report
+## 编排模式
 
-Ensure the final output is comprehensive but accessible to technical leaders.`
-});
-```
+- **顺序流水线**：研究 → 分析 → 写作 → 评估 → 最终输出。
+- **并行汇总**：多个独立智能体同时完成子任务，再综合结果。
+- **迭代优化**：评估未通过时把反馈交回智能体，直到达标。
 
-## Orchestration Patterns
+## 集成场景
 
-### Sequential Pipeline
-```mermaid
-graph LR
-    A[Task] --> B[Research Agent]
-    B --> C[Analyst Agent]
-    C --> D[Writer Agent]
-    D --> E[Evaluator Agent]
-    E --> F[Final Output]
-```
-
-### Parallel with Aggregation
-```mermaid
-graph TD
-    A[Task] --> B[Parallel Dispatch]
-    B --> C[Agent 1]
-    B --> D[Agent 2]
-    B --> E[Agent 3]
-    C --> F[Aggregation]
-    D --> F
-    E --> F
-    F --> G[Synthesis]
-```
-
-### Iterative Refinement
-```mermaid
-graph TD
-    A[Draft] --> B[Evaluator]
-    B --> C{Score OK?}
-    C -->|No| D[Refine]
-    D --> A
-    C -->|Yes| E[Final Output]
-```
-
-## Integration Points
-
-- **API Gateway**: Primary entry point for complex requests
-- **Job Queue**: Handle long-running orchestrated tasks
-- **Monitoring**: Track multi-agent execution metrics
-- **Audit Log**: Record all delegations and decisions
-
+可作为复杂请求的 API 网关入口，配合任务队列处理长任务，并使用监控与审计日志追踪多智能体执行。

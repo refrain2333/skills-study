@@ -151,19 +151,20 @@ class Validator:
                 self.warn(skill_file, "description may not be third person")
             if len(lines) > 500:
                 self.error(skill_file, f"SKILL.md exceeds 500 lines ({len(lines)})")
-            for section in [
-                "## When to Activate",
-                "## Core Concepts",
-                "## Practical Guidance",
-                "## Examples",
-                "## Guidelines",
-                "## Gotchas",
-                "## Integration",
-                "## References",
-            ]:
-                if section not in text:
-                    self.error(skill_file, f"missing required section: {section}")
-            if "Do not activate" not in text:
+            required_sections = {
+                "何时启用": r"^##\s+何时启用\s*$",
+                "核心概念": r"^##\s+核心概念\s*$",
+                "实践指南": r"^##\s+实践指南\s*$",
+                "示例": r"^##\s+示例\s*$",
+                "指南": r"^##\s+指南\s*$",
+                "易错点": r"^##\s+(?:易错点|注意事项|常见问题)\s*$",
+                "集成": r"^##\s+集成\s*$",
+                "参考资料": r"^##\s+参考资料\s*$",
+            }
+            for label, pattern in required_sections.items():
+                if not re.search(pattern, text, flags=re.MULTILINE):
+                    self.error(skill_file, f"missing required section: {label}")
+            if not re.search(r"(?:不要|不应)[^\n。；]*启用本技能", text):
                 self.warn(skill_file, "missing explicit non-activation boundary")
 
         return sorted(skill_names)

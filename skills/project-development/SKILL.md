@@ -1,97 +1,97 @@
 ---
 name: project-development
-description: "This skill should be used for project-level decisions about LLM-powered systems: whether an LLM is the right primitive for the task at hand, the shape of a multi-stage batch or agent pipeline, token and cost estimation, choosing between single-agent and multi-agent at the project level, structured output design for downstream parsing, and structuring agent-assisted iteration. Use this when the unit of work is a whole project or a multi-stage pipeline. Route individual tool design to tool-design and individual skill-loading or context-budget tactics to context-optimization."
+description: "用于规划 LLM 项目与多阶段流水线，包括任务适配、成本估算、结构化输出和单体与多智能体的选择。"
 ---
 
-# Project Development Methodology
+# 项目开发方法
 
-This skill covers the principles for identifying tasks suited to LLM processing, designing effective project architectures, and iterating rapidly using agent-assisted development. The methodology applies whether building a batch processing pipeline, a multi-agent research system, or an interactive agent application.
+本技能介绍如何判断哪些任务适合由 LLM 处理、如何设计有效的项目架构，以及如何借助智能体辅助开发快速迭代。无论是构建批处理流水线、多智能体研究系统，还是交互式智能体应用，都可以采用这些方法。
 
-The unit of work for this skill is the whole project or a multi-stage pipeline. Individual tool design (descriptions, schemas, error messages) belongs to `tool-design`. Per-skill activation routing belongs to the corresponding skill plus the corpus index. This skill owns the project-level questions: should you build this with an LLM at all, what shape should the pipeline take, what does it cost, how should it be iterated.
+本技能讨论的工作单元是整个项目或多阶段流水线。单个工具的设计（描述、模式、错误消息）归 `tool-design` 负责；单项技能的启用路由归相应技能和语料索引负责。本技能负责项目层面的问题：是否应该用 LLM 来构建、流水线应采用什么结构、成本是多少，以及应如何迭代。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when the unit of work is a whole project or pipeline:
+当工作单元是整个项目或流水线时启用本技能：
 
-- Deciding whether an LLM is the right primitive for a task at all (task-model fit before any code).
-- Shaping a multi-stage batch or agent pipeline (acquire / prepare / process / parse / render).
-- Estimating tokens, dollar cost, and timelines for an LLM-heavy project.
-- Choosing between single-agent and multi-agent at the project level.
-- Structuring agent-assisted iteration (where the agent helps build the project itself).
-- Designing structured output at the pipeline contract level (cross-stage handoff format).
+- 在编写代码前，判断 LLM 是否适合作为任务的基本处理方式。
+- 设计多阶段批处理或智能体流水线（采集 / 准备 / 处理 / 解析 / 渲染）。
+- 估算大量使用 LLM 的项目所需 Token、费用和时间。
+- 在项目层面选择单智能体还是多智能体架构。
+- 设计智能体辅助迭代的方式（让智能体协助构建项目本身）。
+- 在流水线契约层设计结构化输出格式（定义跨阶段交接格式）。
 
-Do not activate this skill for adjacent work owned by other skills:
+以下相邻工作由其他技能负责，不要为它们启用本技能：
 
-- Per-tool description, schema, naming, response format, error message: `tool-design`.
-- Per-trajectory token-efficiency tactics (masking, partitioning, caching): `context-optimization`.
-- Deciding to split work across sub-agents at the agent topology level: `multi-agent-patterns`.
-- Designing the autonomous control loop (locked metrics, novelty gates, human approval boundaries): `harness-engineering`.
+- 单个工具的描述、模式、命名、响应格式和错误消息：`tool-design`。
+- 单次执行中的 Token 效率技巧（遮罩、分区、缓存）：`context-optimization`。
+- 在智能体拓扑层面决定是否将工作分配给子智能体：`multi-agent-patterns`。
+- 设计自主控制循环（锁定指标、新颖性门禁、人工审批边界）：`harness-engineering`。
 
-## Core Concepts
+## 核心概念
 
-### Task-Model Fit Recognition
+### 判断任务是否适合模型
 
-Evaluate task-model fit before writing any code, because building automation on a fundamentally mismatched task wastes days of effort. Run every proposed task through these two tables to decide proceed-or-stop.
+编写任何代码之前，先判断任务是否适合模型，因为若任务本质上与模型能力不匹配，自动化会白白耗费数天。根据以下两个表格逐项检查拟议任务，决定继续还是停止。
 
-**Proceed when the task has these characteristics:**
+**具备以下特点时可以继续：**
 
-| Characteristic | Rationale |
-|----------------|-----------|
-| Synthesis across sources | LLMs combine information from multiple inputs better than rule-based alternatives |
-| Subjective judgment with rubrics | Grading, evaluation, and classification with criteria map naturally to language reasoning |
-| Natural language output | When the goal is human-readable text, LLMs deliver it natively |
-| Error tolerance | Individual failures do not break the overall system, so LLM non-determinism is acceptable |
-| Batch processing | No conversational state required between items, which keeps context clean |
-| Domain knowledge in training | The model already has relevant context, reducing prompt engineering overhead |
+| 特点 | 原因 |
+|-----------|-----------|
+| 跨来源综合 | 与基于规则的方案相比，LLM 更擅长综合多个输入中的信息 |
+| 有评分标准的主观判断 | 打分、评估和分类等任务符合基于语言推理的处理方式 |
+| 自然语言输出 | 目标是生成易读文本时，LLM 可以直接生成 |
+| 可容忍错误 | 个别失败不会破坏整个系统，因此可以接受 LLM 的非确定性 |
+| 批处理 | 项目不需要在不同条目间保留对话状态，上下文可以保持清晰 |
+| 训练数据中包含领域知识 | 模型已有相关背景知识，可以减少提示词工程工作 |
 
-**Stop when the task has these characteristics:**
+**具备以下特点时应停止：**
 
-| Characteristic | Rationale |
-|----------------|-----------|
-| Precise computation | Math, counting, and exact algorithms are unreliable in language models |
-| Real-time requirements | LLM latency is too high for sub-second responses |
-| Perfect accuracy requirements | Hallucination risk makes 100% accuracy impossible |
-| Proprietary data dependence | The model lacks necessary context and cannot acquire it from prompts alone |
-| Sequential dependencies | Each step depends heavily on the previous result, compounding errors |
-| Deterministic output requirements | Same input must produce identical output, which LLMs cannot guarantee |
+| 特点 | 原因 |
+|-----------|-----------|
+| 精确计算 | 语言模型难以可靠执行数学、计数和精确算法 |
+| 实时要求 | LLM 的延迟无法满足亚秒级响应要求 |
+| 必须完全准确 | 存在幻觉风险，因此无法保证百分之百准确 |
+| 依赖专有数据 | 模型缺少必要上下文，单靠提示词也无法获取 |
+| 存在连续依赖 | 每一步都高度依赖上一步结果，错误会逐步累积 |
+| 要求确定性输出 | 相同输入必须得到完全相同的输出，而 LLM 无法保证这一点 |
 
-### The Manual Prototype Step
+### 手动原型验证
 
-Always validate task-model fit with a manual test before investing in automation. Copy one representative input into the model interface, evaluate the output quality, and use the result to answer these questions:
+在投入自动化开发前，务必先用手动测试验证任务是否适合模型。将一个有代表性的输入复制到模型界面，评估输出质量，并回答以下问题：
 
-- Does the model have the knowledge required for this task?
-- Can the model produce output in the format needed?
-- What level of quality should be expected at scale?
-- Are there obvious failure modes to address?
+- 模型具备完成此任务所需的知识吗？
+- 模型能按所需格式生成输出吗？
+- 大规模运行时应期待什么质量水平？
+- 是否存在需要处理的明显失效模式？
 
-Do this because a failed manual prototype predicts a failed automated system, while a successful one provides both a quality baseline and a prompt-design template. The test takes minutes and prevents hours of wasted development.
+这么做是因为：手动原型失败意味着自动化系统大概率也会失败；手动原型成功则能同时提供质量基线和提示词设计模板。测试只需几分钟，却能避免数小时的无效开发。
 
-### Pipeline Architecture
+### 流水线架构
 
-Structure LLM projects as staged pipelines because separation of deterministic and non-deterministic stages enables fast iteration and cost control. Design each stage to be:
+将 LLM 项目设计为分阶段的流水线，因为将确定性阶段与非确定性阶段分开，有助于快速迭代和控制成本。各阶段应具备以下特点：
 
-- **Discrete**: Clear boundaries between stages so each can be debugged independently
-- **Idempotent**: Re-running produces the same result, preventing duplicate work
-- **Cacheable**: Intermediate results persist to disk, avoiding expensive re-computation
-- **Independent**: Each stage can run separately, enabling selective re-execution
+- **离散**：阶段边界清晰，可以单独调试。
+- **幂等**：重复运行产生相同结果，避免重复工作。
+- **可缓存**：中间结果持久化到磁盘，避免昂贵的重复计算。
+- **相互独立**：每个阶段可以单独运行，支持选择性重跑。
 
-**Use this canonical pipeline structure:**
+**采用以下标准流水线结构：**
 
 ```
 acquire -> prepare -> process -> parse -> render
 ```
 
-1. **Acquire**: Fetch raw data from sources (APIs, files, databases)
-2. **Prepare**: Transform data into prompt format
-3. **Process**: Execute LLM calls (the expensive, non-deterministic step)
-4. **Parse**: Extract structured data from LLM outputs
-5. **Render**: Generate final outputs (reports, files, visualizations)
+1. **采集（Acquire）**：从来源获取原始数据（API、文件、数据库）。
+2. **准备（Prepare）**：将数据转换为提示词格式。
+3. **处理（Process）**：执行 LLM 调用（成本高、具有非确定性的阶段）。
+4. **解析（Parse）**：从 LLM 输出中提取结构化数据。
+5. **渲染（Render）**：生成最终产物（报告、文件、可视化内容）。
 
-Stages 1, 2, 4, and 5 are deterministic. Stage 3 is non-deterministic and expensive. Maintain this separation because it allows re-running the expensive LLM stage only when necessary, while iterating quickly on parsing and rendering.
+第 1、2、4、5 阶段是确定性的，第 3 阶段则具有非确定性且成本较高。应保持这种分离，以便只在必要时重新运行昂贵的 LLM 阶段，同时快速迭代解析和渲染阶段。
 
-### File System as State Machine
+### 将文件系统用作状态机
 
-Use the file system to track pipeline state rather than databases or in-memory structures, because file existence provides natural idempotency and human-readable debugging.
+使用文件系统追踪流水线状态，而不是数据库或内存结构，因为文件是否存在能自然地实现幂等性，也便于人工排查。
 
 ```
 data/{id}/
@@ -101,204 +101,204 @@ data/{id}/
   parsed.json      # parse stage complete
 ```
 
-Check if an item needs processing by checking whether the output file exists. Re-run a stage by deleting its output file and downstream files. Debug by reading the intermediate files directly. This pattern works because each directory is independent, enabling simple parallelization and trivial caching.
+检查输出文件是否存在，以判断某项是否需要处理。需要重新运行某个阶段时，删除该阶段的输出文件以及后续阶段的文件。调试时直接阅读中间文件。每个目录互相独立，因此这种模式易于并行化，也方便缓存。
 
-### Structured Output Design
+### 设计结构化输出
 
-Design prompts for structured, parseable outputs because prompt design directly determines parsing reliability. Include these elements in every structured prompt:
+设计提示词时，应要求输出结构化且可解析的内容，因为提示词设计会直接影响解析可靠性。每个结构化提示词都应包含以下要素：
 
-1. **Section markers**: Explicit headers or prefixes that parsers can match on
-2. **Format examples**: Show exactly what output should look like
-3. **Rationale disclosure**: State "I will be parsing this programmatically" so the model prioritizes format compliance
-4. **Constrained values**: Enumerated options, score ranges, and fixed formats
+1. **分段标记**：使用解析器能够匹配的明确标题或前缀。
+2. **格式示例**：准确展示输出应是什么样子。
+3. **说明解析用途**：告知模型“我会通过程序解析此内容”，让模型优先遵守格式要求。
+4. **受限取值**：使用枚举选项、分数范围和固定格式。
 
-Build parsers that handle LLM output variations gracefully, because LLMs do not follow instructions perfectly. Use regex patterns flexible enough for minor formatting variations, provide sensible defaults when sections are missing, and log parsing failures for review rather than crashing.
+构建解析器时，要能稳健处理 LLM 输出的各种变化，因为 LLM 并不总能完美遵循指令。正则表达式应容忍轻微格式变化；若某些部分缺失，应提供合理默认值；解析失败时应记录下来供人工检查，而不是直接崩溃。
 
-### Agent-Assisted Development
+### 智能体辅助开发
 
-Use agent-capable models to accelerate development through rapid iteration: describe the project goal and constraints, let the agent generate initial implementation, test and iterate on specific failures, then refine prompts and architecture based on results.
+通过快速迭代使用具备智能体能力的模型来加快开发：描述项目目标和限制，让智能体生成初始实现；针对具体问题进行测试和迭代；再根据结果改进提示词和架构。
 
-Adopt these practices because they keep agent output focused and high-quality:
-- Provide clear, specific requirements upfront to reduce revision cycles
-- Break large projects into discrete components so each can be validated independently
-- Test each component before moving to the next to catch failures early
-- Keep the agent focused on one task at a time to prevent context degradation
+采用以下做法，使智能体输出保持聚焦并提高质量：
+- 提前提供清晰、具体的要求，以减少修改轮次。
+- 将大型项目拆成可单独验证的组件。
+- 每完成一个组件就先测试，再继续下一项，以便尽早发现问题。
+- 一次只让智能体专注于一项任务，避免上下文退化。
 
-### Cost and Scale Estimation
+### 估算成本和规模
 
-Estimate LLM processing costs before starting, because token costs compound quickly at scale and late discovery of budget overruns forces costly rework. Use this formula:
+开始前先估算 LLM 处理成本，因为 Token 费用会随规模快速累积，而等预算超支后才发现，往往会迫使团队进行昂贵的返工。使用以下公式：
 
 ```
 Total cost = (items x tokens_per_item x price_per_token) + API overhead
 ```
 
-For batch processing, estimate input tokens per item (prompt + context), estimate output tokens per item (typical response length), multiply by item count, and add 20-30% buffer for retries and failures.
+对于批处理，估算每项的输入 Token（提示词 + 上下文），估算每项的输出 Token（典型响应长度），乘以项目总数，再加上 20–30% 的重试和失败缓冲。
 
-Track actual costs during development. If costs exceed estimates significantly, reduce context length through truncation, use smaller models for simpler items, cache and reuse partial results, or add parallel processing to reduce wall-clock time.
+开发过程中追踪实际成本。如果成本大幅超出预估，可以截断上下文以缩短长度、为简单条目改用更小的模型、缓存并复用部分结果，或添加并行处理以缩短墙钟时间。
 
-## Detailed Topics
+## 详细主题
 
-### Choosing Single vs Multi-Agent Architecture
+### 选择单智能体还是多智能体架构
 
-Default to single-agent pipelines for batch processing with independent items, because they are simpler to manage, cheaper to run, and easier to debug. Escalate to multi-agent architectures only when one of these conditions holds:
+批处理中的条目互相独立时，默认使用单智能体流水线，因为它更容易管理、运行成本更低，也更容易调试。只有满足以下任一条件时，才升级到多智能体架构：
 
-- Parallel exploration of different aspects is required
-- The task exceeds single context window capacity
-- Specialized sub-agents demonstrably improve quality on benchmarks
+- 需要并行探索不同方面
+- 任务超出单个上下文窗口的容量
+- 基准测试已证明专门的子智能体能提高质量
 
-Choose multi-agent for context isolation, not role anthropomorphization. Sub-agents get fresh context windows for focused subtasks, which prevents context degradation on long-running tasks.
+选择多智能体架构应基于上下文隔离的需要，而不是为了给角色拟人化。子智能体会获得新的上下文窗口来专注处理子任务，从而避免长时间运行的任务出现上下文退化。
 
-See `multi-agent-patterns` skill for detailed architecture guidance.
+架构细节参见 `multi-agent-patterns` 技能。
 
-### Architectural Reduction
+### 架构精简
 
-Start with minimal architecture and add complexity only when production evidence proves it necessary, because over-engineered scaffolding often constrains rather than enables model performance.
+从最小架构开始，只有生产证据证明有必要时才增加复杂性，因为过度设计的脚手架往往会限制模型表现，而不是提升表现。
 
-Vercel's d0 case study reports improved success after reducing many specialized tools to two primitives: command execution and SQL (claim-project-development-vercel-d0-reduction). The file system agent pattern uses standard Unix utilities instead of custom exploration tools.
+Vercel 的 d0 案例研究报告称，将许多专用工具简化为两个基础能力（命令执行和 SQL）后，成功率提高了（claim-project-development-vercel-d0-reduction）。文件系统智能体模式则使用标准 Unix 工具，而不是自定义探索工具。
 
-**Reduce when:**
-- The data layer is well-documented and consistently structured
-- The model has sufficient reasoning capability
-- Specialized tools are constraining rather than enabling
-- More time is spent maintaining scaffolding than improving outcomes
+**适合精简的情况：**
+- 数据层文档完善且结构一致
+- 模型具备足够的推理能力
+- 专用工具是在限制模型，而不是帮助模型
+- 维护脚手架耗费的时间超过改善结果的时间
 
-**Add complexity when:**
-- The underlying data is messy, inconsistent, or poorly documented
-- The domain requires specialized knowledge the model lacks
-- Safety constraints require limiting agent capabilities
-- Operations are truly complex and benefit from structured workflows
+**需要增加复杂性的情况：**
+- 底层数据杂乱、不一致或文档不足
+- 领域要求模型不具备的专业知识
+- 安全限制要求收窄智能体的能力
+- 操作确实复杂，适合使用结构化工作流
 
-See `tool-design` skill for detailed tool architecture guidance.
+详细的工具架构指南参见 `tool-design` 技能。
 
-### Iteration and Refactoring
+### 迭代和重构
 
-Plan for multiple architectural iterations from the start, because production agent systems at scale always require refactoring. Manus refactored their agent framework five times since launch. The Bitter Lesson suggests that structures added for current model limitations become constraints as models improve.
+从一开始就规划多轮架构迭代，因为大规模生产智能体系统总是需要重构。Manus 自发布以来对智能体框架进行了五次重构。“苦涩教训”（The Bitter Lesson）指出，为当前模型局限性添加的结构，会随着模型进步而变成限制。
 
-Build for change by following these practices:
-- Keep architecture simple and unopinionated so refactoring is cheap
-- Test across model generations to verify the harness is not limiting performance
-- Design systems that benefit from model improvements rather than locking in limitations
+按照以下做法设计可变更系统：
+- 保持架构简单、不强加观点，以降低重构成本。
+- 在不同代际的模型上测试，确认脚手架没有限制性能。
+- 设计能受益于模型进步的系统，而不是把模型局限性固定下来。
 
-## Practical Guidance
+## 实践指南
 
-### Project Planning Template
+### 项目规划模板
 
-Follow this template in order, because each step validates assumptions before the next step invests effort.
+按顺序遵循此模板，因为每一步都会在下一步投入更多精力前验证当前假设。
 
-1. **Task Analysis**
-   - Define the input and desired output explicitly
-   - Classify: synthesis, generation, classification, or analysis
-   - Set an acceptable error rate based on business impact
-   - Estimate the value per successful completion to justify costs
+1. **任务分析**
+   - 明确界定输入和预期输出。
+   - 分类：综合、生成、分类或分析。
+   - 根据业务影响设定可接受的错误率。
+   - 估算每次成功完成任务的价值，确认足以支撑成本。
 
-2. **Manual Validation**
-   - Test one representative example with the target model
-   - Evaluate output quality and format against requirements
-   - Identify failure modes that need parser hardening or prompt revision
-   - Estimate tokens per item for cost projection
+2. **手动验证**
+   - 使用目标模型测试一个有代表性的示例。
+   - 根据要求评估输出质量和格式。
+   - 找出需要强化解析器或修改提示词的失效模式。
+   - 估算每项 Token 用量，以预测成本。
 
-3. **Architecture Selection**
-   - Choose single pipeline vs multi-agent based on the criteria above
-   - Identify required tools and data sources
-   - Design storage and caching strategy using file-system state
-   - Plan parallelization approach for the process stage
+3. **架构选择**
+   - 根据上述标准选择单流水线或多智能体架构。
+   - 确定所需工具和数据来源。
+   - 使用文件系统状态设计存储和缓存策略。
+   - 规划处理阶段的并行化方式。
 
-4. **Cost Estimation**
-   - Calculate items x tokens x price with a 20-30% buffer
-   - Estimate development time for each pipeline stage
-   - Identify infrastructure requirements (API keys, storage, compute)
-   - Project ongoing operational costs for production runs
+4. **成本估算**
+   - 按“项目数 × Token 数 × 单价”计算，并预留 20–30% 缓冲。
+   - 估算流水线各阶段所需开发时间。
+   - 确定基础设施需求（API 密钥、存储、计算资源）。
+   - 预测生产运行期间的持续运营成本。
 
-5. **Development Plan**
-   - Implement stage-by-stage, testing each before proceeding
-   - Define a testing strategy per stage with expected outputs
-   - Set iteration milestones tied to quality metrics
-   - Plan deployment approach with rollback capability
+5. **开发计划**
+   - 按阶段实现，每完成一个阶段就先测试，再继续。
+   - 为每个阶段定义测试策略和预期输出。
+   - 将迭代里程碑与质量指标关联起来。
+   - 规划具备回滚能力的部署方式。
 
-## Examples
+## 示例
 
-**Example 1: Batch Analysis Pipeline (Karpathy's HN Time Capsule)**
+**示例 1：批量分析流水线（Karpathy 的 HN Time Capsule）**
 
-Task: Analyze 930 HN discussions from 10 years ago with hindsight grading.
+任务：分析 930 条来自十年前的 Hacker News 讨论，并根据现有认知对其进行回顾性评价。
 
-Architecture:
-- 5-stage pipeline: fetch -> prompt -> analyze -> parse -> render
-- File system state: data/{date}/{item_id}/ with stage output files
-- Structured output: 6 sections with explicit format requirements
-- Parallel execution: 15 workers for LLM calls
+架构：
+- 五阶段流水线：fetch -> prompt -> analyze -> parse -> render
+- 文件系统状态：`data/{date}/{item_id}/`，其中包含各阶段的输出文件
+- 结构化输出：六个部分，每个部分有明确格式要求
+- 并行执行：15 个工作进程负责 LLM 调用
 
-Results: $58 total cost, ~1 hour execution, static HTML output.
+结果：总成本 58 美元，执行约 1 小时，输出为静态 HTML。
 
-**Example 2: Architectural Reduction (Vercel d0)**
+**示例 2：架构精简（Vercel d0）**
 
-Task: Text-to-SQL agent for internal analytics.
+任务：为内部分析构建文本转 SQL 智能体。
 
-Before: many specialized tools with lower measured success and longer average execution.
+精简前：有许多专用工具，测得的成功率较低，平均执行时间较长。
 
-After: two tools (bash + SQL) with higher measured success and shorter average execution (claim-project-development-vercel-d0-reduction).
+精简后：只保留两个工具（bash + SQL），测得的成功率较高，平均执行时间较短（claim-project-development-vercel-d0-reduction）。
 
-Key insight: The semantic layer was already good documentation. Claude just needed access to read files directly.
+关键洞见：语义层文档本来就很完善。Claude 只需要能够直接读取文件。
 
-See [Case Studies](./references/case-studies.md) for detailed analysis.
+详细分析参见[案例研究](./references/case-studies.md)。
 
-## Guidelines
+## 指南
 
-1. Validate task-model fit with manual prototyping before building automation
-2. Structure pipelines as discrete, idempotent, cacheable stages
-3. Use the file system for state management and debugging
-4. Design prompts for structured, parseable outputs with explicit format examples
-5. Start with minimal architecture; add complexity only when proven necessary
-6. Estimate costs early and track throughout development
-7. Build robust parsers that handle LLM output variations
-8. Expect and plan for multiple architectural iterations
-9. Test whether scaffolding helps or constrains model performance
-10. Use agent-assisted development for rapid iteration on implementation
+1. 构建自动化之前，先用手动原型验证任务是否适合模型。
+2. 将流水线设计成离散、幂等、可缓存的阶段。
+3. 使用文件系统管理状态并调试。
+4. 设计结构化、可解析的输出提示词，并提供明确的格式示例。
+5. 从最小架构开始，只在证据证明有必要时增加复杂性。
+6. 及早估算成本，并在开发过程中持续追踪。
+7. 构建能够处理 LLM 输出变化的稳健解析器。
+8. 预期架构会多次迭代，并提前做好规划。
+9. 验证脚手架是否有帮助，还是限制了模型表现。
+10. 使用智能体辅助开发，快速迭代实现。
 
-## Gotchas
+## 注意事项
 
-1. **Skipping manual validation**: Building automation before verifying the model can do the task wastes significant time when the approach is fundamentally flawed. Always run one representative example through the model interface first.
-2. **Monolithic pipelines**: Combining all stages into one script makes debugging and iteration difficult. Separate stages with persistent intermediate outputs so each can be re-run independently.
-3. **Over-constraining the model**: Adding guardrails, pre-filtering, and validation logic that the model could handle on its own reduces performance. Test whether scaffolding helps or hurts before keeping it.
-4. **Ignoring costs until production**: Token costs compound quickly at scale. Estimate and track from the beginning to avoid budget surprises that force architectural rework.
-5. **Perfect parsing requirements**: Expecting LLMs to follow format instructions perfectly leads to brittle systems. Build robust parsers that handle variations and log failures for review.
-6. **Premature optimization**: Adding caching, parallelization, and optimization before the basic pipeline works correctly wastes effort on code that may be discarded during iteration.
-7. **Model version lock-in**: Building pipelines that only work with one specific model version creates fragile systems. Test across model generations and abstract the LLM call layer so models can be swapped without rewriting pipeline logic.
-8. **Evaluation-less deployment**: Shipping agent pipelines without measuring output quality means regressions go undetected. Define quality metrics during development and run evaluation checks before and after every model or prompt change.
-9. **Provenance drift**: Raw inputs, intermediate outputs, and final proposals separated across ad hoc folders become impossible to audit. Keep each pipeline run in a single directory with source evidence, transformations, validation reports, and decisions.
+1. **跳过手动验证**：如果方法本身不适用，先开发自动化会浪费大量时间。务必先在模型界面中运行一个有代表性的示例。
+2. **单体式流水线**：把所有阶段放进一个脚本会让调试和迭代变困难。应使用持久化中间输出将阶段分开，以便独立重跑。
+3. **过度限制模型**：如果模型本可自行完成，添加防护、预过滤和验证逻辑可能会降低表现。决定保留前，先测试脚手架究竟有利还是有害。
+4. **直到生产阶段才考虑成本**：规模扩大时 Token 成本会迅速累积。应从一开始估算并追踪，以免预算意外超支而被迫重构架构。
+5. **要求完美解析**：若认为 LLM 会完美遵循格式指令，系统就会变得脆弱。应构建能够处理格式变化的稳健解析器，并记录解析失败供后续检查。
+6. **过早优化**：基础流水线尚未正确运行就添加缓存、并行化和优化，会在迭代时浪费精力开发可能被丢弃的代码。
+7. **锁定单一模型版本**：只适配一个具体模型版本的流水线会很脆弱。应跨代际测试，并抽象 LLM 调用层，使模型可以替换而无需重写流水线逻辑。
+8. **部署时没有评估**：不衡量输出质量就发布智能体流水线，回归会一直无法发现。应在开发期间定义质量指标，并在每次模型或提示词变更前后运行评估。
+9. **来源记录漂移**：若原始输入、中间输出和最终提案被随意放在不同目录中，就无法审核。应将每次流水线运行的证据来源、转换过程、验证报告和决策保存在同一目录。
 
-## Integration
+## 集成
 
-This skill owns project-shape and pipeline decisions. Adjacent decisions are owned elsewhere:
+本技能负责项目形态和流水线决策。相邻决策由其他技能负责：
 
-- `tool-design`: the per-tool interface layer (descriptions, schemas, response formats, error messages, MCP namespacing, individual tool consolidation). If the question is "what should this specific tool look like" rather than "what should the pipeline look like," route there.
-- `multi-agent-patterns`: agent topology decisions (supervisor vs swarm vs hierarchical, handoff protocols, context isolation across agents). This skill picks single-vs-multi at the project level; the topology details belong to multi-agent-patterns.
-- `harness-engineering`: the autonomous control loop around the project (locked metrics, novelty gates, run state machine, human approval boundaries). If the question is "how do we make this run unattended for days," route there.
-- `context-fundamentals`: the conceptual frame for context constraints that inform prompt design at every stage.
-- `evaluation`: outcome measurement and quality gates for pipeline runs.
-- `context-compression`: when long-running pipeline stages produce trajectories that need summarization.
+- `tool-design`：单个工具的接口层（描述、模式、响应格式、错误消息、MCP 命名空间和单个工具的合并）。如果问题是“这个具体工具应该长什么样”，而不是“流水线应该长什么样”，请转到该技能。
+- `multi-agent-patterns`：智能体拓扑决策（监督者与群体模式、分层结构、交接协议、智能体间上下文隔离）。本技能负责项目层面选择单智能体或多智能体；拓扑细节归该技能负责。
+- `harness-engineering`：项目周围的自主控制循环（锁定指标、新颖性门禁、运行状态机、人工审批边界）。如果问题是“如何让它无人值守运行数天”，请转到该技能。
+- `context-fundamentals`：影响各阶段提示词设计的上下文限制概念框架。
+- `evaluation`：流水线运行的结果测量和质量门禁。
+- `context-compression`：当长时间运行的流水线阶段产生需要总结的执行轨迹时，使用此技能。
 
-## References
+## 参考资料
 
-Internal references:
-- [Case Studies](./references/case-studies.md) - Read when: evaluating architecture tradeoffs or reviewing real-world pipeline implementations (Karpathy HN Capsule, Vercel d0, Manus patterns)
-- [Pipeline Patterns](./references/pipeline-patterns.md) - Read when: designing a new pipeline stage layout, choosing caching strategies, or debugging stage boundaries
+内部参考：
+- [案例研究](./references/case-studies.md) - 在以下情况下阅读：评估架构取舍或审阅真实世界的流水线实现（Karpathy HN Capsule、Vercel d0、Manus 模式）。
+- [流水线模式](./references/pipeline-patterns.md) - 在以下情况下阅读：设计新的流水线阶段结构、选择缓存策略或调试阶段边界。
 
-Related skills in this collection:
-- tool-design - Tool architecture and reduction patterns
-- multi-agent-patterns - When to use multi-agent architectures
-- evaluation - Output evaluation frameworks
+本合集中的相关技能：
+- tool-design - 工具架构和精简模式
+- multi-agent-patterns - 何时采用多智能体架构
+- evaluation - 输出评估框架
 
-External resources:
-- Karpathy's HN Time Capsule project: https://github.com/karpathy/hn-time-capsule
-- Vercel d0 architectural reduction: https://vercel.com/blog/we-removed-80-percent-of-our-agents-tools
-- Manus context engineering: Peak Ji's blog on context engineering lessons
-- Anthropic multi-agent research: How we built our multi-agent research system
+外部资源：
+- Karpathy 的 HN Time Capsule 项目：https://github.com/karpathy/hn-time-capsule
+- Vercel d0 架构精简：https://vercel.com/blog/we-removed-80-percent-of-our-agents-tools
+- Manus 上下文工程：Peak Ji 关于上下文工程经验的博客
+- Anthropic 多智能体研究：我们如何构建多智能体研究系统
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-25
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 1.3.0
+**创建时间**：2025-12-25
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：1.3.0

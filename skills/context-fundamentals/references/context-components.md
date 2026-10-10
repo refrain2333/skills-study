@@ -1,80 +1,78 @@
-# Context Components: Technical Reference
+# 上下文组成部分：技术参考
 
-This document provides detailed technical reference for each context component in agent systems.
+本文档为智能体系统中的每个上下文组成部分提供了详细的技术参考。
 
-## System Prompt Engineering
+## 系统提示词工程 (System Prompt Engineering)
 
-### Section Structure
+### 章节结构
 
-Organize system prompts into distinct sections with clear boundaries. A recommended structure:
+使用具有清晰边界的独立章节来组织系统提示词。推荐结构如下：
 
 ```
 <BACKGROUND_INFORMATION>
-Context about the domain, user preferences, or project-specific details
+关于领域、用户偏好或项目特定细节的上下文
 </BACKGROUND_INFORMATION>
 
 <INSTRUCTIONS>
-Core behavioral guidelines and task instructions
+核心行为准则和任务指令
 </INSTRUCTIONS>
 
 <TOOL_GUIDANCE>
-When and how to use available tools
+何时以及如何使用可用工具
 </TOOL_GUIDANCE>
 
 <OUTPUT_DESCRIPTION>
-Expected output format and quality standards
+预期的输出格式和质量标准
 </OUTPUT_DESCRIPTION>
 ```
 
-This structure allows agents to locate relevant information quickly and enables selective context loading in advanced implementations.
+这种结构允许智能体快速定位相关信息，并在高级实现中实现选择性的上下文加载。
 
-### Altitude Calibration
+### 高度校准 (Altitude Calibration)
 
-The "altitude" of instructions refers to the level of abstraction. Consider these examples:
+指令的“高度”是指抽象程度。请考虑以下示例：
 
-**Too Low (Brittle):**
+**过低（脆性）：**
 ```
-If the user asks about pricing, check the pricing table in docs/pricing.md.
-If the table shows USD, convert to EUR using the exchange rate in
-config/exchange_rates.json. If the user is in the EU, add VAT at the
-applicable rate from config/vat_rates.json. Format the response with
-the currency symbol, two decimal places, and a note about VAT.
-```
-
-**Too High (Vague):**
-```
-Help users with pricing questions. Be helpful and accurate.
+如果用户询问价格，请查看 docs/pricing.md 中的价格表。
+如果表格显示美元 (USD)，请使用 config/exchange_rates.json 中的汇率转换为欧元 (EUR)。
+如果用户在欧盟境内，请按照 config/vat_rates.json 中的适用税率添加增值税 (VAT)。
+格式化响应时应包含货币符号、两位小数以及关于增值税的备注。
 ```
 
-**Optimal (Heuristic-Driven):**
+**过高（模糊）：**
 ```
-For pricing inquiries:
-1. Retrieve current rates from docs/pricing.md
-2. Apply user location adjustments (see config/location_defaults.json)
-3. Format with appropriate currency and tax considerations
-
-Prefer exact figures over estimates. When rates are unavailable,
-say so explicitly rather than projecting.
+帮助用户解决价格问题。要乐于助人且准确无误。
 ```
 
-The optimal altitude provides clear steps while allowing flexibility in execution.
+**最佳（启发式驱动）：**
+```
+针对价格查询：
+1. 从 docs/pricing.md 检索当前费率
+2. 应用用户位置调整（参见 config/location_defaults.json）
+3. 结合适当的货币和税务因素进行格式化
 
-## Tool Definition Specification
+优先使用精确数字而非估算值。当费率不可用时，请明确说明而非进行预测。
+```
 
-### Schema Structure
+最佳高度提供了清晰的步骤，同时在执行过程中允许一定的灵活性。
 
-Each tool should define:
+## 工具定义规范
+
+### Schema 结构
+
+每个工具应定义：
 
 ```python
 {
     "name": "tool_function_name",
-    "description": "Clear description of what the tool does and when to use it",
+    "description": "清晰描述工具的作用以及何时使用它",
     "parameters": {
         "type": "object",
         "properties": {
             "param_name": {
                 "type": "string",
-                "description": "What this parameter controls",
+                "description": "此参数控制什么",
                 "default": "reasonable_default_value"
             }
         },
@@ -82,101 +80,101 @@ Each tool should define:
     },
     "returns": {
         "type": "object",
-        "description": "What the tool returns and its structure"
+        "description": "工具返回什么及其结构"
     }
 }
 ```
 
-### Description Engineering
+### 描述工程 (Description Engineering)
 
-Tool descriptions should answer: what the tool does, when to use it, and what it produces. Include usage context, examples, and edge cases.
+工具描述应回答：工具做什么、何时使用它以及它产生什么结果。包括使用背景、示例和边缘情况。
 
-**Weak Description:**
+**弱描述：**
 ```
-Search the database for customer information.
-```
-
-**Strong Description:**
-```
-Retrieve customer information by ID or email.
-
-Use when:
-- User asks about a specific customer's details, history, or status
-- User provides a customer identifier and needs related information
-
-Returns customer object with:
-- Basic info (name, email, account status)
-- Order history summary
-- Support ticket count
-
-Returns null if customer not found. Returns error if database unreachable.
+在数据库中搜索客户信息。
 ```
 
-## Retrieved Document Management
+**强描述：**
+```
+通过 ID 或电子邮件检索客户信息。
 
-### Identifier Design
+使用场景：
+- 用户询问特定客户的详细信息、历史记录或状态
+- 用户提供客户标识符并需要相关信息
 
-Design identifiers that convey meaning and enable efficient retrieval:
+返回包含以下内容的客户对象：
+- 基本信息（姓名、电子邮件、账户状态）
+- 订单历史摘要
+- 支持工单计数
 
-**Poor identifiers:**
+如果未找到客户则返回 null。如果数据库无法访问则返回错误。
+```
+
+## 检索文档管理
+
+### 标识符设计
+
+设计能够传达含义并实现高效检索的标识符：
+
+**糟糕的标识符：**
 - `data/file1.json`
 - `ref/ref.md`
 - `2024/q3/report`
 
-**Strong identifiers:**
+**强大的标识符：**
 - `customer_pricing_rates.json`
 - `engineering_onboarding_checklist.md`
 - `2024_q3_revenue_report.pdf`
 
-Strong identifiers allow agents to locate relevant files even without search tools.
+强大的标识符允许智能体即使在没有搜索工具的情况下也能定位相关文件。
 
-### Document Chunking Strategy
+### 文档分块策略
 
-For large documents, chunk strategically to preserve semantic coherence:
+对于大文档，进行战略性分块以保留语义连贯性：
 
 ```python
-# Pseudocode for semantic chunking
+# 语义分块伪代码
 def chunk_document(content):
-    """Split document at natural semantic boundaries."""
-    boundaries = find_section_headers(content)
-    boundaries += find_paragraph_breaks(content)
-    boundaries += find_logical_breaks(content)
-    
+    """在自然语义边界处拆分文档。"""
+    boundaries = find_section_headers(content) # 查找章节标题
+    boundaries += find_paragraph_breaks(content) # 查找段落分隔
+    boundaries += find_logical_breaks(content) # 查找逻辑中断
+
     chunks = []
     for i in range(len(boundaries) - 1):
         chunk = content[boundaries[i]:boundaries[i+1]]
         if len(chunk) > MIN_CHUNK_SIZE and len(chunk) < MAX_CHUNK_SIZE:
             chunks.append(chunk)
-    
+
     return chunks
 ```
 
-Avoid arbitrary character limits that split mid-sentence or mid-concept.
+避免使用会在句子中途或概念中途拆分的任意字符限制。
 
-## Message History Management
+## 消息历史管理
 
-### Turn Representation
+### 回合表示 (Turn Representation)
 
-Structure message history to preserve key information:
+组织消息历史以保留关键信息：
 
 ```python
 {
     "role": "user" | "assistant" | "tool",
-    "content": "message text",
-    "reasoning": "optional chain-of-thought",
-    "tool_calls": [list if role="assistant"],
-    "tool_output": "output if role="tool"",
-    "summary": "compact summary if conversation is long"
+    "content": "消息文本",
+    "reasoning": "可选的思维链",
+    "tool_calls": [如果角色是 assistant 则包含此列表],
+    "tool_output": "如果角色是 tool 则包含输出",
+    "summary": "如果对话很长则包含精简摘要"
 }
 ```
 
-### Summary Injection Pattern
+### 摘要注入模式
 
-For long conversations, inject summaries at intervals:
+对于长对话，每隔一段时间注入摘要：
 
 ```python
 def inject_summaries(messages, summary_interval=20):
-    """Inject summaries at regular intervals to preserve context."""
+    """定期注入摘要以保留上下文。"""
     summarized = []
     for i, msg in enumerate(messages):
         summarized.append(msg)
@@ -184,100 +182,99 @@ def inject_summaries(messages, summary_interval=20):
             summary = generate_summary(summarized[-summary_interval:])
             summarized.append({
                 "role": "system",
-                "content": f"Conversation summary: {summary}",
+                "content": f"对话摘要：{summary}",
                 "is_summary": True
             })
     return summarized
 ```
 
-## Tool Output Optimization
+## 工具输出优化
 
-### Response Formats
+### 响应格式
 
-Provide response format options to control token usage:
+提供响应格式选项以控制令牌使用：
 
 ```python
 def get_customer_response_format():
     return {
-        "format": "concise | detailed",
+        "format": "concise | detailed", # 简洁 | 详细
         "fields": ["id", "name", "email", "status", "history_summary"]
     }
 ```
 
-The concise format returns essential fields only; detailed returns complete objects.
+简洁格式仅返回必要字段；详细格式返回完整对象。
 
-### Observation Masking
+### 观察掩蔽 (Observation Masking)
 
-For verbose tool outputs, consider masking patterns:
+对于冗长的工具输出，考虑使用掩蔽模式：
 
 ```python
 def mask_observation(output, max_length=500):
-    """Replace long observations with compact references."""
+    """用精简引用替换长观察结果。"""
     if len(output) <= max_length:
         return output
-    
+
     reference_id = store_observation(output)
-    return f"[Previous observation elided. Full content stored at reference {reference_id}]"
+    return f"[之前的观察结果已省略。完整内容存储在引用 {reference_id} 中]"
 ```
 
-This preserves information access while reducing token usage.
+这在减少令牌使用的同时保留了信息访问。
 
-## Context Budget Estimation
+## 上下文预算估算
 
-### Token Counting Approximation
+### 令牌计数近似值
 
-For planning purposes, estimate tokens at approximately 4 characters per token for English text:
+出于规划目的，对于英文文本，估计每个令牌大约对应 4 个字符：
 
 ```
-1000 words ≈ 7500 characters ≈ 1800-2000 tokens
+1000 个单词 ≈ 7500 个字符 ≈ 1800-2000 个令牌
 ```
 
-This is a rough approximation; actual tokenization varies by model and content type.
+这只是一个粗略的近似值；实际的分词结果因模型和内容类型而异。对于中文，通常一个汉字对应 1-2 个令牌（取决于具体模型）。
 
-### Context Budget Allocation
+### 上下文预算分配
 
-Allocate context budget across components:
+在各组成部分之间分配上下文预算：
 
-| Component | Typical Range | Notes |
+| 组成部分 | 典型范围 | 备注 |
 |-----------|---------------|-------|
-| System prompt | 500-2000 tokens | Stable across session |
-| Tool definitions | 100-500 per tool | Grows with tool count |
-| Retrieved documents | Variable | Often largest consumer |
-| Message history | Variable | Grows with conversation |
-| Tool outputs | Variable | Can dominate context |
+| 系统提示词 | 500-2000 令牌 | 整个会话保持稳定 |
+| 工具定义 | 每个工具 100-500 | 随工具数量增长 |
+| 检索到的文档 | 可变 | 通常是最大的消耗者 |
+| 消息历史 | 可变 | 随对话进行而增长 |
+| 工具输出 | 可变 | 可能主导上下文 |
 
-Monitor actual usage during development to establish baseline allocations.
+在开发期间监控实际使用情况，以建立基准分配。
 
-## Progressive Disclosure Implementation
+## 渐进式披露实现
 
-### Skill Activation Pattern
+### 技能激活模式
 
 ```python
 def activate_skill_context(skill_name, task_description):
-    """Load skill context when task matches skill description."""
-    skill_metadata = load_all_skill_metadata()
-    
+    """当任务匹配技能描述时加载技能上下文。"""
+    skill_metadata = load_all_skill_metadata() # 加载所有技能元数据
+
     relevant_skills = []
     for skill in skill_metadata:
         if skill_matches_task(skill, task_description):
             relevant_skills.append(skill)
-    
-    # Load full content only for most relevant skills
+
+    # 仅为最相关的技能加载全部内容
     for skill in relevant_skills[:MAX_CONCURRENT_SKILLS]:
         skill_context = load_skill_content(skill)
         inject_into_context(skill_context)
 ```
 
-### Reference Loading Pattern
+### 引用加载模式
 
 ```python
 def get_reference(file_reference):
-    """Load reference file only when explicitly needed."""
+    """仅在显式需要时加载引用文件。"""
     if not file_reference.is_loaded:
         file_reference.content = read_file(file_reference.path)
         file_reference.is_loaded = True
     return file_reference.content
 ```
 
-This pattern ensures files are loaded once and cached for the session.
-
+这种模式确保文件仅加载一次，并在会话期间进行缓存。

@@ -1,54 +1,52 @@
-# Skill Change Rubric
+# 技能变更评分规则
 
-Use this rubric after a source passes content curation. It decides whether the extracted mechanism should change the published skill corpus.
+来源通过内容筛选后，使用本规则判断提取出的机制是否应修改正式技能语料。
 
-## Hard Gates
+## 硬性门槛
 
-| Gate | Pass | Fail |
+| 门槛 | 通过 | 未通过 |
 | --- | --- | --- |
-| S1 Distinct Activation | The change has a clear trigger or improves an existing trigger | No clear activation scenario |
-| S2 Implementable Guidance | The change tells an agent what to do, when to do it, and what to avoid | Adds only background knowledge |
-| S3 Corpus Fit | The change belongs in an existing skill or justifies a new skill boundary | Duplicates existing content without improvement |
-| S4 Evidence Traceability | Every non-obvious claim maps to a retrieved source or internal example | Unsupported or uncited claim |
-| S5 Maintainer Burden | The claim is stable enough for `SKILL.md` or isolated in references if volatile | Adds brittle numbers or vendor-specific churn to core instructions |
+| S1 启用场景明确 | 变更有清楚触发条件，或能改进现有触发条件 | 没有清晰的适用场景 |
+| S2 指导可执行 | 说明智能体做什么、何时做、要避免什么 | 只增加背景知识 |
+| S3 适合当前语料 | 属于某项现有技能，或足以支持独立的新技能边界 | 与现有内容重复且没有改进 |
+| S4 证据可追溯 | 每项非显然主张都关联到已获取来源或内部示例 | 主张无依据或无引用 |
+| S5 维护负担可控 | 主张足够稳定，可放入 `SKILL.md`；易变内容则单独放在参考资料中 | 把脆弱数值或特定厂商变化塞进核心说明 |
 
-Any failed gate routes to `HUMAN_REVIEW` or `REJECT`; do not publish automatically.
+任何门槛失败都应转人工审查或拒绝，不得自动发布。
 
-## Scoring
+## 评分
 
-| Dimension | Weight | What To Check |
+| 维度 | 权重 | 检查问题 |
 | --- | --- | --- |
-| Actionability | 30% | Can a future agent apply this without additional research? |
-| Relevance | 25% | Does it improve context engineering, harness engineering, evaluation, memory, tools, or agent architecture? |
-| Non-Duplication | 20% | Does it add a new mechanism, failure mode, or sharper operating rule? |
-| Evidence | 15% | Is the claim backed by reproducible artifacts, benchmarks, or credible production experience? |
-| Skill Ergonomics | 10% | Does it keep discovery, line count, and progressive disclosure clean? |
+| 可执行性 | 30% | 未来的智能体能否直接应用，而无需额外研究？ |
+| 相关性 | 25% | 是否改善上下文工程、运行框架工程、评估、记忆、工具或智能体架构？ |
+| 非重复性 | 20% | 是否增加了新机制、失败模式或更明确的操作规则？ |
+| 证据 | 15% | 是否由可复现产物、基准或可信生产经验支持？ |
+| 技能易用性 | 10% | 是否保持了易发现、篇幅合适和渐进披露清晰？ |
 
-Score each dimension 0, 1, or 2. Approve only when weighted total is at least 1.4 and no hard gate fails.
+每项评分为 0、1 或 2。只有加权总分不低于 1.4 且所有硬性门槛通过时，才批准。
 
-## New Skill vs Existing Skill
+## 新技能与更新现有技能
 
-Update an existing skill when:
+在以下情况下更新现有技能：
 
-- The mechanism shares the same activation scenario.
-- The current skill already owns the concept.
-- The update is a sharper guideline, gotcha, example, or reference.
+- 机制适用同一启用场景。
+- 该概念已由现有技能负责。
+- 改动用于改进指导、易错点、示例或参考资料。
 
-Create a new skill only when:
+只有满足以下条件时才创建新技能：
 
-- The activation scenario is distinct and likely to be recognized by future agents.
-- The workflow has its own operating sequence.
-- Combining it with an existing skill would blur boundaries or exceed the 500-line budget.
+- 启用场景明显不同，未来智能体也能识别。
+- 工作流有独立的操作步骤。
+- 与现有技能合并会模糊边界或超过 500 行上限。
 
-Keep as reference-only when:
+以下情况仅保留参考资料：
 
-- The source is credible but volatile.
-- The mechanism is interesting but not yet an operating rule.
-- Evidence is useful for background but not enough for published instructions.
+- 来源可信但内容易变。
+- 机制有趣，但尚未形成操作规则。
+- 证据适合背景阅读，但不足以支持正式指导。
 
-## Required Proposal Fields
-
-Every proposed skill change must include:
+## 提案必填字段
 
 ```yaml
 target: "new skill | existing skill | reference only"
@@ -68,10 +66,10 @@ risks:
 review_decision: "approve | human_review | reject"
 ```
 
-## Failure Modes
+## 失败模式
 
-1. **Encyclopedia bloat**: Adding every interesting paper turns skills into literature reviews. Only publish mechanisms that change agent behavior.
-2. **Claim rot**: Model-specific numbers age quickly. Put volatile evidence in dated references, not timeless guidance.
-3. **Trigger collision**: Similar descriptions cause agents to activate the wrong skill. Keep skill boundaries sharper than taxonomy labels.
-4. **Reference laundering**: Secondary summaries can point to primary sources but should not carry technical claims alone.
-5. **One-source overfit**: A single credible source can justify human review, but broad guidance should have either reproduced evidence or multiple converging sources.
+1. **百科式膨胀**：把每篇有趣论文都加进技能会变成文献综述。只发布能改变智能体行为的机制。
+2. **主张过时**：模型专属数值很快过期。易变证据放在带日期的参考资料，不写进不随时间变化的指导。
+3. **触发冲突**：描述相似会让智能体启用错误技能。技能边界应比分类标签更清晰。
+4. **借二手资料洗来源**：二手总结可以指向一手来源，但不能单独承载技术主张。
+5. **过度依赖单一来源**：一个可信来源足以触发人工审查；要形成普遍指导，则应有可复现证据或多个相互印证的来源。

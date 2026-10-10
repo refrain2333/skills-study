@@ -1,16 +1,16 @@
-# Published Router Benchmark Results
+# 已发布的路由基准结果
 
-Each `<date>.md` file in this directory is a committed snapshot of a router benchmark sweep. Raw per-run JSON outputs live under `researcher/benchmarks/router/results/<date>-<seed>/` and are gitignored; only the curated summary published here is tracked in the repo.
+目录中的每个 `<日期>.md` 文件都是一次路由基准扫描的已提交快照。每次运行的原始 JSON 位于 `researcher/benchmarks/router/results/<日期>-<种子>/`，并已加入 Git 忽略规则；仓库只跟踪此处整理后的摘要。
 
-Every report includes:
+每份报告都包含：
 
-- Run metadata (timestamp, repo commit, fixture SHA, seed, model list, replications).
-- Executive summary calling out the actually meaningful findings.
-- Per-model leaderboard with bootstrap 95% CIs.
-- Per-skill confusion matrix.
-- Hardest-prompts breakdown.
-- Reproduction command.
+- 运行元数据：时间戳、仓库提交、样例摘要、随机种子、模型列表和重复次数。
+- 突出关键发现的执行摘要。
+- 每模型排行榜和自助法 95% 置信区间。
+- 单技能混淆矩阵。
+- 最难提示的分析。
+- 复现命令。
 
-When a benchmark exposes a routing failure, follow up by editing the activation description of the failing skill, rerunning the benchmark, and comparing the new report against the previous one to show the delta.
+发现路由失败时，应改进失败技能的启用描述，重新运行基准，并与上一份报告比较差异。
 
-History across runs is also appended to `researcher/reports/router-history.jsonl` (gitignored) by the runner.
+运行器还会把跨次历史追加到已忽略的 `researcher/reports/router-history.jsonl`。

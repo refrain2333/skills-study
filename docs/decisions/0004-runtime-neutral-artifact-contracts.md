@@ -1,47 +1,47 @@
-# ADR-0004: Make schemas, identity, and frozen bytes runtime-neutral
+# 架构决策记录 0004：让数据结构、身份和冻结字节适用于不同运行环境
 
-- Status: accepted for proposal
-- Date: 2026-08-10
-- Spec: SPEC-003
+- 状态：提案已接受
+- 日期：2026-08-10
+- 关联规范：SPEC-003
 
-## Context
+## 背景
 
-The repository already has useful JSON, JSONL, Markdown-frontmatter, and directory contracts. They are validated by different scripts, use paths or semantic keys as identity, and do not share canonical serialization or compatibility rules. Hermes, Temporal, and later executors cannot safely exchange those records if chat state or adapter-specific storage becomes the implicit contract.
+仓库已有 JSON、JSONL、Markdown 元数据和目录格式约定，但它们由不同脚本验证，以路径或语义键作为身份，也没有共用的规范序列化和兼容规则。如果把聊天状态或适配器专用存储默认为数据契约，Hermes、Temporal 及后续执行器就无法安全交换记录。
 
-## Decision
+## 决策
 
-Durable cross-runtime records use Draft 2020-12 schemas registered with exact file digests. The bootstrap registry contains only contracts needed before the event journal and evaluator exist: the registry meta-schema, artifact envelope and reference, private storage binding, SPEC-002 export records, minimal candidate and freeze receipt, credential reference, capability grant specification, and four legacy adapters.
+跨运行环境传递的持久记录使用 Draft 2020-12 数据结构，并固定数据结构文件的精确摘要。初始注册表只包含事件日志和评估器尚不存在前必须具备的契约：注册表元结构、产物封装和引用、私有存储绑定、SPEC-002 导出记录、最小候选记录和冻结回执、凭据引用、能力授权说明，以及四种旧数据适配器。
 
-Event, work-order, command, source, context-package, evaluation, promotion, execution-environment, and contribution schemas are intentionally absent. Their owning specs must register them after their invariants are implemented. This avoids making draft architecture permanent through premature schemas.
+事件、工作单、命令、来源、上下文包、评估、晋级、执行环境和贡献数据包的结构暂不纳入。负责这些对象的规范应在不变量实现后再登记，避免过早用数据结构把草案架构固定下来。
 
-JSON record digests use `jcs-rfc8785-integer-v1`, an executable subset of [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785.html). It admits null, booleans, strings without lone surrogates, arrays, objects, and integers in the exact ECMAScript range. Floats, negative zero, duplicate keys, non-finite numbers, and unsafe integers deny. Blob digests remain SHA-256 over exact bytes with no text normalization.
+JSON 记录摘要使用 `jcs-rfc8785-integer-v1`，这是 [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785.html) 的一个可执行子集。它允许空值、布尔值、没有孤立代理项的字符串、数组、对象，以及处于 ECMAScript 精确范围内的整数；浮点数、负零、重复键、非有限数值和不安全整数一律拒绝。数据块摘要则直接对原始字节计算 SHA-256，不做文本规范化。
 
-New typed identifiers use `<prefix>_<UUIDv7>` following [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562.html). Deterministic legacy imports use a fixed UUIDv5 namespace and declare `id_origin: legacy_import`. Existing claim, mechanism, source, and run keys remain aliases; migration does not rewrite their files.
+新的带类型标识采用 `<prefix>_<UUIDv7>`，遵循 [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562.html)。旧数据确定性导入使用固定 UUIDv5 命名空间，并声明 `id_origin: legacy_import`。现有主张、机制、来源和运行键保留为别名；迁移不改写原文件。
 
-An `ArtifactEnvelope` is not an untyped JSON bag. Its declared target resolves through the same registry. A native envelope payload is the complete target record. A legacy-import payload names the matching legacy adapter and semantic key, carries the canonical source digest and source record, and binds both through `input_digests` and `aliases`. Rollback revalidates the embedded source through that adapter before returning it.
+`ArtifactEnvelope` 不是任意 JSON 容器。声明的目标类型必须能在同一注册表中解析。本地封装载荷是完整目标记录；旧数据导入载荷须注明匹配的适配器和语义键，携带规范来源摘要与来源记录，并通过 `input_digests` 和 `aliases` 绑定二者。回滚前，必须由该适配器重新验证嵌入的来源记录。
 
-`ArtifactRef`, `StorageBinding`, and authority are separate concepts. Portable references contain no private locator. A private binding maps a reference to storage and is validated on every read. Read authority is supplied independently and checked before existence. Possessing an ID or reference is never read permission. A reference declares whether its target ID is native or a legacy import, and validators resolve the target registry entry before accepting its kind, version, or prefix. A writer must validate the exact registered JSON body, its typed ID, kind, version, and classification before CAS publication.
+`ArtifactRef`、`StorageBinding` 和权限是三个独立概念。可移植引用不包含私有位置；私有绑定负责把引用映射到存储，并在每次读取时验证。读取权限由外部单独提供，且必须先于“对象是否存在”的检查。拥有编号或引用本身不构成读取权限。引用必须声明目标编号是原生标识还是旧数据导入；验证器先查注册表，再接受其类型、版本和前缀。写入者必须在发布到 CAS 前验证精确登记的 JSON 正文、类型标识、种类、版本和分类。
 
-Candidate freezing copies exact file bytes into the local CAS, hashes a UTF-16-sorted tree manifest, applies an explicit NFC POSIX and ASCII case-insensitive path profile, enforces an authority-owned editable-surface policy, and emits an immutable receipt before evaluation. A frozen candidate ID cannot be rebound; a revision receives a new candidate ID. Snapshot traversal, open-time identity, file count, and total bytes all fail closed.
+冻结候选时，将精确文件字节复制到本地 CAS，对按 UTF-16 排序的目录树清单计算摘要，并执行明确的 NFC POSIX 路径及 ASCII 不区分大小写规则。冻结过程要求权限方维护可编辑区域规则，并在评估前生成不可变回执。冻结后的候选编号不能重新绑定；修订必须使用新编号。目录遍历、打开时身份、文件数量和总字节数均采用默认拒绝策略。
 
-## Consequences
+## 后果
 
-- Python and TypeScript must produce the committed canonical vectors and schema results exactly.
-- Current claims, mechanisms, run state, and queue records remain canonical in their existing formats during migration.
-- Deterministic import-ID collisions quarantine every conflicting claimant; exact canonical duplicates are represented once and remain visible as deduplicated inputs.
-- Private CAS objects and bindings are ignored runtime state. Public Git artifacts remain ordinary files.
-- The fake capability provider proves scope and replay behavior without making a production secret broker part of this wave. Resource classification comes from provider-owned metadata, not the caller. Its grant digest is integrity-only, not issuer authentication; SPEC-024 owns real identity and credential resolution.
-- SPEC-004 stores artifact references and events, not another blob body. SPEC-010 adapts retrieval snapshots to this CAS. SPEC-018 extends candidate history, and SPEC-019 promotes the exact freeze receipt.
-- The integer-only profile is narrower than general RFC 8785. A future float-bearing schema requires a new canonicalization profile and cross-language vectors rather than silently broadening this one.
+- Python 与 TypeScript 必须生成完全相同的规范向量和数据结构结果。
+- 迁移期间，现有主张、机制、运行状态和队列记录继续沿用原格式。
+- 确定性导入编号发生冲突时，将所有冲突对象隔离；规范身份完全相同的重复项只表示一次，并明确记录去重结果。
+- 私有 CAS 对象和绑定属于被忽略的运行状态；公开 Git 产物仍是普通文件。
+- 模拟能力提供方用于验证范围和重放行为，本阶段不建立生产秘密代理。资源分类由提供方元数据决定，而非调用者；授权摘要只用于完整性检查，不用于认证签发方。SPEC-024 负责真实身份和凭据解析。
+- SPEC-004 保存产物引用和事件，不重复保存数据块正文；SPEC-010 将检索快照接入 CAS；SPEC-018 扩展候选历史；SPEC-019 晋级精确的冻结回执。
+- 只允许整数的规范化规则比完整 RFC 8785 更窄。将来若需支持浮点数，必须新增规范化规则和跨语言一致性向量，不能静默放宽现有规则。
 
-## Alternatives considered
+## 考虑过的替代方案
 
-- Hash ordinary `json.dumps` or `JSON.stringify` output. Rejected because key sorting and accepted numeric domains differ across runtimes.
-- Put locators in `ArtifactRef`. Rejected because portable references would expose private topology and be confused with authority.
-- Register every planned organization record now. Rejected because later specs have not made those contracts executable.
-- Make paths the artifact key. Rejected because moves, public projections, and CAS materialization would change identity.
-- Rewrite all JSONL records into envelopes immediately. Rejected because it would create a high-risk flag day and damage append-only history.
+- 对普通 `json.dumps` 或 `JSON.stringify` 输出计算摘要：拒绝，因为不同运行环境的键排序和数值范围不同。
+- 把存储位置放进 `ArtifactRef`：拒绝，因为可移植引用会暴露私有拓扑，并容易被误认为权限。
+- 现在登记所有规划中的组织记录：拒绝，因为后续规范尚未把相关契约变成可执行规则。
+- 用路径作为产物键：拒绝，因为移动文件、公开投影和 CAS 物化都会改变身份。
+- 立即把所有 JSONL 记录改写成封装：拒绝，因为这会造成高风险的集中迁移并破坏只追加历史。
 
-## Verification
+## 验证范围
 
-The conformance suite covers duplicate keys, unsafe numbers, UTF-16 astral ordering, combining Unicode, control characters, typed-ID version and prefix checks, impossible timestamps, schema digest drift, current legacy records, pure migration and rollback, concurrent CAS writes, tampering, binding mismatch, classification high-water behavior, authority-before-existence, candidate path attacks, open-time substitution, editable surfaces, bounded snapshots, exact no-clobber materialization, and one-use capability scope.
+一致性检查覆盖重复键、不安全数字、UTF-16 补充平面字符排序、组合 Unicode、控制字符、带类型标识的版本和前缀、无效时间戳、数据结构摘要漂移、现有旧记录、纯迁移与回滚、CAS 并发写入、篡改、绑定不匹配、分类上限单调性、先授权后判断存在、候选路径攻击、打开时替换、可编辑区域、有限快照、不可覆盖的精确物化和一次性能力范围。

@@ -1,62 +1,62 @@
-# Harness Change Rubric
+# 运行框架变更评分规则
 
-Use this rubric when a source proposes changes to a research loop, evaluation harness, agent operating procedure, or PR automation policy.
+当来源建议修改研究循环、评估运行框架、智能体操作流程或拉取请求自动化规则时，使用本规则。
 
-## Harness Definition
+## 运行框架定义
 
-A harness is the control system around an agent: prompts, editable surfaces, tools, evals, logs, retry rules, rollback rules, and human approval gates. Harness engineering is separate from content authoring because agents can game or weaken their own harnesses if the boundary is not explicit.
+运行框架是围绕智能体的控制系统，包括提示词、可编辑区域、工具、评估、日志、重试规则、回滚规则和人工审批门槛。运行框架工程与内容编写不同：如果边界不明确，智能体可能操纵或削弱自己的运行框架。
 
-## Locked vs Editable Surfaces
+## 锁定区域与可编辑区域
 
-Every harness proposal must classify files or settings:
+每项运行框架提案都必须给文件或设置分类：
 
-| Surface | Examples | Rule |
+| 区域 | 示例 | 规则 |
 | --- | --- | --- |
-| Locked | Rubrics, evaluation scripts, source registry, merge policy | Agent may propose changes, but cannot use changed version to score the same proposal |
-| Editable | Skill draft, source evaluation, research thread, proposal text | Agent can modify during the loop |
-| Append-only | Result logs, rejected source log, experiment history | Agent can append, not rewrite |
-| Human-controlled | Merge decisions, credential setup, destructive actions | Agent cannot automate without explicit approval |
+| 锁定 | 评分规则、评估脚本、来源注册表、合并政策 | 智能体可以提出修改，但不能用同一提案中新修改的版本给自己评分 |
+| 可编辑 | 技能草稿、来源评估、研究讨论、提案文本 | 智能体可在循环中修改 |
+| 只追加 | 结果日志、拒绝来源日志、实验历史 | 智能体可以追加，不能改写 |
+| 人工控制 | 合并决策、凭据设置、破坏性操作 | 未经明确批准，智能体不得自动执行 |
 
-## Gates
+## 门槛
 
-| Gate | Pass | Fail |
+| 门槛 | 通过 | 未通过 |
 | --- | --- | --- |
-| H1 Objective Clarity | The harness has a measurable objective and stop/continue rule | Goal is vague or impossible to evaluate |
-| H2 Metric Integrity | Metrics are locked, external, and resistant to gaming | Agent can change the metric or hidden answer key |
-| H3 Artifact Durability | The loop writes durable logs, candidates, failures, and decisions | State only exists in chat context |
-| H4 Recovery Path | Crashes, bad sources, and failed proposals have explicit handling | Failures are ignored or retried indefinitely |
-| H5 Human Governance | PR, merge, and policy-changing boundaries are explicit | Agent can merge or change governance autonomously |
+| H1 目标明确 | 运行框架具有可衡量目标和停止/继续规则 | 目标模糊或无法评估 |
+| H2 指标可靠 | 指标被锁定、由外部控制且难以投机 | 智能体能修改指标或隐藏答案 |
+| H3 产物持久 | 循环保存日志、候选、失败和决策 | 状态只存在于聊天上下文 |
+| H4 有恢复途径 | 崩溃、无效来源和失败提案均有明确处理 | 忽略失败或无限重试 |
+| H5 人工治理 | 拉取请求、合并和政策变更边界明确 | 智能体可自行合并或修改治理规则 |
 
-Any failed gate requires human review.
+任一门槛失败时都需要人工审查。
 
-## Scoring
+## 评分
 
-Score each dimension 0, 1, or 2.
+每项评分为 0、1 或 2。
 
-| Dimension | Weight | Score 2 |
+| 维度 | 权重 | 2 分标准 |
 | --- | --- | --- |
-| Feedback Quality | 25% | Fast, unambiguous feedback from locked metrics or rubrics |
-| Search Discipline | 20% | Supports novelty, ablation, pruning, and upstream refresh |
-| Auditability | 20% | Durable logs reconstruct what happened and why |
-| Safety and Governance | 20% | Clear approval gates and rollback paths |
-| Cost Control | 15% | Bounded token, compute, and review cost per loop |
+| 反馈质量 | 25% | 从锁定指标或评分规则获得快速且明确的反馈 |
+| 搜索纪律 | 20% | 支持新颖性检查、消融、精简和上游更新 |
+| 可审计性 | 20% | 持久日志能重建发生了什么及原因 |
+| 安全与治理 | 20% | 审批门槛和回滚途径明确 |
+| 成本控制 | 15% | 限制每轮循环的令牌、计算和审查成本 |
 
-Approve harness changes only when total >= 1.5 and all gates pass. Otherwise route to human review.
+只有总分不低于 1.5 且全部门槛通过时才批准运行框架变更；否则转人工审查。
 
-## Required Checks
+## 必需检查
 
-Before accepting a harness change:
+接受运行框架变更前：
 
-1. Run the old harness on at least one known artifact if possible.
-2. Run the proposed harness on the same artifact and compare decisions.
-3. Confirm that stricter checks do not block obviously valid examples.
-4. Confirm that looser checks do not admit known bad examples.
-5. Record whether the change affects future proposals only or invalidates earlier results.
+1. 如条件允许，用旧运行框架处理至少一个已知产物。
+2. 用新运行框架处理同一产物并比较决策。
+3. 确认更严格的检查不会阻止明显有效的示例。
+4. 确认更宽松的检查不会放过已知错误示例。
+5. 记录该变更只影响未来提案，还是会使先前结果失效。
 
-## Common Anti-Patterns
+## 常见反模式
 
-1. **Self-scored harness edits**: The same agent proposes and approves a new rubric. Require independent review or old-rubric scoring.
-2. **Mutable benchmark**: The loop optimizes a metric the agent can edit. Lock metrics outside the editable surface.
-3. **No discard path**: Bad experiments accumulate and become implicit context. Log and isolate rejected attempts.
-4. **No pruning round**: Agents stack components and rarely remove them. Require leave-one-out or simplification checks for complex proposals.
-5. **Stale upstream view**: Long-running agents stop checking new sources. Schedule periodic source refresh before major decisions.
+1. **智能体自评自己的运行框架改动**：同一个智能体提出并批准新评分规则。要求独立审查，或使用旧规则评分。
+2. **可变基准**：循环优化智能体可以修改的指标。将指标锁定在可编辑区域之外。
+3. **没有丢弃机制**：失败实验不断累积并变成隐式上下文。记录并隔离拒绝的尝试。
+4. **没有精简环节**：智能体不断堆叠组件，很少移除。复杂提案应进行逐项移除或简化检查。
+5. **上游信息过时**：长期运行的智能体停止查看新来源。重要决策前定期刷新来源。

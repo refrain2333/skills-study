@@ -57,6 +57,7 @@ STOPWORDS = {
     "target",
     "type",
 }
+CJK_STOPWORDS = {"智能体", "任务", "系统", "内容", "信息", "进行", "这个", "相关", "工作", "使用", "可以", "需要", "例如"}
 
 
 STRUCTURED_SECTIONS = [
@@ -70,7 +71,11 @@ STRUCTURED_SECTIONS = [
 
 def tokens(text: str) -> set[str]:
     raw = re.findall(r"[a-zA-Z][a-zA-Z0-9_-]{2,}", text.lower())
-    return {t.replace("_", "-") for t in raw if t not in STOPWORDS}
+    result = {t.replace("_", "-") for t in raw if t not in STOPWORDS}
+    for run in re.findall(r"[\u3400-\u9fff]+", text):
+        result.update(run[index:index + 2] for index in range(len(run) - 1))
+        result.update(run[index:index + 3] for index in range(len(run) - 2))
+    return result - CJK_STOPWORDS
 
 
 def jaccard(a: set[str], b: set[str]) -> float:
@@ -145,15 +150,17 @@ def load_mechanisms(root: Path) -> list[dict[str, Any]]:
 def salient_text(text: str) -> str:
     """Keep the parts of a proposal most likely to contain real mechanism text."""
     section_names = [
-        "Mechanism",
-        "Proposed Delta",
-        "Risks And Gaps",
-        "Recommendation",
-        "Core Concepts",
-        "Detailed Topics",
-        "Practical Guidance",
-        "Guidelines",
-        "Gotchas",
+        "机制",
+        "拟议改动",
+        "风险与缺口",
+        "建议",
+        "核心概念",
+        "详细主题",
+        "实践指南",
+        "指南",
+        "易错点",
+        "注意事项",
+        "常见问题",
     ]
     chunks: list[str] = []
     for section in section_names:

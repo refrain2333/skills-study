@@ -1,92 +1,151 @@
 ---
 name: karpathy-hn-time-capsule
-description: Andrej Karpathy's project auto-grading decade-old Hacker News discussions using GPT 5.1 Thinking to identify prescient and incorrect predictions with hindsight analysis.
+description: Andrej Karpathy使用GPT 5.1 Thinking对十年前的黑客新闻讨论进行自动评分，以识别预言性和错误的预测，并进行事后分析。
 doc_type: blog
 source_url: https://karpathy.bearblog.dev/auto-grade-hn/
 ---
 
-https://karpathy.bearblog.dev/auto-grade-hn/
-- A lot more detail in my blog post https://karpathy.bearblog.dev/auto-grade-hn/
-- GitHub repo of the project if you'd like to play https://github.com/karpathy/hn-time-capsule
-- The actual results pages for your reading pleasure https://karpathy.ai/hncapsule/
+# 用事后分析自动评分十年前的黑客新闻讨论
 
+## 资源链接
 
-karpathy
-Home Blog
+- 详细信息请见我的博客 https://karpathy.bearblog.dev/auto-grade-hn/
+- 如果你想参与的项目GitHub仓库 https://github.com/karpathy/hn-time-capsule
+- 实际结果页面供你阅读 https://karpathy.ai/hncapsule/
 
-Auto-grading decade-old Hacker News discussions with hindsight
-10 Dec, 2025
+## 项目介绍
 
-hnhero
+**核心概念**：我对2015年12月的所有930条黑客新闻首页文章+讨论进行了事后分析，使用GPT 5.1 Thinking API识别最有远见和最错误的评论。这个项目耗时约3小时编码，约1小时运行，成本约$60。
 
-TLDR: https://karpathy.ai/hncapsule/
+## 项目起源
 
-Yesterday I stumbled on this HN thread Show HN: Gemini Pro 3 hallucinates the HN front page 10 years from now, where Gemini 3 was hallucinating the frontpage of 10 years from now. One of the comments struck me a bit more though - Bjartr linked to the HN frontpage from exactly 10 years ago, i.e. December 2015. I was reading through the discussions of 10 years ago and mentally grading them for prescience when I realized that an LLM might actually be a lot better at this task. I copy pasted one of the article+comment threads manually into ChatGPT 5.1 Thinking and it gave me a beautiful analysis of what people thought + what actually happened in retrospect, even better and significantly more detailed than what I was doing manually. I realized that this task is actually a really good fit for LLMs and I was looking for excuses to vibe code something with the newly released Opus 4.5, so I got to work. I'm going to get all the front pages of December (31 days, 30 articles per day), get ChatGPT 5.1 Thinking to do the analysis, and present everything in a nice way for historical reading.
+昨天我偶然发现了一个HN线程"Show HN: Gemini Pro 3幻觉了HN首页未来十年"，其中Gemini 3幻觉了十年后的首页。但有个评论特别引起了我的注意——Bjartr链接到了恰好十年前的HN首页，即2015年12月。
 
-There are two macro reasons for why I think the exercise is interesting more generally:
+我翻阅十年前的讨论，心里评估它们的预言性，当时我意识到一个LLM可能在这个任务上表现得好得多。我手动复制粘贴了一个文章+评论线程到ChatGPT 5.1 Thinking中，它给了我关于人们的想法+实际发生事情的美妙分析，甚至比我手动做的更详细和显著更好。
 
-I believe it is quite possible and desirable to train your forward future predictor given training and effort.
-I was reminded again of my tweets that said "Be good, future LLMs are watching". You can take that in many directions, but here I want to focus on the idea that future LLMs are watching. Everything we do today might be scrutinized in great detail in the future because doing so will be "free". A lot of the ways people behave currently I think make an implicit "security by obscurity" assumption. But if intelligence really does become too cheap to meter, it will become possible to do a perfect reconstruction and synthesis of everything. LLMs are watching (or humans using them might be). Best to be good.
-Vibe coding the actual project was relatively painless and took about 3 hours with Opus 4.5, with a few hickups but overall very impressive. The repository is on GitHub here: karpathy/hn-time-capsule. Here is the progression of what the code does:
+我意识到这个任务对LLM来说真的是个非常好的契合，并且我一直在找借口用新发布的Opus 4.5进行一些编码，所以我开始着手。我打算获取12月的所有首页（31天，每天30篇文章），让ChatGPT 5.1 Thinking进行分析，并以一种很好的历史阅读方式呈现一切。
 
-Given a date, download the frontpage of 30 articles
-For each article, download/parse the article itself and the full comment thread using Algolia API.
-Package up everything into a markdown prompt asking for the analysis. Here is the prompt prefix I used:
-The following is an article that appeared on Hacker News 10 years ago, and the discussion thread.
+## 为什么这个项目很有意思
 
-Let's use our benefit of hindsight now in 6 sections:
+有两个宏观原因说明这项工作为什么更普遍地有趣：
 
-1. Give a brief summary of the article and the discussion thread.
-2. What ended up happening to this topic? (research the topic briefly and write a summary)
-3. Give out awards for "Most prescient" and "Most wrong" comments, considering what happened.
-4. Mention any other fun or notable aspects of the article or discussion.
-5. Give out grades to specific people for their comments, considering what happened.
-6. At the end, give a final score (from 0-10) for how interesting this article and its retrospect analysis was.
+### 1. 训练你的未来预测器
 
-As for the format of Section 5, use the header "Final grades" and follow it with simply an unordered list of people and their grades in the format of "name: grade (optional comment)". Here is an example:
+我相信完全可能并且可取的是用训练和努力来训练你的未来预测器。读这些结果真的很有趣。
 
-Final grades
-- speckx: A+ (excellent predictions on ...)
-- tosh: A (correctly predicted this or that ...)
+### 2. 思考未来的LLM监视
+
+我再次想起我的推文说"表现良好，未来的LLM在看"。你可以从很多方向理解这个，但在这里我想关注这样的想法，即未来的LLM在看。我们今天做的所有事情都可能在未来被详细审查，因为这样做会是"免费的"。
+
+许多人目前表现的方式我认为做了一个隐含的"安全依靠晦涩"的假设。但如果智能真的变得便宜到无法计量，它会变得可能完美重建和合成所有东西。LLM在看（或使用它们的人可能）。最好表现良好。
+
+## 技术实现
+
+### 项目架构
+
+使用新发布的Opus 4.5进行"氛围编码"（vibe coding）相对无痛，花了约3小时有些小问题，但总体上令人印象深刻。仓库在GitHub: karpathy/hn-time-capsule
+
+代码的进展流程：
+
+1. **数据获取**：给定日期，下载30篇文章的首页
+2. **内容处理**：对于每篇文章，使用Algolia API下载/解析文章本身和完整的评论线程
+3. **提示打包**：将所有内容打包成markdown提示，要求进行分析
+
+### 分析提示结构
+
+以下是我使用的提示前缀：
+
+```
+以下是十年前出现在黑客新闻上的文章和讨论线程。
+
+现在让我们用事后分析的好处在6个部分中进行分析：
+
+1. 对文章和讨论线程进行简要总结。
+2. 这个话题最后怎么样了？(简要研究话题并写出总结)
+3. 给出"最有远见"和"最错误"的评论奖项，考虑到发生了什么。
+4. 提及文章或讨论的任何其他有趣或值得注意的方面。
+5. 给具体的人的评论评分，考虑到发生了什么。
+6. 最后，给出最终分数(从0-10)，评价这篇文章及其事后分析有多有趣。
+```
+
+### 格式规范
+
+**第5部分格式（最终成绩）**：
+
+```
+最终成绩
+- speckx: A+ (对...的优秀预测)
+- tosh: A (正确预测了这个或那个...)
 - keepamovin: A
 - bgwalter: D
-- fsflover: F (completely wrong on ...)
+- fsflover: F (完全错了...)
+```
 
-Your list may contain more people of course than just this toy example. Please follow the format exactly because I will be parsing it programmatically. The idea is that I will accumulate the grades for each account to identify the accounts that were over long periods of time the most prescient or the most wrong.
+该列表可能包含比这个玩具示例更多的人。请准确遵循格式，因为我会以编程方式解析它。这样我可以累积每个账户的成绩，以识别在长期内最有远见或最错误的账户。
 
-As for the format of Section 6, use the prefix "Article hindsight analysis interestingness score:" and then the score (0-10) as a number. Give high scores to articles/discussions that are prominent, notable, or interesting in retrospect. Give low scores in cases where few predictions are made, or the topic is very niche or obscure, or the discussion is not very interesting in retrospect.
+**第6部分格式（趣味评分）**：
 
-Here is an example:
-Article hindsight analysis interestingness score: 8
+```
+文章事后分析趣味评分: 8
+```
+
+给与文章/讨论在事后看来突出、值得注意或有趣的高分。在很少进行预测、话题非常小众或不起眼、或讨论事后不太有趣的情况下给低分。
+
+### 处理流程
+
+4. **API调用**：通过OpenAI API向GPT 5.1 Thinking提交提示
+5. **结果收集**：收集和解析结果
+6. **渲染呈现**：将结果渲染为静态HTML网页以便查看
+7. **托管发布**：
+   - 在我的网站上托管html结果页面: https://karpathy.ai/hncapsule/
+   - 如果有人想参与的话，在相同的url前缀下托管所有中间数据结果目录。文件是data.zip，在相同url前缀下(有意避免直接链接)
+
+## 有趣的示例线程
+
+我花了几个小时浏览，发现它非常有趣。几个示例线程来助兴：
+
+- 2015年12月3日 Swift开源
+- 2015年12月6日 Figma的推出
+- 2015年12月11日 OpenAI的原始公告 :')
+- 2015年12月16日 geohot正在构建Comma
+- 2015年12月22日 SpaceX发射网络直播：Orbcomm-2任务
+- 2015年12月28日 Theranos遭遇困难
+
+## 结果与荣誉榜
+
+导航到名人堂，你可以找到2015年12月黑客新闻的顶级评论者，按IMDb风格的成绩点平均分数排序。
+
+特别祝贺：pcwalton, tptacek, paulmd, cstross, greglindahl, moxie, hannob, 0xcde4c3db, Manishearth, johncolanduoni
+
+GPT 5.1 Thinking发现你们的评论非常有洞察力和远见。你们也可以滚动到最底部找到HN的噪音，我认为我们都很熟悉 :)
+
+## 成本与规模
+
+我的代码(等等，Opus的代码?)在GitHub上可以用来复现或调整结果。
+
+运行31天的30篇文章通过GPT 5.1 Thinking意味着31 * 30 = 930个LLM查询，成本约$58，大约花了约1小时。未来的LLM百万富翁可能会发现这样的事情容易得多、快得多、便宜得多。
+
+## 更新：快速新帖
+
+**标题**：使用事后分析自动评分十年前的黑客新闻讨论
+
+我取了2015年12月的所有930条黑客新闻首页文章+讨论，让GPT 5.1 Thinking API进行事后分析，以识别最/最不有远见的评论。这花了约3小时进行氛围编码，约1小时和$60来运行。这个想法是由昨天的HN文章触发的，Gemini 3被要求幻觉十年后的HN首页。
+
+**更普遍地**：
+
+1. **事后分析作为训练**：事后分析一直让我着迷，作为训练你的前向预测模型的方式，所以读这些结果真的很有意思
+
+2. **未来的监视**：值得思考当未来的LLM百万富翁可以以更便宜、更快、更好的方式做这种工作时是什么样子。你对互联网的每一位信息贡献都可以(并可能会)如果是"免费的"被详细审查。因此也包括我早前的推文——"表现良好，未来的LLM在看"。
+
+**祝贺排名前10的账户**：pcwalton, tptacek, paulmd, cstross, greglindahl, moxie, hannob, 0xcde4c3db, Manishearth, 和 johncolanduoni——GPT 5.1 Thinking发现你们的评论是2015年12月所有黑客新闻评论中最有洞察力和远见的。
+
 ---
-Submit prompt to GPT 5.1 Thinking via the OpenAI API
-Collect and parse the results
-Render the results into static HTML web pages for easy viewing
-Host the html result pages on my website: https://karpathy.ai/hncapsule/
-Host all the intermediate results of the data directory if someone else would like to play. It's the file data.zip under the exact same url prefix (intentionally avoiding a direct link).
-I spent a few hours browsing around and found it to be very interesting. A few example threads just for fun:
 
-December 3 2015 Swift went open source.
-December 6 2015 Launch of Figma
-December 11 2015 original announcement of OpenAI :').
-December 16 2015 geohot is building Comma
-December 22 2015 SpaceX launch webcast: Orbcomm-2 Mission
-December 28 2015 Theranos struggles
-And then when you navigate over to the Hall of Fame, you can find the top commenters of Hacker News in December 2015, sorted by imdb-style score of their grade point average. In particular, congratulations to pcwalton, tptacek, paulmd, cstross, greglindahl, moxie, hannob, 0xcde4c3db, Manishearth, johncolanduoni - GPT 5.1 Thinking found your comments very insightful and prescient. You can also scroll all the way down to find the noise of HN, which I think we're all familiar with too :)
+## 项目反思
 
-My code (wait, Opus' code?) on GitHub can be used to reproduce or tweak the results. Running 31 days of 30 articles through GPT 5.1 Thinking meant 31 * 30 = 930 LLM queries and cost about $58 and somewhere around ~1 hour. The LLM megaminds of the future might find this kind of a thing a lot easier, a lot faster and a lot cheaper.
+这个项目展示了几个有趣的面向：
 
-
--------
-
-
-Quick new post: Auto-grading decade-old Hacker News discussions with hindsight
-
-I took all the 930 frontpage Hacker News article+discussion of December 2015 and asked the GPT 5.1 Thinking API to do an in-hindsight analysis to identify the most/least prescient comments. This took ~3 hours to vibe code and ~1 hour and $60 to run. The idea was sparked by the HN article yesterday where Gemini 3 was asked to hallucinate the HN front page one decade forward.
-
-More generally: 
-
-1. in-hindsight analysis has always fascinated me as a way to train your forward prediction model so reading the results is really interesting and
-2. it's worth contemplating what it looks like when LLM megaminds of the future can do this kind of work a lot cheaper, faster and better. Every single bit of information you contribute to the internet can (and probably will be) scrutinized in great detail if it is "free". Hence also my earlier tweet from a while back - "be good, future LLMs are watching".
-
-Congrats to the top 10 accounts pcwalton, tptacek, paulmd, cstross, greglindahl, moxie, hannob, 0xcde4c3db, Manishearth, and johncolanduoni - GPT 5.1 Thinking found your comments to be the most insightful and prescient of all comments of HN in December of 2015.
+1. **LLM在分析中的能力**：比人工评估更快、更详细、更系统化地进行历史分析
+2. **成本效率**：930次查询仅需$58和1小时，展示了AI应用的可扩展性
+3. **未来的含义**：当分析变得廉价时，隐私和历史追溯的含义
+4. **预测性学习**：通过分析过去的错误和预言来改进未来的预测能力

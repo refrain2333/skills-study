@@ -1,85 +1,163 @@
 ---
 name: production-grade-llm-agents
-description: Comprehensive technical analysis of production-grade LLM agents covering multi-agent architectures, context management, attention degradation, memory systems, and agent reliability patterns.
+description: 生产级LLM代理的全面技术分析，涵盖多代理架构、上下文管理、注意力衰减、记忆系统和代理可靠性模式。
 doc_type: research
-source_url: No
+source_url: 无
 ---
 
-Engineering Production-Grade LLM Agents: A Technical Deep Dive
-The shift from prompt engineering to context engineering represents the most significant paradigm change in building LLM agents. As Anthropic's research articulates, the challenge isn't writing better prompts—it's curating "the smallest possible set of high-signal tokens that maximize the likelihood of desired outcomes." Inkeepanthropic This report synthesizes technical findings from major AI labs and framework developers on multi-agent architectures, context management, attention degradation, and agent reliability patterns.
-Multi-agent architectures: From orchestrators to swarms
-Production multi-agent systems have converged on three dominant patterns, each with distinct tradeoffs. Orchestrator-worker (supervisor) patterns place a central agent in control, delegating to specialists and synthesizing results. LangGraph's benchmarks found this architecture initially performed 50% worse than optimized versions due to the "telephone game" problem—supervisors paraphrasing sub-agent responses incorrectly. The fix: implementing a forward_message tool allowing sub-agents to pass responses directly to users. langchainLangChain
-Swarm architectures, pioneered by OpenAI's experimental Swarm framework, enable peer-to-peer handoffs where any agent transfers control to any other. LangGraph benchmarks show swarms slightly outperform supervisors because sub-agents respond directly to users, eliminating translation errors. langchainLangChain The core abstraction is elegantly simple:
-pythondef transfer_to_agent_b():
-    return agent_b  # Handoff via function return
+# 生产级LLM代理工程化：深度技术剖析
+
+从提示词工程向上下文工程的转变代表了构建LLM代理中最重大的范式改变。正如Anthropic研究所表述的，挑战并不在于编写更好的提示词——而在于策划"最小可能的高信号令牌集，最大化期望结果的可能性"。本报告综合了来自主要AI实验室和框架开发者关于多代理架构、上下文管理、注意力衰减和代理可靠性模式的技术发现。
+
+## 多代理架构：从编排器到群体
+
+生产多代理系统已收敛到三种主要模式，各具不同的权衡。**编排器-工作者（主管）模式**将中央代理置于控制地位，委派给专家并综合结果。LangGraph的基准测试发现该架构初期性能比优化版本低50%，原因是"传话游戏"问题——主管不正确地改述了子代理的响应。修复方案：实现一个forward_message工具，允许子代理直接将响应传递给用户。
+
+**群体架构**由OpenAI的实验性Swarm框架开创，支持点对点交接，其中任何代理都可以将控制权转移给任何其他代理。LangGraph基准测试显示群体略优于主管，因为子代理直接响应用户，消除了转换错误。核心抽象简洁优雅：
+
+```python
+def transfer_to_agent_b():
+    return agent_b  # 通过函数返回进行交接
 
 agent_a = Agent(
     name="Agent A",
     functions=[transfer_to_agent_b]
 )
-Hierarchical patterns, implemented in CrewAI's Process.hierarchical mode, create management trees where managers decompose goals and delegate to subordinates. Activewizards This mirrors organizational structures and works well for complex, multi-stage tasks.
-The critical insight from Manus AI's production experience: sub-agents exist primarily to isolate context, not to anthropomorphize role division. Rlancemartin Context isolation prevents KV-cache penalties and avoids context confusion between specialized tasks.
-Context coordination and the file system as memory
-How agents share context determines both performance and cost. Manus AI identified KV-cache hit rate as the single most important production metric— Manusthe difference between $0.30/MTok (cached) and $3/MTok (uncached) for Claude Sonnet, a 10× cost differential. manus
-Three context-sharing patterns emerge from production systems:
-PatternMechanismUse CaseFull context delegationPlanner shares entire context with sub-agentComplex tasks requiring complete understandingInstruction passingPlanner creates instructions via function callSimple, well-defined subtasksFile system memoryAgents read/write to persistent storageUnlimited size, agent-operable context
-Claude Code exemplifies file-system-as-memory: rather than stuffing context windows, agents use grep, head, and tail to navigate codebases, storing query results and analyzing large databases without loading full data. AnthropicRlancemartin This "just-in-time" context loading maintains small active context while enabling access to arbitrarily large information. anthropic
-Manus AI's context engineering principles offer production-tested guidance: use append-only context (never modify previous actions), employ logit masking instead of tool removal to constrain actions, and keep errors in context for implicit belief updates rather than hiding failures. manusManus
-KV-cache optimization: From PagedAttention to prefix caching
-The KV-cache stores Key and Value tensors computed during inference, growing linearly with sequence length. Neptune.ai For LLaMA-2 13B, this means approximately 1MB per token per sequence—a 4K context consumes ~4GB, comparable to the model itself. Rohan-paul
-PagedAttention, introduced by vLLM, revolutionized memory efficiency by applying OS-inspired virtual memory concepts. Medium Instead of pre-allocating contiguous memory, it partitions KV cache into fixed-size blocks (typically 16 tokens), mapping logical blocks to non-contiguous physical memory via block tables. Results: 2-4× throughput improvement arXiv with up to 96% reduction in memory waste. Medium
-Prefix caching (Automatic Prefix Caching) reuses KV blocks across requests sharing identical prefixes, using hash-based block matching: hash(parent_hash, block_tokens, extra_hashes). Anthropic reports up to 90% cost savings and 85% latency reduction with prefix caching on Claude.
-Advanced quantization pushes efficiency further. SKVQ achieves 1M token context on 80GB GPUs using 2-bit keys and 1.5-bit values with only <5% accuracy drop. Emergent Mind Layer-Condensed KV caches only top layers for 26× throughput. Emergent Mind RazorAttention identifies "retrieval heads" that need full caches versus those that can use buffers, achieving 40-60% memory reduction. Emergent Mind
-Context rot: The hidden performance cliff
-Despite claims of 100K+ token context windows, empirical research reveals significant performance degradation—a phenomenon researchers call context rot. anthropic The "lost in the middle" effect, documented by Liu et al. (TACL 2024), shows a U-shaped performance curve: accuracy drops 10-40% when relevant information sits in the middle of context versus beginning or end. arXivACL Anthology
-The RULER benchmark delivers a sobering finding: only half of models claiming 32K+ context maintain satisfactory performance at 32K tokens. arXivOpenReview GPT-4 showed the least degradation (15.4 points from 4K to 128K), while most models dropped 30+ points. Medium Near-perfect scores on simple needle-in-haystack tests don't translate to real long-context understanding— trychromaRULER's multi-hop tracing, aggregation, and question-answering tasks expose the gap. arXivOpenReview
-Chroma's 2025 research across 18 LLMs identified critical patterns: trychroma
+```
 
-Distractor effect: Even a single irrelevant document reduces performance; multiple distractors compound degradation
-Needle-question similarity: Lower similarity pairs show faster degradation with context length trychroma
-Counterintuitive haystack structure: Shuffled (incoherent) haystacks produce better performance than logically coherent ones trychroma
-Model-specific behaviors: Claude shows lowest hallucination rates but high abstention under ambiguity; GPT shows highest hallucination rates with confident-but-incorrect responses trychroma
+**分层模式**在CrewAI的Process.hierarchical模式中实现，创建管理树，经理分解目标并委派给下属。这反映了组织结构，适用于复杂的多阶段任务。
 
-Four failure modes in production contexts
-Beyond simple degradation, long-running agents encounter distinct context failure patterns that require different mitigations:
-Context poisoning occurs when hallucinations or errors enter context and compound through repeated reference. Feluda As Drew Breunig documents, if an agent's "goals" section becomes poisoned, it develops nonsensical strategies that take "very long time to undo." Drew Breunig Symptoms include degraded output quality, tool misalignment, and hallucinations treated as facts.
-Context distraction emerges when context grows so long that models over-focus on context at the expense of training knowledge. The Gemini 2.5 technical report notes: "While Gemini 2.5 Pro supports 1M+ token context, making effective use of it for agents presents a new research frontier." Drew Breunig
-Context confusion arises when irrelevant information influences responses. As one practitioner observed: "If you put something in the context, the model has to pay attention to it. It may be irrelevant information or needless tool definitions, but the model will take it into account." Drew Breunig
-Context clash develops when accumulated information directly conflicts, documented by Microsoft and Salesforce research showing that sharding information across multiple prompts creates conflicting contexts that derail reasoning. Drew Breunig
-Mitigation strategies that work
-Effective context management employs four strategies, formalized by LangChain as the "four-bucket" approach:
-StrategyImplementationExampleWriteSave context outside windowScratchpads, memory stores, file systemSelectPull relevant context inRAG, memory retrieval, tool selectionCompressReduce tokens preserving infoSummarization, observation maskingIsolateSplit context across agentsSub-agents, sandboxes, state schemas
-Observation masking deserves special attention: replacing old tool outputs with fixed masks like "Previous X lines elided for brevity" often matches or exceeds LLM summarization performance while adding zero token overhead (versus 5-7% for summarization). Research shows observations comprise 83.9% of tokens in typical agent trajectories—masking offers significant efficiency gains.
-Architectural approaches include Core Context Aware (CCA) Attention, a plug-and-play module achieving 5.7× faster inference at 64K tokens, arXiv and Google's Chain of Agents (CoA), which breaks inputs into chunks processed by worker agents sequentially, reducing time complexity from n² to nk. Google Research
-Tool design for agent ergonomics
-Tools are contracts between deterministic systems and non-deterministic agents—design matters critically. anthropic Anthropic's guidance emphasizes minimizing functional overlap: "If a human can't definitively say which tool to use, an AI agent can't either." Anthropic
-The consolidation principle transforms API design:
-Instead ofImplementlist_users, list_events, create_eventschedule_event (finds availability + schedules)read_logssearch_logs (returns relevant lines with context)get_customer_by_id, list_transactions, list_notesget_customer_context (compiles all relevant info)
-Tool descriptions require engineering. Poor descriptions like "Search the database" with cryptic parameter names force agents to guess. Optimized descriptions include usage context ("Use this when the user asks about company policies"), examples ("Example: 'vacation policy remote employees'"), and defaults ("Start with 3-5 for most queries").
-Response format options offer significant token savings: implementing a response_format parameter with DETAILED (full JSON, 206 tokens) versus CONCISE (essential info only, 72 tokens) cuts context consumption by 65% when full metadata isn't needed.
-Reasoning patterns and their measured impact
-ReAct (Reasoning + Acting) interleaves thinking with tool use: "Thought 1: [reasoning] → Action 1: [tool call] → Observation 1: [result]". Prompt Engineering Guide Performance gains are substantial: +34% absolute success rate on ALFWorld, +10% on WebShop versus imitation learning. React-lm However, 2024 research reveals brittleness—40-90% of generated thoughts lead to invalid actions depending on the model. arXiv
-Tree of Thoughts (ToT) explores multiple reasoning paths simultaneously. On Game of 24, performance jumps from 4% (Chain-of-Thought) to 74% with GPT-4 using ToT. KDnuggets The approach works by generating multiple candidates at each reasoning step, having the LLM self-evaluate progress, and using tree search (BFS/DFS) for exploration.
-Dynamic few-shot selection consistently outperforms static examples. LangChain benchmarks show Claude 3 Sonnet jumping from 16% to 52% accuracy with just 3 semantically similar examples—often matching or exceeding 13 static examples. The key is semantic similarity: retrieve examples similar to the current query rather than maintaining fixed lists.
-Hallucination prevention in agentic contexts
-Agentic settings amplify hallucination risk since errors compound across tool calls. A critical MIT survey finding: "No prior work demonstrates successful self-correction with feedback from prompted LLMs, except for tasks exceptionally suited for self-correction."
-What does work for self-correction:
+来自Manus AI生产经验的关键洞察：子代理主要存在于隔离上下文，而非拟人化角色划分。上下文隔离防止KV缓存惩罚，避免专业任务间的上下文混淆。
 
-External tool feedback: Code execution results, API verification, calculator outputs
-Retrieval grounding: Web search for fact verification
-Fine-tuned correction models: Models specifically trained for correction tasks
+## 上下文协调与文件系统作为记忆
 
-RAG-based grounding can decrease hallucination by 60-80% according to industry surveys. Implementation requires explicit constraints: "Answer based ONLY on the provided context. If the context doesn't contain relevant information, respond: 'I cannot find information about this in the provided documents.'"
-The Chain-of-Verification (CoVe) pattern generates verification questions about claims, answers them independently, compares answers with initial claims, and revises based on inconsistencies. ProCo framework achieves +6.8 EM on QA and +14.1% on arithmetic through systematic condition verification.
-Evaluation methods for production agents
-Anthropic's multi-agent evaluation approach uses a structured rubric: factual accuracy (claims match sources), citation accuracy (cited sources match claims), completeness (all aspects covered), source quality (primary versus secondary), and tool efficiency (reasonable usage). Anthropic
-Key benchmarks reveal capability gaps:
-BenchmarkFindingRULEROnly 50% of 32K+ models maintain performance at 32K tokens arXiv∞Bench"Existing long-context LLMs require significant advancements for 100K+"LongBench v2Best model achieves 50.1% accuracy; humans achieve 53.7% Longbench2τ-benchTests single/multi-agent cognitive architectures on real-world scenarios
-The methodology: start with small samples (~20 queries), use LLM-as-judge for scalable evaluation, supplement with human evaluation to catch automation misses, and focus on end-state evaluation for agents that mutate state. Anthropic
-Conclusion
-Building production LLM agents requires treating context as the central engineering concern rather than an afterthought. The research converges on several principles:
-Context quality trumps context length—despite 1M+ token windows, effective performance often degrades past 32K-256K tokens depending on task complexity. Use just-in-time context loading, observation masking, and sub-agent isolation to maintain signal quality.
-Multi-agent architecture selection depends on coordination needs: swarms for peer-to-peer handoffs with direct user interaction, supervisors for integrating diverse sub-agents with minimal assumptions, hierarchical patterns for complex decomposition tasks.
-Tool design directly impacts agent capability. Consolidate overlapping tools, return contextual information in error messages, implement response format options, and namespace clearly. anthropic Poor tool descriptions create failure modes no amount of prompt engineering can fix.
-Verification requires external grounding. Self-correction without external feedback doesn't work reliably. RAG, tool execution results, and multi-agent verification architectures provide the grounding necessary for production reliability.
-The field is rapidly evolving—KV-cache optimization, attention architectures, and evaluation methods continue advancing. Engineers building agents should monitor production metrics (especially KV-cache hit rates and token efficiency), implement compaction triggers at 80% of effective context limits, and design systems assuming context will degrade rather than hoping it won't.
+代理如何共享上下文决定了性能和成本。Manus AI确定KV缓存命中率是最重要的生产指标——Claude Sonnet对于缓存和未缓存之间的差异为$0.30/MTok与$3/MTok，差异达10倍。
+
+生产系统中出现了三种上下文共享模式：
+
+| 模式 | 机制 | 用例 |
+|------|------|------|
+| 完整上下文委派 | 规划者与子代理共享整个上下文 | 需要完整理解的复杂任务 |
+| 指令传递 | 规划者通过函数调用创建指令 | 简单的、定义明确的子任务 |
+| 文件系统记忆 | 代理读写持久存储 | 无限大小、代理可操作的上下文 |
+
+Claude Code体现了文件系统作为记忆的方式：代理使用grep、head和tail来导航代码库，而不是填充上下文窗口，存储查询结果并分析大型数据库而无需加载完整数据。这种"即时"上下文加载维持较小的活跃上下文，同时实现对任意大型信息的访问。
+
+Manus AI的上下文工程原则提供了生产测试的指导：使用仅追加上下文（从不修改之前的操作），使用logit掩蔽而不是工具移除来约束操作，并将错误保留在上下文中以进行隐式信念更新，而非隐藏失败。
+
+## KV缓存优化：从PagedAttention到前缀缓存
+
+KV缓存存储在推理过程中计算的Key和Value张量，随序列长度线性增长。对于LLaMA-2 13B，这意味着每个令牌每个序列大约1MB——4K上下文消耗约4GB，与模型本身相当。
+
+**PagedAttention**由vLLM引入，通过应用操作系统启发的虚拟内存概念革新了内存效率。它不是预分配连续内存，而是将KV缓存分区为固定大小块（通常16个令牌），通过块表将逻辑块映射到非连续物理内存。结果：吞吐量提高2-4倍，内存浪费减少最多96%。
+
+**前缀缓存**（自动前缀缓存）跨共享相同前缀的请求重用KV块，使用基于哈希的块匹配：hash(parent_hash, block_tokens, extra_hashes)。Anthropic报告在Claude上使用前缀缓存可节省高达90%的成本和减少85%的延迟。
+
+高级量化进一步推进了效率。SKVQ使用2位键和1.5位值在80GB GPU上实现100万令牌上下文，精度损失仅<5%。Layer-Condensed KV缓存仅顶层，实现26倍吞吐量。RazorAttention识别需要完整缓存的"检索头"与可使用缓冲区的头，实现40-60%的内存减少。
+
+## 上下文衰变：隐藏的性能悬崖
+
+尽管宣称100K+令牌上下文窗口，实证研究显示显著的性能衰减——一种研究人员称之为上下文衰变的现象。由Liu等人文献记录的"丢失在中间"效应显示U形性能曲线：当相关信息位于上下文中间而非开始或结束时，准确度下降10-40%。
+
+RULER基准测试提供了令人沮丧的发现：只有一半声称32K+上下文的模型在32K令牌处保持满意的性能。GPT-4显示衰减最少（从4K到128K下降15.4个百分点），而大多数模型下降30多个百分点。简单的"大海捞针"测试中接近完美的分数并不转换为真实的长上下文理解——RULER的多跳跟踪、聚合和问答任务暴露了这一差距。
+
+Chroma 2025年对18个LLM的研究确定了关键模式：
+
+- **分散器效应**：即使一个无关文档也会降低性能；多个分散器会加剧衰减
+- **针-问题相似性**：较低相似性对随着上下文长度增加而显示更快衰减
+- **反直觉的干草堆结构**：打乱的（不连贯的）干草堆产生比逻辑连贯的更好的性能
+- **模型特定行为**：Claude显示最低幻觉率但在模糊性下表现出高弃权；GPT显示最高幻觉率，伴随自信但不正确的响应
+
+## 生产上下文中的四种失败模式
+
+超越简单衰减，长期运行代理遭遇需要不同缓解的不同上下文失败模式：
+
+**上下文中毒**发生在幻觉或错误进入上下文并通过重复参考而加剧时。如Drew Breunig记录的，如果代理的"目标"部分被中毒，它会开发无意义的策略，需要"很长时间才能撤销"。症状包括输出质量下降、工具错位和幻觉被视为事实。
+
+**上下文分散**出现在上下文增长如此之长，以至于模型过度关注上下文而牺牲训练知识时。Gemini 2.5技术报告指出："虽然Gemini 2.5 Pro支持1M+令牌上下文，但对代理的有效利用提供了新的研究前沿"。
+
+**上下文混淆**出现在无关信息影响响应时。正如一位从业者观察到的："如果你把某样东西放在上下文中，模型必须注意它。它可能是无关的信息或不必要的工具定义，但模型会考虑它"。
+
+**上下文冲突**发展于积累的信息直接冲突时，由Microsoft和Salesforce研究记录，显示信息跨多个提示分片创建冲突上下文会破坏推理。
+
+## 有效的缓解策略
+
+有效的上下文管理采用四种策略，由LangChain形式化为"四桶"方法：
+
+| 策略 | 实现 | 示例 |
+|------|------|------|
+| 写入 | 在窗口外保存上下文 | 草稿本、记忆存储、文件系统 |
+| 选择 | 拉入相关上下文 | RAG、记忆检索、工具选择 |
+| 压缩 | 减少保留信息的令牌 | 总结、观察掩蔽 |
+| 隔离 | 跨代理分割上下文 | 子代理、沙箱、状态模式 |
+
+**观察掩蔽**值得特别关注：用固定掩蔽替换旧工具输出，如"为简洁起见，前面X行被省略"，通常匹配或超过LLM总结性能，同时增加零令牌开销（相比总结的5-7%）。研究显示观察占典型代理轨迹中令牌的83.9%——掩蔽提供了显著的效率增益。
+
+架构方法包括核心上下文感知（CCA）注意力，一个即插即用模块在64K令牌处实现5.7倍更快推理，以及Google的代理链（CoA），它将输入分解为由工作代理依序处理的块，将时间复杂度从n²减少到nk。
+
+## 代理人体工程学的工具设计
+
+工具是确定性系统与非确定性代理之间的合约——设计至关重要。Anthropic的指导强调最小化功能重叠："如果人类不能明确地说出使用哪个工具，AI代理也不能"。
+
+**整合原则**转变了API设计：
+
+| 与其是 | 实现 |
+|--------|------|
+| list_users, list_events, create_events | schedule_event（找到可用性+安排）|
+| read_logs | search_logs（返回带上下文的相关行）|
+| get_customer_by_id, list_transactions, list_notes | get_customer_context（编译所有相关信息）|
+
+工具描述需要工程化。差劲的描述如"搜索数据库"加上模糊的参数名称迫使代理猜测。优化的描述包括使用上下文（"用户询问公司政策时使用此工具"）、示例（"示例：'远程员工假期政策'"）和默认值（"大多数查询以3-5开始"）。
+
+响应格式选项提供显著的令牌节省：实现response_format参数，DETAILED（完整JSON，206令牌）对比CONCISE（仅基本信息，72令牌）当不需要完整元数据时将上下文消耗减少65%。
+
+## 推理模式及其测量影响
+
+**ReAct**（推理+行动）交织思考与工具使用："思考1：[推理]→行动1：[工具调用]→观察1：[结果]"。性能增益显著：在ALFWorld上绝对成功率+34%，在WebShop上+10%相比模仿学习。然而，2024研究揭示了脆弱性——40-90%的生成思考导致无效行动，取决于模型。
+
+**思维树**（ToT）同时探索多条推理路径。在"24的游戏"上，性能从4%（思维链）跳升到使用GPT-4的ToT时的74%。该方法通过在每个推理步骤生成多个候选、让LLM自我评估进度，并使用树搜索（BFS/DFS）进行探索而工作。
+
+**动态少样本选择**始终优于静态示例。LangChain基准测试显示Claude 3 Sonnet从16%跳升到仅用3个语义相似示例时的52%准确度——通常匹配或超过13个静态示例。关键是语义相似性：检索类似于当前查询的示例而不是维持固定列表。
+
+## 代理环境中的幻觉防止
+
+代理设置放大了幻觉风险，因为错误通过工具调用复合。关键的MIT调查发现："没有先前工作证明通过提示LLM的反馈成功自我纠正，除了特别适合自我纠正的任务"。
+
+对自我纠正有效的方法：
+
+- **外部工具反馈**：代码执行结果、API验证、计算器输出
+- **检索接地**：用于事实验证的网络搜索
+- **微调纠正模型**：专门为纠正任务训练的模型
+
+基于RAG的接地可根据行业调查将幻觉减少60-80%。实现需要明确约束："仅基于提供的上下文回答。如果上下文不包含相关信息，回应：'我在提供的文档中找不到此相关信息'"。
+
+**验证链**（CoVe）模式生成关于声明的验证问题，独立地回答它们，比较答案与初始声明，并基于不一致进行修订。ProCo框架通过系统条件验证在QA上实现+6.8 EM，在算术上+14.1%。
+
+## 生产代理的评估方法
+
+Anthropic的多代理评估方法使用结构化评分标准：事实准确度（声明与来源匹配）、引用准确度（引用的来源与声明匹配）、完整性（涵盖所有方面）、来源质量（一级与二级）和工具效率（合理的使用）。
+
+关键基准揭示了能力差距：
+
+| 基准 | 发现 |
+|------|------|
+| RULER | 仅50%的32K+模型在32K令牌处保持性能 |
+| ∞Bench | "现有长上下文LLM需要在100K+方面的重大进步" |
+| LongBench v2 | 最佳模型达到50.1%准确度；人类达到53.7% |
+| τ-bench | 在真实场景上测试单/多代理认知架构 |
+
+方法论：从小样本开始（~20个查询），使用LLM即判官进行可扩展评估，用人工评估补充以捕捉自动化遗漏，并关注代理改变状态的最终状态评估。
+
+## 结论
+
+构建生产LLM代理需要将上下文视为中心工程关注而非事后考虑。研究收敛于几项原则：
+
+**上下文质量胜过上下文长度**——尽管有1M+令牌窗口，有效性能通常在32K-256K令牌后衰减，取决于任务复杂性。使用即时上下文加载、观察掩蔽和子代理隔离来维持信号质量。
+
+**多代理架构选择取决于协调需求**：用于具有直接用户交互的点对点交接的群体、用于集成多个子代理且假设最小的主管、用于复杂分解任务的分层模式。
+
+**工具设计直接影响代理能力**。整合重叠工具，在错误消息中返回上下文信息，实现响应格式选项，并清晰命名空间。差劲的工具描述创建了任何提示词工程都无法修复的失败模式。
+
+**验证需要外部接地**。没有外部反馈的自我纠正不可靠地工作。RAG、工具执行结果和多代理验证架构提供了生产可靠性所需的接地。
+
+该领域快速演进——KV缓存优化、注意力架构和评估方法继续进步。构建代理的工程师应监控生产指标（特别是KV缓存命中率和令牌效率），在有效上下文限制的80%处实现紧缩触发器，并假设上下文将衰减而非寄希望于它不会。

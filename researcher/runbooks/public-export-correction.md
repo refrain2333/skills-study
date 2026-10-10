@@ -1,14 +1,14 @@
-# Public export correction and removal
+# 更正或移除公开投影
 
-Publication is not reversible. A later deletion cannot make already distributed data private again.
+发布后无法真正撤回；之后删除也不能让已经分发的数据重新变为私有。
 
-When a public projection is incorrect or should no longer be used:
+若公开投影有误或不应继续使用：
 
-1. Disable further renders of the affected request or transform.
-2. Preserve the private plan, render receipt, and failed validation evidence.
-3. Open a corrective pull request with a new public correction or tombstone record that names the public projection and safe reason code.
-4. Remove or replace the projected body in that pull request when appropriate. Do not rewrite Git history as the normal response.
-5. A human maintainer reviews and merges the correction.
-6. Downstream indexes mark the prior projection superseded or unavailable while retaining non-sensitive decision lineage.
+1. 停止对受影响请求或转换执行新的渲染。
+2. 保留私有计划、渲染回执和验证失败证据。
+3. 创建修正拉取请求，加入新的公开更正记录或删除标记，并注明对应公开投影及安全原因代码。
+4. 适当时在该拉取请求中移除或替换投影正文。通常不要重写 Git 历史。
+5. 由人工维护者审查并合并更正。
+6. 下游索引将旧投影标记为已取代或不可用，同时保留不含敏感信息的决策沿革。
 
-If the event exposed an actual credential, revoke and rotate it outside this repository. Do not add the value or matched scanner excerpt to the public incident record.
+如果事件暴露了真实凭据，应在仓库之外撤销并轮换凭据。不要把凭据值或扫描器匹配到的敏感片段写入公开事件记录。

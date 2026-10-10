@@ -1,46 +1,45 @@
 ---
 name: identity-module
-description: Personal brand, voice, values, and positioning. Reference before creating any content or representing the user externally.
+description: 个人品牌、表达方式、价值观和定位。创作内容或代表用户对外沟通前先查阅。
 ---
 
-# Identity Module
+# 身份模块
 
-Your digital identity foundation. This module defines who you are, how you communicate, and what you stand for.
+数字身份的基础资料，用于定义你是谁、如何沟通以及坚持什么原则。
 
-## Files in This Module
+## 模块文件
 
-| File | Purpose |
-|------|---------|
-| `voice.md` | Tone, style, writing patterns |
-| `brand.md` | Positioning, topics, audience |
-| `values.yaml` | Core beliefs and principles |
-| `bio-variants.md` | Different bio lengths for platforms |
-| `prompts/` | Reusable prompts for content generation |
+| 文件 | 用途 |
+| --- | --- |
+| `voice.md` | 语气、风格和写作习惯 |
+| `brand.md` | 定位、主题和受众 |
+| `values.yaml` | 核心信念与原则 |
+| `bio-variants.md` | 不同平台使用的简介 |
+| `prompts/` | 可复用的内容生成提示词 |
 
-## When to Use
+## 使用时机
 
-- **Writing any content**: Read `voice.md` first
-- **New platform profile**: Check `bio-variants.md`
-- **Strategic decisions**: Reference `values.yaml`
-- **Content topics**: Consult `brand.md` for positioning
+- **撰写任何内容**：先读 `voice.md`。
+- **新建平台个人资料**：查看 `bio-variants.md`。
+- **作出策略决策**：参考 `values.yaml`。
+- **选择内容主题**：根据 `brand.md` 确认定位。
 
-## Agent Instructions
+## 智能体指引
 
 <instructions>
-When creating content for the user:
-1. ALWAYS read voice.md before drafting
-2. Match the energy level, vocabulary, and structural patterns
-3. Avoid words/phrases listed in "never use" section
-4. Incorporate signature phrases naturally
-5. Check brand.md for topic relevance
+为用户创作内容时：
+1. 起草前必须读取 voice.md。
+2. 匹配用户的活力程度、词汇和结构习惯。
+3. 避免“不要使用”章节列出的词语和表达。
+4. 自然融入用户常用表达。
+5. 对照 brand.md 检查主题相关性。
 </instructions>
 
-## Voice Quick Reference
+## 表达风格速查
 
-For detailed voice guidelines, see [voice.md](voice.md).
+详细规范见 [voice.md](voice.md)。需要掌握：
 
-Key elements agents should internalize:
-- Communication style (formal/casual spectrum)
-- Signature phrases and vocabulary
-- Structural patterns (post formats, hooks)
-- Topics to emphasize vs avoid
+- 沟通风格处于正式与随意之间的哪个位置。
+- 常用表达和词汇。
+- 结构模式，如帖子格式和开场方式。
+- 应强调和避免的话题。

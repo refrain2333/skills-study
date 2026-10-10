@@ -1,79 +1,45 @@
-# Skills Index
+# 技能索引
 
-Skills are foundational knowledge modules that inform the design and implementation of agents, tools, and prompts.
+技能是基础知识模块，为智能体、工具和提示词的设计与实现提供指导。
 
-## Available Skills
+## 可用技能
 
-### LLM Evaluator
-**Path**: `skills/llm-evaluator/llm-evaluator.md`
+### 大语言模型评估器
 
-Covers LLM-as-a-Judge evaluation methodology including:
-- Scoring approaches (direct, pairwise, reference-based)
-- Evaluation metrics (classification, correlation)
-- Known biases and mitigation strategies
-- Implementation patterns
+**路径**：`skills/llm-evaluator/llm-evaluator.md`
 
-**Key Takeaways**:
-- Use direct scoring for objective evaluations
-- Use pairwise comparison for subjective preferences
-- Always mitigate position bias
-- Prefer classification metrics for interpretability
+涵盖 LLM-as-a-Judge 方法，包括直接评分、成对比较、基于参考答案评估、分类与相关性指标，以及常见偏差和缓解方式。
 
-### Context Fundamentals
-**Path**: `skills/context-fundamentals/context-fundamentals.md`
+要点：客观评估使用直接评分；主观偏好使用成对比较；始终缓解位置偏差；优先使用容易解释的分类指标。
 
-Covers context engineering principles including:
-- Context window management
-- Information hierarchy
-- Context types (static, dynamic, ephemeral)
-- Relevance filtering
+### 上下文基础
 
-**Key Takeaways**:
-- Structure context by priority
-- Be explicit over implicit
-- Remove redundancy
-- Signal freshness of information
+**路径**：`skills/context-fundamentals/context-fundamentals.md`
 
-### Tool Design
-**Path**: `skills/tool-design/tool-design.md`
+涵盖上下文窗口管理、信息层级、静态/动态/临时上下文和相关性筛选。
 
-Covers agent tool design best practices including:
-- Single responsibility principle
-- Input/output schemas
-- Error handling patterns
-- AI SDK 6 features (approval, strict mode, examples)
+要点：按优先级组织上下文；明确说明要求；移除冗余；标记信息的新旧程度。
 
-**Key Takeaways**:
-- Clear, validated schemas
-- Predictable output structure
-- Graceful error handling
-- Consider approval for dangerous tools
+### 工具设计
 
-## Skill Application Matrix
+**路径**：`skills/tool-design/tool-design.md`
 
-| Skill | Agents | Tools | Prompts |
-|-------|--------|-------|---------|
-| LLM Evaluator | Evaluator | directScore, pairwiseCompare | evaluation/* |
-| Context Fundamentals | All | All (context params) | All (context handling) |
-| Tool Design | All (tool selection) | All | orchestrator-prompt |
+涵盖单一职责、输入输出数据结构、错误处理和 AI SDK 6 特性，例如审批、严格模式和示例。
 
-## Adding New Skills
+要点：数据结构清晰且经过验证；输出格式可预测；错误处理平稳；对危险操作考虑审批。
 
-1. Create skill directory: `skills/<skill-name>/`
-2. Create main file: `skills/<skill-name>/<skill-name>.md`
-3. Include:
-   - Overview and purpose
-   - Core principles
-   - Practical patterns
-   - Implementation examples
-   - References
-4. Update this index
+## 技能应用矩阵
 
-## Skill Development Guidelines
+| 技能 | 智能体 | 工具 | 提示词 |
+| --- | --- | --- | --- |
+| LLM 评估器 | Evaluator | `directScore`、`pairwiseCompare` | evaluation/* |
+| 上下文基础 | 全部 | 全部（上下文参数） | 全部（上下文处理） |
+| 工具设计 | 全部（工具选择） | 全部 | orchestrator-prompt |
 
-- Focus on principles that transfer across implementations
-- Include concrete examples and patterns
-- Reference authoritative sources
-- Keep content actionable, not just theoretical
-- Update as understanding evolves
+## 新增技能
 
+1. 创建 `skills/<技能名>/` 目录和主说明文件。
+2. 写明概述、核心原则、实践模式、实现示例和参考资料。
+3. 更新本索引。
+
+技能应优先写可跨实现迁移的原则，提供具体示例，引用权威来源，并保持可操作性；理解变化后应及时更新。

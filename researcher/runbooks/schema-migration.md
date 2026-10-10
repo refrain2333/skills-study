@@ -1,26 +1,26 @@
-# Schema migration, quarantine, and rollback
+# 数据结构迁移、隔离与回滚
 
-## Dry run
+## 试运行
 
-1. Run `python researcher/scripts/validate_schemas.py --check`.
-2. Run `python researcher/scripts/migrate_legacy.py --dry-run --json`. The default reads only `researcher/schemas/public-legacy-sources.json`.
-3. Review every `quarantined` reason code and every `deduplicated` input. Do not activate a writer while quarantine is non-empty.
-4. Compare the report digest with `researcher/schemas/generated/migration-dry-run.json`.
+1. 运行 `python researcher/scripts/validate_schemas.py --check`。
+2. 运行 `python researcher/scripts/migrate_legacy.py --dry-run --json`。默认只读取 `researcher/schemas/public-legacy-sources.json`。
+3. 检查所有 `quarantined` 原因代码和 `deduplicated` 输入。隔离项不为空时，不得启用写入者。
+4. 将报告摘要与 `researcher/schemas/generated/migration-dry-run.json` 比较。
 
-The adapter never edits a claim, mechanism, run-state, queue record, or append-only ledger. A migrated envelope carries the original semantic key as an alias, the canonical source-record digest, and the original record in its migration payload. The report separately records the SHA-256 digest of the exact source line or JSON file bytes. Inputs that resolve to one deterministic ID and one canonical source identity are represented once and listed under `deduplicated`; conflicting source identities for one ID quarantine every claimant with `MIGRATION_ID_COLLISION`.
+适配器不会修改主张、机制、运行状态、队列记录或只追加账本。迁移后的封装携带原始语义键作为别名、规范来源记录摘要，以及迁移载荷中的原始记录。报告还会单独记录精确来源行或 JSON 文件字节的 SHA-256 摘要。如果多个输入对应同一确定性编号和同一规范来源身份，只保留一份，并在 `deduplicated` 中列出；同一编号对应互相冲突的来源身份时，将所有相关输入隔离，原因代码为 `MIGRATION_ID_COLLISION`。
 
-For private runtime records, create a `private_operational` source manifest, run with `--source-manifest`, and direct the report to ignored `researcher/schemas/reports/runtime/`. Public manifests reject files that are not Git-tracked. Never add a private run path or digest to the public source manifest or generated evidence.
+迁移私有运行时记录时，创建 `private_operational` 来源清单，使用 `--source-manifest`，并将报告输出到被忽略的 `researcher/schemas/reports/runtime/`。公开清单拒绝未被 Git 跟踪的文件。不要把私有运行路径或摘要加入公开来源清单或生成证据。
 
-## Activation
+## 启用新写入者
 
-Activation of a new writer requires a later owner-spec PR. That PR names the old reader, new writer, compatibility window, rollback owner, and cutoff condition. Merely registering a schema does not activate a writer.
+启用新写入者需要后续负责方规范的拉取请求。该请求应注明旧读取器、新写入者、兼容窗口、回滚负责人和终止条件。仅登记数据结构并不会自动启用写入者。
 
-## Quarantine
+## 隔离
 
-Unknown kinds, unsupported major versions, schema failures, digest mismatches, and malformed legacy records produce typed quarantine entries without private payloads. Unexpected implementation exceptions stop the run and fail CI; they are never converted into quarantine. Correct the source through its existing owner workflow or register a reviewed adapter. Never weaken a schema to make an unexplained record pass.
+未知类型、不支持的大版本、数据结构检查失败、摘要不匹配和格式错误的旧记录，会生成带类型的隔离条目，不包含私有载荷。意外实现异常会停止运行并导致持续集成失败，绝不能伪装成普通隔离。应通过现有负责流程修正来源，或登记经过审查的适配器。不要为使无法解释的记录通过检查而放宽数据结构。
 
-## Rollback
+## 回滚
 
-`rollback_envelope()` returns the original record only after verifying the embedded source digest, target kind and version, legacy kind and key, provenance bindings, and adapter schema. Rollback restores the prior writer and reader configuration; it does not delete envelopes already produced. New-format records remain isolated for diagnosis and later replay.
+`rollback_envelope()` 只有在验证嵌入来源摘要、目标类型与版本、旧类型与键、来源绑定和适配器数据结构后，才会返回原始记录。回滚时恢复旧的读写配置，但不删除已经生成的新格式封装。新格式记录应隔离保存，供诊断和后续重放。
 
-If a schema file or registry digest was released incorrectly, supersede it with a new registry revision. Do not rewrite an effective registry artifact or reuse a schema version for different bytes.
+如果发布的数据结构文件或注册表摘要有误，应通过新的注册表版本取代它。不要改写已生效的注册表产物，也不要让不同字节复用同一数据结构版本。

@@ -1,41 +1,41 @@
-# SPEC-000: Program constitution and authority model
+# 技术规范 000：研究计划章程与权限模型
 
-- Status: implementing
-- Wave: 0
-- Classification: public
-- Depends on: none
+- 状态：`implementing`
+- 阶段：0
+- 分类：`public`
+- 依赖：无
 
-## Decision
+## 决策
 
-The organization operates under a versioned, machine-testable constitution. Agents may research, evaluate, edit permitted artifacts, create proposal branches, push candidate commits, open pull requests, and respond to review. Only the human maintainer may merge, alter constitutional authority, expose a private record, authorize credential destinations, or approve weight-level training. A human-merged commit is the sole promotion event.
+组织依照带版本、可由机器检查的章程运行。智能体可以研究、评估、编辑获准的产物、创建提案分支、推送候选提交、创建拉取请求并响应审查。只有人工维护者可以合并、修改章程权限、公开私有记录、授权凭据目标或批准模型权重训练。经人工合并的提交是唯一晋级事件。
 
-## Invariants
+## 不变量
 
-1. No automated identity has merge or production-activation authority.
-2. A candidate author cannot be its sole evaluator or release attestor.
-3. Production points to an exact merged commit and immutable configuration digest.
-4. Ordinary experiments cannot edit the constitution, hidden tests, acceptance gates, evaluator policy, permission ceilings, or public/private boundary.
-5. Chat approval is not authority unless converted into an authenticated command or GitHub action and recorded.
-6. Unlisted authority is denied.
-7. Emergency disable stops work without changing artifact history or granting authority.
-8. Automated authorship and review are disclosed.
+1. 自动化身份不得拥有合并或启用生产环境的权限。
+2. 候选变更的作者不能成为唯一评估者或发布证明者。
+3. 生产环境必须指向精确的已合并提交和不可变配置摘要。
+4. 普通实验不得修改章程、隐藏测试、验收门槛、评估规则、权限上限或公私边界。
+5. 聊天中的批准不构成权限；必须转成经过认证的命令或 GitHub 操作并留下记录。
+6. 未列明的权限一律拒绝。
+7. 紧急停用可以停止工作，但不得改写产物历史或授予新权限。
+8. 必须披露自动化作者身份和审查行为。
 
-## Interfaces
+## 接口
 
-- `governance/constitution.yaml`: canonical policy.
-- `governance/authority.schema.json`: public interchange schema.
-- `Constitution.decide(actor, action, resource, context)`: deterministic decision with matched rule, reason code, version, and digest.
-- `validate_governance.py --check|--write|--decision`: CI, generated-view, and diagnostic interface.
+- `governance/constitution.yaml`：规范权限规则。
+- `governance/authority.schema.json`：公开交换格式。
+- `Constitution.decide(actor, action, resource, context)`：返回确定性决策，包括命中规则、原因代码、版本和摘要。
+- `validate_governance.py --check|--write|--decision`：持续集成、生成视图和诊断接口。
 
-Constitution states are `draft -> reviewed -> merged -> effective -> superseded`. Only a merged revision becomes effective. Startup fails closed on digest mismatch. In-flight work retains its starting version for provenance; a newly forbidden action is denied at execution and later orchestration records `policy_blocked` without destroying its checkpoint.
+章程状态依次为 `draft -> reviewed -> merged -> effective -> superseded`。只有合并后的版本才生效。启动时摘要不匹配就必须拒绝运行。进行中的工作保留开始时的版本作为来源记录；新规则禁止的操作会在执行时被拒绝，编排器随后记录 `policy_blocked`，同时保留检查点。
 
-## Acceptance criteria
+## 验收条件
 
-- [x] Human merge is the only permitted promotion transition.
-- [x] Protected surfaces are enumerated and denied to ordinary actors.
-- [x] Current durable `AGENTS.md` authority is represented or classified as non-constitutional guidance.
-- [x] The validator has no network dependency and runs in CI.
-- [x] Amendment and emergency-disable procedures are documented.
-- [x] Exhaustive actor/action/resource decisions and critical negative fixtures are tested.
+- [x] 只有人工合并可以触发晋级。
+- [x] 受保护区域已完整列举，普通参与者不能修改。
+- [x] 当前 `AGENTS.md` 中的长期权限已纳入章程，或明确归类为非章程指导。
+- [x] 检查器无需访问网络，并可在持续集成中运行。
+- [x] 已记录章程修订和紧急停用流程。
+- [x] 已检查参与者、操作和资源的完整组合，以及关键拒绝样例。
 
-Runtime command integration, authenticated identity binding, event emission, and mid-run reconciliation are delivered by later orchestration specs. Until then, this is a read-only authority oracle and CI contract.
+运行时命令接入、身份认证绑定、事件记录和运行中规则协调由后续编排规范实现。在此之前，本规范只提供只读权限判断和持续集成约定。

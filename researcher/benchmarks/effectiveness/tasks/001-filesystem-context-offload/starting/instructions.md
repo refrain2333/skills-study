@@ -1,6 +1,6 @@
-# Workspace layout
+# 工作区结构
 
-- `tool_output.txt`: the diagnostic output you need to analyze.
-- `scratch/`: create this directory if you want to offload large content for targeted re-reading.
+- `tool_output.txt`：需要分析的诊断输出。
+- `scratch/`：如需卸载大段内容并定向重读，可创建此目录。
 
-You can use any file system tools available in your environment.
+可以使用当前环境中可用的文件系统工具。

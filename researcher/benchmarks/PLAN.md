@@ -1,113 +1,107 @@
-# Benchmark Architecture Plan
+# 基准测试架构计划
 
-The current benchmark harness verifies that the researcher OS itself is hard to game (deterministic structural checks and seven adversarial scenarios). It does not yet measure the thing users actually care about: **do these skills make agents better at the tasks they claim to help with?**
+当前基准运行框架检查研究系统本身是否容易被投机：它执行确定性结构检查和七项对抗情景。但它尚未衡量用户真正关心的事情：**这些技能是否能让智能体更好地完成其声称支持的任务？**
 
-This document is the plan to close that gap, in four staged releases, with research-paper-grade methodology and the Cursor SDK as the execution layer.
+本计划分四个阶段回答这个问题，采用研究论文级方法，并使用 Cursor SDK 执行真实智能体。
 
-## Status
+## 当前状态
 
-| Stage | Release | What it measures | Cost | Status |
+| 阶段 | 版本 | 衡量内容 | 费用 | 状态 |
 | --- | --- | --- | --- | --- |
-| 0 | v2.2.0 (shipped) | Harness resistance to gaming, structural validity | $0 | done |
-| 1 | v2.3.0 (shipped) | Per-skill health metrics (deterministic) | $0 | done; corpus 0.814 aggregate, 2 of 15 flagged |
-| 2 | v2.3.0 (shipped) | Skill router accuracy (LLM-as-router) | Cursor credits (~$7 per full sweep) | done; baseline + post-fix delta published |
-| 3 | v2.4.0 | Skill effectiveness on real agent tasks | Cursor credits, larger | scaffolded, one task built |
-| 4 | v2.5.0 | Cross-skill composition | Cursor credits | future |
+| 0 | v2.2.0（已发布） | 运行框架抗投机能力、结构有效性 | 0 美元 | 完成 |
+| 1 | v2.3.0（已发布） | 单项技能健康度，确定性检查 | 0 美元 | 完成；当时语料汇总分 0.814，15 项中 2 项被标记 |
+| 2 | v2.3.0（已发布） | 技能路由准确率，由大语言模型选择技能 | Cursor 额度（完整扫描约 7 美元） | 完成；已发布基线和修复后差异 |
+| 3 | v2.4.0 | 真实智能体任务中的技能有效性 | Cursor 额度，较高 | 已搭脚手架，完成一项任务 |
+| 4 | v2.5.0 | 技能组合效果 | Cursor 额度 | 后续阶段 |
 
-### Shipped Stage 2 results (v2.3.0)
+### 第二阶段已发布结果（v2.3.0）
 
-Two full 600-run sweeps across `composer-2`, `claude-opus-4-7`, `gpt-5.5`, `gemini-3.1-pro` at seed=1, 3 replications per (prompt, model):
+对 `composer-2`、`claude-opus-4-7`、`gpt-5.5` 和 `gemini-3.1-pro` 进行两轮完整扫描；随机种子为 1，每个（提示、模型）组合重复三次：
 
-- Baseline: `researcher/benchmarks/router/results-published/2026-05-15.md` (566 of 600; v1 runner died mid-sweep).
-- Post-fix (description rewrites + hardened runner): `researcher/benchmarks/router/results-published/2026-05-15-v2.md` (600 of 600, includes delta-vs-baseline section).
+- 基线：`researcher/benchmarks/router/results-published/2026-05-15.md`（600 次中完成 566 次，第一版运行器在中途退出）。
+- 修复后：`researcher/benchmarks/router/results-published/2026-05-15-v2.md`（600 次全部完成，并包含相对基线的差异）。
 
-Headline finding: targeted description rewrites moved `context-fundamentals` top-1 from 0.255 to 0.489 (+23.4pp) and `project-development` from 0.750 to 1.000 (+25pp, now perfect). Three of four models gained on top-1; all four gained on top-3.
+主要发现：定向改写描述后，`context-fundamentals` 的 top-1 从 0.255 提高到 0.489（增加 23.4 个百分点）；`project-development` 从 0.750 提高到 1.000（增加 25 个百分点，达到满分）。四个模型中有三个 top-1 提高，四个模型的 top-3 都提高。
 
-## Goals And Non-Goals
+## 目标与非目标
 
-### Goals
+### 目标
 
-- Produce reproducible, model-agnostic evidence that skill loading improves agent behavior or, where it does not, surface that honestly.
-- Make every measurement reproducible from a single CLI invocation plus a pinned config.
-- Track results longitudinally so regressions are detectable.
-- Disclose methodology fully: prompts, tasks, ground truth, scoring, raw outputs.
-- Use deterministic checks first, model-judged measurements second, real task execution third.
+- 产生可复现、尽量不依赖特定模型的证据，衡量加载技能是否改善智能体行为；若没有改善，也如实报告。
+- 每次测量都能通过一次命令和固定配置复现。
+- 纵向记录结果，以便发现退化。
+- 完整公开方法：提示词、任务、标准答案、评分和原始输出。
+- 按顺序使用确定性检查、模型评审和真实任务执行。
 
-### Non-Goals
+### 非目标
 
-- Build a general-purpose agent benchmarking framework. We benchmark this skill collection on representative tasks.
-- Replace SWE-bench, BrowseComp, or other public benchmarks. We can subset them or use them as comparison points, not redo them.
-- Train models. This is evaluation only.
-- Run benchmarks that require paid APIs other than Cursor. Stage 2 and 3 spend Cursor credits via the SDK.
+- 不构建通用智能体基准框架，只在有代表性的任务上评估本技能集合。
+- 不替代 SWE-bench、BrowseComp 等公开基准；可选取子集或用作比较，不重做这些基准。
+- 不训练模型；本项目只做评估。
+- 不运行除 Cursor 以外需要付费 API 的基准。第二、三阶段通过 SDK 消耗 Cursor 额度。
 
-## Methodology Principles
+## 方法原则
 
-These apply to every stage.
+所有阶段都遵循以下原则。
 
-### Reproducibility
+### 可复现
 
-- Every benchmark run is described by a frozen config (model id, seed, fixture revision, repo commit SHA).
-- Raw outputs (transcripts, judge JSON, task workspace diffs) are persisted with the run record.
-- Each run appends a single line to a history JSONL with the config hash and pointers to raw artifacts.
-- A CLI flag (`--seed`, `--config`) lets a third party reproduce a run exactly.
+- 每次运行都由冻结配置描述，包括模型编号、随机种子、样例版本和仓库提交 SHA。
+- 原始输出（对话记录、评审 JSON、任务工作区差异）随运行记录持久保存。
+- 每次运行向历史 JSONL 追加一行，记录配置摘要和原始产物位置。
+- 提供 `--seed`、`--config` 等参数，使第三方能够精确复现。
 
-### Statistical Discipline
+### 统计纪律
 
-- Minimum 3 replications per condition (model x skill-state x task) for variance estimation.
-- Report effect sizes with bootstrap 95% confidence intervals, not point estimates.
-- Paired comparisons where possible (same task, different conditions) using a Wilcoxon signed-rank test on per-task differences.
-- Sample size targets per stage are stated below; underpowered runs land as "preliminary" with that label visible in the dashboard.
+- 每种条件（模型 × 技能状态 × 任务）至少重复三次，以估算方差。
+- 报告效应量和自助法 95% 置信区间，不只报单点估计。
+- 尽量使用配对比较：同一任务在不同条件下运行，并对逐任务差值使用 Wilcoxon 符号秩检验。
+- 各阶段注明目标样本量；样本不足的运行应在仪表板上明确标为“初步”。
 
-### Bias Mitigation
+### 缓解偏差
 
-- **Position bias** in router benchmarks: shuffle skill order across replications, report consistency.
-- **Self-preference** in judge models: never use the same model as judge and candidate. Use a different family (e.g. Composer evaluates Claude outputs, GPT evaluates Composer outputs).
-- **Length bias** in pairwise: include length-normalized scoring and a "shorter wins ties" rule.
-- **Selection bias** in tasks: tasks include some where the relevant skill should not help (negative controls) so we can measure false-positive rates.
+- **路由位置偏差**：每次重复都打乱技能顺序，并报告结果一致性。
+- **评审模型自偏好**：评审模型不能与候选模型相同；例如用 Composer 评估 Claude 输出，用 GPT 评估 Composer 输出。
+- **成对比较的长度偏差**：加入长度归一化评分，并规定平局时较短者胜出。
+- **任务选择偏差**：纳入相关技能不应有帮助的负向对照，测量误报率。
 
-### Ablations
+### 消融
 
-- Per-skill: with vs without each skill, holding all others constant.
-- Leave-one-out: remove one skill at a time from the full corpus to find which skills carry the work.
-- Order: run skill subsets in different orders to surface order-dependent effects.
+- 单项技能：保持其他条件不变，比较加载与不加载该技能。
+- 逐项移除：每次从完整语料移除一项技能，找出真正发挥作用的技能。
+- 顺序影响：按不同顺序加载技能子集，发现顺序依赖效应。
 
-### Disclosure
+### 公开
 
-- All prompts published in `researcher/benchmarks/<stage>/`.
-- All ground truth published as fixtures.
-- All scoring code published in `researcher/scripts/`.
-- Raw run outputs (with secrets redacted) committed under `researcher/benchmarks/<stage>/results/` or attached to release notes.
+- 所有提示词放在 `researcher/benchmarks/<阶段>/`。
+- 所有标准答案以样例文件公开。
+- 所有评分代码放在 `researcher/scripts/`。
+- 经脱敏的原始运行结果放在对应基准 `results/` 目录或发布说明中。
 
-## Stage 1: Deterministic Skill Health (v2.2.1, $0)
+## 第一阶段：确定性技能健康度（v2.2.1，0 美元）
 
-The cheap and uncontroversial floor. Per-skill, deterministic scoring of structural quality. Catches drift, missing sections, stale claims, and underspecified gotchas before any user notices.
+低成本、争议较少的基础门槛。对每项技能进行确定性结构评分，在用户发现问题前找出结构漂移、缺少章节、过期主张和含糊易错点。
 
-### Metrics
+### 指标
 
-For each `skills/<name>/SKILL.md`:
+对每个 `skills/<名称>/SKILL.md` 检查：
 
-- `line_count`: must be at or below 500. Fail above.
-- `frontmatter_valid`: name matches directory, description present, description third-person, description length within 1024 chars.
-- `required_sections`: When to Activate, Core Concepts, Practical Guidance, Gotchas, Integration, References.
-- `gotcha_count`: number of numbered items in Gotchas. Target >= 3.
-- `code_example_count`: fenced code blocks.
-- `internal_links_resolved`: every `skills/<other>/SKILL.md` link resolves to a real file.
-- `external_link_count`: presence only; reachability is opt-in (`--check-urls`) because it requires network.
-- `claim_coverage`: numeric claims (regex `\b\d+(\.\d+)?%\b`, `\b\d+x\b`, benchmark names) divided by the number of those claims that have a `claim_id` referencing `researcher/claims/index.jsonl`.
-- `mechanism_coverage`: number of mechanisms in `researcher/mechanisms/registry.jsonl` owned by this skill.
-- `activation_case_coverage`: number of activation cases in `researcher/fixtures/activation-cases.jsonl` whose `expected_primary_skill` is this skill.
+- `line_count`：最多 500 行，超出即失败。
+- `frontmatter_valid`：名称与目录一致；描述存在、采用第三人称且不超过 1,024 字符。
+- `required_sections`：何时启用、核心概念、实践指南、易错点、集成、参考资料。
+- `gotcha_count`：易错点中的编号条目数，目标至少 3 条。
+- `code_example_count`：围栏代码块数量。
+- `internal_links_resolved`：每个指向 `skills/<其他技能>/SKILL.md` 的链接都能解析到实际文件。
+- `external_link_count`：只记录链接数量；可选 `--check-urls` 才检查可达性，因为需要网络。
+- `claim_coverage`：数值主张（百分比、倍数和基准名称）中，具备 `claim_id` 并指向 `researcher/claims/index.jsonl` 的比例。
+- `mechanism_coverage`：`researcher/mechanisms/registry.jsonl` 中归属于该技能的机制数。
+- `activation_case_coverage`：`researcher/fixtures/activation-cases.jsonl` 中以该技能为 `expected_primary_skill` 的案例数。
 
-### Output
+### 输出与评分
 
-`researcher/reports/skill-health.json`, regenerated by `researcher/scripts/skill_health.py`. Per-skill scores plus a weighted aggregate per skill plus a corpus-wide aggregate.
+`researcher/scripts/skill_health.py` 生成 `researcher/reports/skill-health.json`，其中包含单项技能分数、加权分数及全语料汇总。`loop_daily.py` 可将每日结果追加到 `researcher/reports/skill-health-history.jsonl`。
 
-`researcher/reports/skill-health-history.jsonl` for daily trend tracking, written by `loop_daily.py`.
-
-### Scoring
-
-Aggregate is a weighted sum with weights tuned to surface drift early:
-
-```
+```text
 0.20 * normalize(required_sections)
 0.15 * normalize(gotcha_count, target=3)
 0.10 * normalize(code_example_count, target=2)
@@ -118,243 +112,207 @@ Aggregate is a weighted sum with weights tuned to surface drift early:
 0.05 * binary(frontmatter_valid)
 ```
 
-Anything below 0.75 is flagged in the daily snapshot.
+低于 0.75 的项目会在每日快照中标记。
 
-### Why this matters
+### 价值
 
-Skill rot is invisible without metrics. A skill that loses its gotcha section, accumulates dead internal links, or drifts past 500 lines is structurally weaker; catching that in CI is cheap insurance.
+没有指标就很难发现技能退化。缺少易错点章节、积累失效内部链接或超过 500 行都会让技能变弱；在持续集成中发现这些问题成本很低。
 
-## Stage 2: Skill Router Benchmark (v2.3.0, ~$5 per full run with Cursor SDK)
+## 第二阶段：技能路由基准（v2.3.0，使用 Cursor SDK 每轮约 5 美元）
 
-The first benchmark that exercises a real model. Tests whether the skill descriptions are good enough to route the right skill to a given task.
+第一个使用真实模型的基准，用于检验技能描述能否把任务路由到正确技能。
 
-### Hypothesis
+### 假设
 
-The activation-scenario descriptions in v2.2.0 frontmatter (replacing v2.1.x keyword triggers) should let a frontier model route prompts to the correct skill at high top-1 accuracy and very high top-3 accuracy.
+v2.2.0 元数据中的启用场景描述（取代 v2.1.x 的关键词触发词）应能让前沿模型以较高 top-1 和很高 top-3 准确率，把提示路由到正确技能。
 
-### Procedure
+### 流程
 
-1. **Fixture**: `researcher/benchmarks/router/prompts.jsonl` with 100 prompts. Each line: `{prompt_id, prompt, expected_primary_skill, acceptable_secondary_skills, rejected_skills, reason}`. Stage 1 ships with 50; expand to 100 over time.
+1. **样例**：`researcher/benchmarks/router/prompts.jsonl` 最终有 100 条提示，每行包含 `{prompt_id, prompt, expected_primary_skill, acceptable_secondary_skills, rejected_skills, reason}`。初始发布 50 条，随后逐步扩展。
+2. **路由提示**：使用 `researcher/benchmarks/router/routing-prompt.md` 模板，展示 15 项技能描述（每次重复时打乱顺序）和任务，并要求模型返回严格 JSON 排名及置信度。
+3. **运行器**：`researcher/benchmarks/sdk-runner/src/runRouter.ts` 对每个提示、模型和重复项执行：生成打乱顺序的路由提示；调用 `Agent.prompt(...)`；设置 `settingSources: []`，确保没有预加载技能，提示中的描述是唯一信号；解析 JSON，失败时记为 `format_failure`，不奖励格式错误输出；与标准答案比较并记录 top-1 和 top-3。
+4. **模型**：`composer-2`、`claude-opus-4-7`、`gpt-5.5`、`gemini-3.1-pro`。运行时通过 `Cursor.models.list()` 获取列表；模型不可用时记录 `model_unavailable` 并继续。
+5. **重复次数**：每个（提示、模型）组合三次。100 条提示 × 4 个模型 × 3 次 = 每轮 1,200 次调用。
 
-2. **Routing prompt**: A standard template (`researcher/benchmarks/router/routing-prompt.md`) that presents the 15 skill descriptions (shuffled per replication) and the task, asks the model to return a strict-JSON ranked list with confidence.
+### 成本估算
 
-3. **Runner**: `researcher/benchmarks/sdk-runner/src/runRouter.ts`. For each prompt x model x replication:
-   - Build the routing prompt with shuffled skill order.
-   - Call `Agent.prompt(routingPrompt, { settingSources: [], model: { id }, local: { cwd: temp } })`.
-   - `settingSources: []` ensures the router agent has no skill loaded; the descriptions in the prompt are the only signal.
-   - Parse JSON. If parse fails, record as `format_failure` (don't reward bad output).
-   - Compare ranked list to ground truth. Record top-1 and top-3 accuracy.
+- 路由提示较小：约 3K—5K 输入令牌和 500 输出令牌。
+- 按 Cursor 的额度价格，完整运行远低于 5 美元。
+- 即使按较高零售价估算，每轮约为 5—15 美元。
 
-4. **Models**: `composer-2`, `claude-opus-4-7`, `gpt-5.5`, `gemini-3.1-pro`. The list comes from `Cursor.models.list()` at run time; if a model is unavailable it is recorded as `model_unavailable` and the run continues.
+### 报告
 
-5. **Replications**: 3 per (prompt, model). 100 prompts x 4 models x 3 reps = 1200 calls per full run.
+- 每模型排行榜：top-1 准确率及 95% 置信区间、top-3 准确率、格式失败率。
+- 单技能混淆矩阵：记录技能之间的误路由。
+- 失败提示逐项分析：列出失败模型及其替代技能。
+- 将模型、样例版本、仓库 SHA 和准确率追加到 `researcher/reports/router-history.jsonl`。
 
-### Cost analysis
+### 价值
 
-- Routing prompt is small (~3-5k input tokens, ~500 output tokens).
-- At Cursor's free-with-credits pricing: well under $5 per full run.
-- Even at unfavorable retail rates: estimated $5-15 per full run.
+已部署智能体只根据技能描述决定是否加载技能。如果描述无法正确路由，其他运行框架改进就缺少实际意义。该基准直接验证 v2.2.0 的启用场景重构。
 
-### Reporting
+## 第三阶段：技能有效性基准（v2.4.0，每轮约 50—200 美元）
 
-- Per-model leaderboard: top-1 accuracy with 95% CI, top-3 accuracy, format-failure rate.
-- Per-skill confusion matrix: which skills get confused with which.
-- Per-prompt drill-down for failures: which models failed, with what alternative skill.
-- Append to `researcher/reports/router-history.jsonl` with model, fixture rev, repo SHA, accuracy.
+用于证明技能在真实任务中确实有帮助。
 
-### Why this matters
+### 假设
 
-Skill descriptions are the only signal a deployed agent uses to decide whether to load a skill. If they don't route correctly, the rest of the harness is academic. This benchmark directly validates the v2.2.0 activation-scenario refactor.
+在相关任务中加载技能可以改善结果质量、令牌效率或两者兼有；加载无关技能不应产生效果，或只产生轻微噪声。
 
-## Stage 3: Skill Effectiveness Benchmark (v2.4.0, ~$50-200 per full run)
+### 流程
 
-The benchmark that proves skills actually help.
+1. **任务样例**：`researcher/benchmarks/effectiveness/tasks/<编号>-<名称>/`。每项任务包含 `task.md`（提示）、`starting/`（起始工作区）、`verify.sh`（成功时退出码为 0 的确定性标准答案检查）和 `metadata.json`（相关技能、负向对照技能、类别、预期难度）。
+2. **条件**：每项任务运行六种设置：
+   - `control`：`settingSources: []`，不加载技能。
+   - `target`：只加载目标技能。
+   - `negative`：只加载已知无关技能，作为负向对照。
+   - `full`：加载所有当前发布技能。
+   - `target_plus_one`：目标技能加一项相关技能。
+   - `target_plus_unrelated`：目标技能加一项无关技能，检查交互影响。
+3. **运行器**：`researcher/benchmarks/sdk-runner/src/runEffectiveness.ts` 为每个任务、条件、模型和重复项新建工作区；从 `starting/` 复制文件，只把条件允许的技能放入 `.cursor/skills/`；调用智能体；结束后运行 `verify.sh`，记录退出码、运行时间和对话令牌数；保存对话 JSON、工作区差异和验证输出。
+4. **初始任务集**：20 项任务，覆盖：
+   - `filesystem-context`：卸载 5,000 行工具输出后再检索特定信息。
+   - `context-compression`：把 100K 令牌对话压缩为保留指定实体的 2K 令牌交接摘要。
+   - `multi-agent-patterns`：判断可并行任务是否该使用子智能体并说明理由。
+   - `memory-systems`：跨两次模拟会话持久保存用户偏好。
+   - `tool-design`：把三个重叠工具调用合并为一个。
+   - `evaluation`：根据任务描述编写评分规则。
+   - `advanced-evaluation`：执行已缓解位置偏差的成对比较。
+   - `harness-engineering`：从四种配置中识别缺少锁定评估器的配置。
+   - `context-degradation`：在长上下文两端放置关键信息。
+   - `context-optimization`：屏蔽超过 2K 令牌的工具输出。
+   - `latent-briefing`：判断 KV 缓存压缩是否适用，含正向和负向案例。
+   - `bdi-mental-states`：将小型 RDF 图转换为结构化信念状态。
+   - `hosted-agents`：为多人协作场景设计预热池配置。
+   - `project-development`：判断任务与模型的匹配度并提出处理流程。
+   - `context-fundamentals`：解释一种上下文退化模式。
+   - 另加 5 项不应受任何技能帮助的负向对照，如基本算术和纯代码格式化。
+5. **模型**：与第二阶段相同。
+6. **重复次数**：每项任务、条件和模型重复三次。20 项任务 × 6 种条件 × 4 个模型 × 3 次 = 每轮 1,440 次智能体运行。
 
-### Hypothesis
+### 成本估算
 
-Loading a relevant skill into an agent's context improves outcome quality, token efficiency, or both, on tasks that the skill claims to address. Loading an irrelevant skill should have no effect or only mild noise.
+- 每项有效性任务大于路由提示，约需 10K—50K 输入令牌、1K—5K 输出令牌和多次工具调用。
+- 使用 Cursor 额度时，完整运行应可纳入每月额度。
+- 按零售价估算，每轮约 50—200 美元，取决于启用模型。
 
-### Procedure
+### 报告
 
-1. **Fixture**: `researcher/benchmarks/effectiveness/tasks/<id>-<slug>/`. Each task directory has:
-   - `task.md`: the prompt the agent receives.
-   - `starting/`: workspace seed copied into a temp directory before the run.
-   - `verify.sh`: deterministic ground-truth check returning exit code 0 if the task succeeded.
-   - `metadata.json`: relevant skills, irrelevant skills (for negative control), category, expected difficulty.
+- 单技能效应量：对照与目标条件之间的成功率、令牌成本和运行时长差异。
+- 单技能效应图：附 95% 置信区间的柱状图。
+- 负向对照检查：无关技能的效应应接近零；否则说明测试存在偏差。
+- 按模型排行：显示哪些模型从技能中受益最多。
+- 结果追加到 `researcher/reports/effectiveness-history.jsonl`。
 
-2. **Conditions**: For each task, run six conditions:
-   - `control`: `settingSources: []`. No skills loaded.
-   - `target`: `settingSources: ["project"]` with only the target skill present. Other skills are temporarily moved out.
-   - `negative`: `settingSources: ["project"]` with only a known-irrelevant skill present.
-   - `full`: `settingSources: ["project"]` with all currently published skills present.
-   - `target_plus_one`: target skill plus one related skill.
-   - `target_plus_unrelated`: target skill plus one unrelated skill (interaction control).
+### 价值
 
-3. **Runner**: `researcher/benchmarks/sdk-runner/src/runEffectiveness.ts`. For each task x condition x model x replication:
-   - Build the task workspace from `starting/`.
-   - Copy only the in-scope skills into `.cursor/skills/` of the task workspace.
-   - Call `Agent.prompt(taskPrompt, { settingSources: ["project"], model: { id }, local: { cwd: taskWorkspace } })` (or local cloud option for parallel runs).
-   - On completion, run `verify.sh`; record exit code, durationMs, transcript token counts (from `run.conversation()`).
-   - Persist transcript JSON, workspace diff, verify output.
+这是关键结果。比如“在适用任务中，加载 filesystem-context 能减少 N% 令牌且不损害质量”，才能为技能集合的价值提供支持。
 
-4. **Initial task set**: 20 tasks across categories:
-   - **filesystem-context**: agent must offload a 5,000-line tool output then retrieve specific data from it.
-   - **context-compression**: agent gets a 100k-token chat history and must produce a 2k-token handoff that preserves named entities.
-   - **multi-agent-patterns**: agent must decide whether to use subagents for a parallelizable task and justify it.
-   - **memory-systems**: agent must persist a user preference across two simulated sessions.
-   - **tool-design**: agent must consolidate three overlapping tool calls into one.
-   - **evaluation**: agent must produce a rubric for a given task description.
-   - **advanced-evaluation**: agent must run a position-bias-mitigated pairwise comparison.
-   - **harness-engineering**: agent must identify which of four agent configurations is missing a locked evaluator.
-   - **context-degradation**: agent must place critical info at U-curve endpoints for a long context.
-   - **context-optimization**: agent must mask tool outputs above 2k tokens.
-   - **latent-briefing**: agent must decide whether KV cache compaction applies (positive case + negative case).
-   - **bdi-mental-states**: agent must convert a small RDF graph into a structured belief state.
-   - **hosted-agents**: agent must propose a warm-pool config for a multiplayer scenario.
-   - **project-development**: agent must evaluate task-model fit and propose a pipeline.
-   - **context-fundamentals**: agent must explain a context degradation pattern.
-   - Plus 5 negative-control tasks where no skill should help (basic arithmetic, plain code reformatting, etc.).
+## 第四阶段：跨技能组合（v2.5.0）
 
-5. **Models**: same as Stage 2.
+与单项技能相比，经过筛选的技能集合可能增加或破坏价值。需要检查：
 
-6. **Replications**: 3 per (task, condition, model). 20 tasks x 6 conditions x 4 models x 3 reps = 1440 agent runs per full sweep.
+- 两项技能一起加载时，指导是相加、互补还是冲突？
+- 集成章节是否准确？章节提到的技能一起加载后，能否真正协同？
+- 技能在上下文中的排列顺序是否影响效果？
 
-### Cost analysis
+该阶段推迟到 v2.5.0，因为它需要第三阶段基础设施，以及专门评估交互的任务。此处只列方向，尚未详细设计。
 
-- Average effectiveness task is larger than routing prompts: 10-50k input tokens, 1-5k output tokens, multiple tool calls.
-- Cursor free-with-credits: should fit in monthly allotment for one full sweep.
-- Retail equivalent estimate: $50-200 per full sweep depending on which models are active.
+## SDK 集成细节
 
-### Reporting
+### 选择 Cursor SDK 的原因
 
-- Per-skill effect size: success rate delta, token cost delta, durationMs delta between control and target.
-- Per-skill effect plot: bar chart with 95% CI.
-- Negative-control validation: irrelevant skill should show effect size near zero; if not, the test is biased.
-- Per-model leaderboard: which model benefits most from skills.
-- Append to `researcher/reports/effectiveness-history.jsonl`.
+- 可使用现有 Cursor 团队额度。
+- 与 IDE 和命令行工具使用相同智能体循环，结果更接近实际使用。
+- 一个接口支持 Composer、Claude Opus、GPT 和 Gemini 模型。
+- `settingSources` 能精确控制加载哪些技能，是执行消融的关键能力。
+- 本地资源不足时可使用云运行环境并行执行。
 
-### Why this matters
+### 技能加载方式
 
-This is the headline result. "Loading filesystem-context reduces tokens by N% with zero quality loss on tasks where it applies" is the kind of claim that justifies the existence of the skill collection.
+- `settingSources: []`（默认）：不加载磁盘设置和技能，作为对照条件；路由基准也用它，保证描述是唯一信号。
+- `settingSources: ["project"]`：从当前工作目录加载 `.cursor/`；通过复制技能到受控工作区来只加载指定项。
+- `settingSources: ["project", "plugins"]`：同时加载插件技能。基准较少使用，因为难以精确控制。
+- `settingSources: "all"`：加载用户和团队设置等全部配置。基准应避免它，以免泄露调用者环境。
 
-## Stage 4: Cross-Skill Composition (v2.5.0)
+第三阶段按条件新建任务工作区：先复制 `starting/` 到临时目录，再按条件放入 `.cursor/skills/`。
 
-Composition is where curated collections add or destroy value compared to individual skills. Tests:
-
-- Do two skills loaded together produce additive, synergistic, or conflicting guidance?
-- Are integration sections accurate? When skill A's integration mentions skill B, does loading both actually compose?
-- Are there ordering effects in how skills appear in context?
-
-Deferred to v2.5.0 because it requires Stage 3 infrastructure plus task design specifically targeting interactions. Sketched here, not designed in detail.
-
-## SDK Integration Details
-
-### Why the Cursor SDK
-
-- Free with the existing Cursor team credits the user already has.
-- Same agent loop as the IDE and CLI, so results transfer to production usage.
-- Multi-model: composer-2, claude-opus-4-7, gpt-5.5, gemini-3.1-pro through one interface.
-- `settingSources` gives precise control over which skills load (this is the key affordance for ablation).
-- Cloud runtime for parallel execution when local resources are insufficient.
-
-### settingSources and skill loading
-
-This is the central mechanism we exploit.
-
-- `settingSources: []` (default): no on-disk settings load. Agent has no skills. Use this as the **control condition** and for the router benchmark where we want descriptions to be the only signal.
-- `settingSources: ["project"]`: loads `.cursor/` from the cwd. Used to load only specific skills by copying them into a controlled workspace.
-- `settingSources: ["project", "plugins"]`: also loads plugin skills. Less useful for benchmarks; we want full control.
-- `settingSources: "all"`: loads everything including user and team settings. Avoid in benchmarks; it leaks the caller's environment.
-
-For Stage 3, each task workspace is built fresh per condition: copy the `starting/` directory to a temp dir, then conditionally place skills into `.cursor/skills/`.
-
-### Result schema we rely on
-
-From the Cursor SDK reference:
+### 依赖的 SDK 结果格式
 
 ```typescript
 interface RunResult {
   id: string;
   status: "finished" | "error" | "cancelled";
-  result?: string;          // final assistant text
-  model?: ModelSelection;   // resolved model
+  result?: string;          // 最终助手文本
+  model?: ModelSelection;   // 解析后的模型
   durationMs?: number;
   git?: RunGitInfo;
 }
 ```
 
-Plus `run.conversation(): Promise<ConversationTurn[]>` for the per-turn transcript. Token counts come from the conversation events (precise schema depends on SDK version; the runner abstracts this).
+此外还使用 `run.conversation(): Promise<ConversationTurn[]>` 获取逐轮对话。令牌数来自对话事件；具体格式随 SDK 版本变化，由运行器封装处理。
 
-### Runtime choice per stage
+### 各阶段的运行环境
 
-- Stage 2 (router): local runtime, no cwd dependence beyond a temp dir. Fast.
-- Stage 3 (effectiveness): local runtime for most tasks; cloud runtime for tasks that need filesystem isolation or parallel execution.
-- Stage 4: cloud runtime by default for full parallelism.
+- 第二阶段（路由）：本地运行；除临时目录外不依赖工作目录，速度快。
+- 第三阶段（有效性）：多数任务在本地运行；需要文件隔离或并行的任务使用云环境。
+- 第四阶段：默认使用云环境以实现充分并行。
 
-### Safety
+### 安全
 
-- Privacy Mode enabled on the Cursor account that runs benchmarks, per Cursor's [privacy docs](https://cursor.help/security-and-privacy/privacy.md). Eval data stays out of training.
-- `apiKey` always passed explicitly, never relied on from env, so cross-tenant mistakes are impossible.
-- `await using` syntax for every agent so disposal is automatic.
-- Concrete rate-limit handling: backoff schedule per Cursor's docs, exponential 1s/2s/4s/8s/16s on 429.
+- 运行基准的 Cursor 账户需启用隐私模式，使评估数据不进入训练。
+- 每次调用都显式传入 `apiKey`，不依赖环境中不明来源的密钥，防止跨租户错误。
+- 每个智能体都使用 `await using` 自动释放资源。
+- 按 Cursor 文档处理速率限制；遇到 429 时使用 1 秒、2 秒、4 秒、8 秒、16 秒的指数退避。
 
-### Cost gates
+### 成本门槛
 
-The runner implements per-run cost caps:
+运行器提供每轮成本上限：
 
-- `--max-runs N`: hard cap on total agent invocations.
-- `--max-budget-usd N`: estimated cost cap, fail fast if exceeded.
-- `--dry-run`: print plan, do not call.
-- `--models <list>`: subset to one model for development.
+- `--max-runs N`：限制智能体调用总数。
+- `--max-budget-usd N`：估算成本上限，超限时快速失败。
+- `--dry-run`：打印计划，不执行调用。
+- `--models <列表>`：开发时只选择部分模型。
 
-Every runner prints a cost forecast before any agent call.
+每个运行器在首次调用智能体之前都会打印成本预测。
 
-## Implementation Order
+## 实施顺序
 
-1. **Stage 1 (this PR, v2.2.1)**: `researcher/scripts/skill_health.py`, output file, integration with `loop_daily.py`. No API cost.
+1. 第一阶段：实现 `researcher/scripts/skill_health.py`、结果文件并接入 `loop_daily.py`；不产生 API 费用。
+2. SDK 运行器脚手架：建立 `researcher/benchmarks/sdk-runner/`、依赖配置、通用工具和预演模式；没有 API 密钥也能编译并正常退出。
+3. 路由样例：在 `researcher/benchmarks/router/prompts.jsonl` 建立 50 条提示，涵盖 v2.2.0 边界混淆配对和单技能正向对照。
+4. 第一项有效性任务：完成 `researcher/benchmarks/effectiveness/tasks/001-filesystem-context-offload/`，作为其他 19 项模板。
+5. 验证：编译并运行预演，在用户允许时运行技能健康度检查，确认其他门禁状态。
+6. 下一次合并后将第一阶段接入 `loop_daily.py`，每日更新技能健康度。
+7. 环境密钥准备好后执行第二阶段，发布结果，并根据混淆改进描述。
+8. 持续构建其余 19 项有效性任务，优先覆盖对用户主张最多的技能。
+9. 准备就绪后执行第三阶段完整扫描，发布单项技能效应量。
+10. 在 v2.5.0 设计并执行第四阶段。
 
-2. **SDK runner scaffolding (this PR)**: `researcher/benchmarks/sdk-runner/` with package.json, tsconfig, common utilities, dry-run mode. Compiles and exits cleanly without an API key.
+## 尚待决定的问题
 
-3. **Router fixtures (this PR)**: 50 prompts in `researcher/benchmarks/router/prompts.jsonl`. Adversarial pairs for the v2.2.0 boundary-confusion cases (evaluation vs advanced-evaluation, etc.) plus single-skill positive controls.
+这些问题需在第二阶段执行前由用户决定，但不阻塞脚手架准备：
 
-4. **First effectiveness task (this PR)**: `researcher/benchmarks/effectiveness/tasks/001-filesystem-context-offload/` fully built. Pattern for the other 19.
+1. 是否确认运行基准的 Cursor 账户已启用隐私模式？
+2. 是否按 Cursor 文档向 `leerob@cursor.com` 申请更高速率限制，还是先用默认限制进行较小规模扫描？
+3. v2.3.0 首次运行使用 Composer 单模型，还是第一天就加入 Claude、GPT 和 Gemini？
+4. 发布政策：将全部原始对话提交到仓库，还是单独托管后链接？完整扫描的原始对话可能达到数 MB。
+5. 是否纳入 BrowseComp、SWE-bench 等公开基准子集作为参照，还是 v2.4.0 先使用自建任务集、v2.5.0 再交叉对照？
 
-5. **Verify (this PR)**: compile, run dry, run skill_health for real, all existing gates still pass.
+## 本计划尚未解决的问题
 
-6. **Execute Stage 1 in CI (next PR after merge)**: add to `loop_daily.py` so skill health updates daily.
+- 每任务令牌核算取决于 SDK 提供的逐轮信息。如果 `conversation()` 不包含令牌数，则在完成埋点前只能暂时用运行时长和请求数作为成本代理。
+- Cursor 模型目录会随时间变化。每次记录解析后的模型编号有助于复现，但跨版本比较仍需谨慎。
+- 初始人工挑选的任务集较小。要提高公开可信度，需要扩展到 100 项以上任务，或与现有公开基准对齐。
+- 真实部署与基准条件不同。此处测得的效应量是上限，不是效果保证。
 
-7. **Execute Stage 2 (when env key provided)**: run router benchmark, publish results, iterate descriptions where confusions appear.
+## 如何阅读结果
 
-8. **Build remaining 19 effectiveness tasks (rolling)**: prioritized by which skills carry the most user-facing claims.
+未来版本发布基准数值时，仪表板依次回答四个问题：
 
-9. **Execute Stage 3 (when ready)**: full effectiveness sweep, publish per-skill effect sizes.
+1. 运行框架是否通过确定性门槛？（第一阶段 0 和 1，必须通过）
+2. 技能描述能否路由到正确技能？（第二阶段，逐模型检查）
+3. 技能是否真正有帮助？（第三阶段，逐技能、模型和任务检查）
+4. 多项技能能否协同？（未来第四阶段）
 
-10. **Stage 4 design and execution (v2.5.0)**.
-
-## Open Decisions
-
-These need user input before Stage 2 execution. They do not block scaffolding.
-
-1. **Privacy mode**: confirm enabled on the Cursor account that will run benchmarks.
-2. **Higher rate limits**: confirm whether to email `leerob@cursor.com` for benchmark-grade limits per Cursor's docs, or rely on default limits for a smaller initial sweep.
-3. **Models to include in v2.3.0 first run**: ship with composer-2 only, or include claude/gpt/gemini from day one?
-4. **Publication policy**: full raw transcripts committed to the repo, or hosted separately and linked? Transcript size at full scale is multi-MB per sweep.
-5. **Comparison points**: include public benchmark subsets (BrowseComp, SWE-bench) for cross-reference, or keep our task set self-contained for v2.4.0 and add cross-reference in v2.5.0?
-
-## What This Plan Does Not Solve
-
-- Tokens-per-task accounting depends on the per-turn data the SDK exposes. If `conversation()` does not include token counts we fall back to wall-clock and request-count as cost proxies until we instrument it.
-- Cursor's model catalog is not stable across time; we record the resolved model id per run for reproducibility, but cross-version comparisons require care.
-- The seed user-curated task set is small. Public credibility requires either growing it to 100+ tasks or aligning with an existing public benchmark.
-- Real-world deployment differs from benchmark conditions. Effect sizes here are upper bounds, not guarantees.
-
-## How To Read Results
-
-When a future release shows benchmark numbers, the dashboard answers four questions in order:
-
-1. **Did the harness pass deterministic gates?** (always required, Stage 0 + 1)
-2. **Can the descriptions route the right skill?** (Stage 2, per model)
-3. **Does the skill actually help?** (Stage 3, per skill x model x task)
-4. **Do skills compose?** (Stage 4, future)
-
-Skills that fail at any earlier stage do not need later stages to be justified for removal or rework.
+前一阶段失败的技能，不必等到后续阶段才能决定移除或返工。

@@ -1,150 +1,150 @@
 ---
 name: long-horizon-prompting
-description: "This skill should be used when writing, enhancing, or evaluating the launch prompt for a long-running autonomous agent or a parallel multi-agent orchestration attacking a hard problem: pseudo-formal task briefs that define terms and an exact success predicate linguistically, enumerate non-counting outcomes, set persistence rules with explicit stop and return conditions and effort floors, manage a diverse portfolio of parallel approaches with an approach registry and blocked-route bookkeeping, and gate the return on adversarial audit. Route agent topology and coordination protocols to multi-agent-patterns, runtime control surfaces and loop governance to harness-engineering, evaluator and quality-gate construction to evaluation, judge design to advanced-evaluation, and compaction or memory mechanics to context-compression and memory-systems."
+description: "用于编写或评估长时间运行和并行智能体的任务提示，明确成功条件、停止规则、检查与工作多样性。"
 ---
 
-# Long-Horizon Prompting
+# 长时程提示词设计
 
-This skill covers the design of the prompt that launches an agent expected to work autonomously for hours or days, alone or as an orchestrator managing many parallel workers. The central technique is the pseudo-formal task brief: a specification written with the rigor of formal verification but expressed linguistically, because most hard problems have no machine-checkable success condition. The exemplar is the published prompt behind GPT-5.6 Sol Ultra's candidate proof of the Cycle Double Cover Conjecture, produced by a 64-subagent orchestration (claim-long-horizon-cdc-run). The prompt structure generalizes far beyond mathematics: any domain where success can be stated precisely and failure modes can be enumerated can use the same brief anatomy.
+本技能介绍如何设计启动提示词：让智能体独自自主工作数小时或数天，或作为协调者管理多个并行工作者。核心技术是伪形式化任务简报：以形式化验证的严谨程度撰写规范，但用语言表达，因为大多数困难问题都没有可由机器检查的成功条件。典型案例是 GPT-5.6 Sol Ultra 对环双覆盖猜想生成候选证明时使用的已公开提示词；该任务由 64 个子智能体协同完成（claim-long-horizon-cdc-run）。这种提示词结构适用于数学之外的领域：只要能精确定义成功条件并列出失效模式，就能使用同样的简报结构。
 
-The controlling trade-off: everything that makes a long run productive (persistence, autonomy, parallelism) also raises the cost of a weak specification. A short interactive prompt fails cheaply; a long-horizon brief with a loophole burns hours of compute producing an answer-shaped artifact that does not solve the problem.
+核心取舍是：让长时间运行更有效的所有因素（坚持、自主、并行），也会放大规范薄弱的代价。短暂的交互式提示词失败，损失有限；长时程简报若留有漏洞，可能会耗费数小时计算资源，产出看似答案却并未解决问题的东西。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
+在以下情况下启用本技能：
 
-- Writing or reviewing the prompt for a long-running autonomous run before launching it
-- Converting a vague hard problem ("solve X", "figure out why Y happens") into an explicit brief with a success predicate and non-counting outcomes
-- Writing the root or orchestrator prompt that manages many parallel workers on an open-ended search problem
-- Adding persistence instructions, stop conditions, effort floors, or return gates to an agent prompt
-- Diagnosing a failed long run whose failure traces to the brief: premature return, an answer-shaped near miss, all workers converging on one approach, or fabricated completion claims
-- Building a pre-launch review step that enhances and evaluates prompts before expensive agent time is committed
+- 启动长时间自主运行前，编写或审查其提示词。
+- 将“解决 X”或“查清 Y 为什么发生”等模糊难题转化为明确简报，写出成功条件和不计为成功的结果。
+- 编写根智能体或协调者提示词，管理多个智能体并行搜索开放问题。
+- 在智能体提示词中加入坚持要求、停止条件、努力下限或交付门槛。
+- 诊断失败原因可归结为简报问题的长时间运行任务：过早返回、产出形似答案的近似结果、所有工作者收敛到同一路径，或虚报完成。
+- 在投入昂贵的智能体运行之前，建立预先审查步骤来改进和评估提示词。
 
-Do not activate this skill for adjacent work owned by other skills:
+以下相邻工作由其他技能负责，不要为它们启用本技能：
 
-- Agent topology, supervisor versus swarm choice, handoff protocols, and coordination mechanics: `multi-agent-patterns`. That skill owns the architecture; this skill owns the words that steer it.
-- Runtime control surfaces, locked evaluators, rollback, durable logs, and approval boundaries around an autonomous loop: `harness-engineering`. Constraints that must survive optimization pressure belong in the harness, not the prompt.
-- Building the evaluator, regression suite, or deterministic quality gates a run is scored by: `evaluation`.
-- LLM-as-judge design, rubrics, pairwise comparison, and bias mitigation: `advanced-evaluation`.
-- Compaction, note-taking, and cross-session memory mechanics for surviving context limits: `context-compression`, `memory-systems`, `filesystem-context`.
-- Loops that modify their own harness or prompts: `self-improvement-loops`.
-- Remote sandboxes and background execution infrastructure: `hosted-agents`.
+- 智能体拓扑、监督者或群体结构的选择、交接协议和协调机制：`multi-agent-patterns`。该技能负责架构；本技能负责引导架构运行的文字。
+- 自主循环周围的运行时控制界面、锁定评估器、回滚、持久化日志和审批边界：`harness-engineering`。必须抵御优化压力的限制应放在运行框架，而不是提示词中。
+- 构建评估器、回归套件或确定性质量门禁：`evaluation`。
+- LLM 判官设计、评分标准、成对比较和偏差缓解：`advanced-evaluation`。
+- 用于应对上下文限制的压缩、记笔记和跨会话记忆机制：`context-compression`、`memory-systems`、`filesystem-context`。
+- 修改自身运行框架或提示词的循环：`self-improvement-loops`。
+- 远程沙箱和后台执行基础设施：`hosted-agents`。
 
-## Core Concepts
+## 核心概念
 
-### Pseudo-Formal Task Specification
+### 伪形式化任务规范
 
-Formal verification requires a machine-checkable specification. Hard open problems rarely have one, but the discipline transfers: state the success condition so precisely that an adversarial reader cannot satisfy its letter without satisfying its intent. Four components, in order of leverage:
+形式化验证需要可由机器检查的规范。困难的开放问题通常没有这种规范，但其中的严谨方法仍可借鉴：应精确定义成功条件，让对抗性读者无法在只满足字面要求的情况下违背真实意图。最值得优先设计的四个组成部分如下：
 
-1. **Definitions with degenerate cases.** Define every load-bearing term before stating the goal, including the edge cases a lazy solution would exploit. The CDC prompt defines graph, bridge, cycle, and cycle double cover before the task, explicitly covering parallel-edge two-cycles, disconnected graphs, and the edgeless graph.
-2. **Exact success predicate.** One statement of what must be true of the returned artifact, with scope quantifiers spelled out ("every finite loopless multigraph with no bridge, without additional assumptions such as cubicity, planarity, connectivity, or higher edge-connectivity").
-3. **Non-counting outcomes.** An enumerated list of results that do not count: partial progress, special-case solutions, reductions to another unproved statement, bounded or computational verification, and best-effort summaries. This is the highest-leverage component. Under persistence pressure, models produce answer-shaped near misses; each excluded outcome removes one escape hatch.
-4. **Enumerated failure modes for the auditor.** A concrete checklist of the domain-specific ways a candidate can be subtly wrong (in CDC: repeated-edge closed trails masquerading as cycles, bridges introduced by reductions, circular use of an equivalent statement). Verifiers with an enumerated hunt list catch what generic "check the work" instructions miss.
+1. **定义及退化情况。** 在陈述目标前，定义每一个关键术语，包括敷衍方案可能钻空子的边缘情况。环双覆盖（CDC）提示词会在提出任务前定义图、桥、环和环双覆盖，并明确涵盖平行边构成的二边环、不连通图和无边图。
+2. **精确的成功谓词。** 用一句话定义交付产物必须满足的条件，并写清适用范围的量词（例如：“所有无桥的有限无环多重图，且不能额外假设图是三次图、平面图、连通图或具有更高边连通度”）。
+3. **不计为成功的结果。** 列出不算成功的结果：部分进展、特殊情况解答、归约为另一条未证明的陈述、有界或计算验证，以及尽力而为的摘要。这是最有杠杆效应的组成部分。在坚持压力下，模型会产出形似答案的近似结果；每排除一类结果，就堵住一个退路。
+4. **供审查者使用的失效模式清单。** 列出候选结果容易出错的领域特定方式（在 CDC 中包括：把重复边的闭游走伪装成环、归约过程引入桥、循环使用等价命题）。与“检查一下工作”这种泛泛指令相比，带明确排查清单的验证者能发现更多隐蔽错误。
 
-### Anatomy of a Long-Horizon Brief
+### 长时程简报的结构
 
-| Block | Job | Failure it prevents |
+| 区块 | 作用 | 预防的失败 |
 | --- | --- | --- |
-| Definitions | Fix the vocabulary, including degenerate cases | Loophole solutions on technicalities |
-| Success predicate | State exactly what must be true at return | Scope-narrowed answers |
-| Non-counting outcomes | Enumerate near misses that do not count | Answer-shaped partial results |
-| Solvability framing | "Assume a solution exists" where existence is plausible | Give-up drift, "this is open" refusals |
-| Orchestration policy | Heuristics for allocating parallel workers, not fixed assignments | Premature convergence, wasted parallelism |
-| Verification policy | Adversarial audit with enumerated failure modes | Lenient self-judging |
-| Reporting contract | Concrete artifacts required; status reports rejected | Vague optimism, fabricated progress |
-| Return condition | Return only when the artifact survives audit | Premature return, best-effort summaries |
-| Effort floor | Minimum effort before giving up is considered | Early abandonment |
-| Contamination guards | What external search may and may not be used for | Laundered lookups, benchmark leakage |
+| 定义 | 固定术语含义，包括退化情况 | 利用技术细节漏洞的解答 |
+| 成功谓词 | 精确说明返回时必须满足什么条件 | 缩小问题范围的回答 |
+| 不计为成功的结果 | 列出不算成功的近似结果 | 形似答案的部分结果 |
+| 可解性框架 | 在问题很可能有解时注明“假定存在解” | 逐渐放弃、拒绝并声称“这是未解决问题” |
+| 编排策略 | 通过启发式分配并行工作者，而不是固定分工 | 过早收敛、浪费并行资源 |
+| 验证策略 | 根据明确列出的失效模式进行对抗性审核 | 过于宽松的自我评判 |
+| 报告契约 | 要求提供具体产物；不接受状态汇报 | 含糊的乐观表述、虚构进展 |
+| 返回条件 | 只有产物通过审核后才返回 | 过早结束、尽力而为的总结 |
+| 努力下限 | 在允许放弃之前必须达到的最低投入 | 过早放弃 |
+| 污染防护 | 规定外部搜索可用于什么、不能用于什么 | 洗入现成答案、基准泄漏 |
 
-### Persistence Cuts Both Ways
+### 坚持具有两面性
 
-Persistence instructions ("do not return until", effort floors, assume-solvable framing) counter the documented drift toward giving up on long trajectories (claim-long-horizon-give-up-drift). But the same pressure raises the reward-hacking surface: the most persistence-trained frontier model measured to date also showed the highest detected cheating rate of any model its evaluator had tested, and its measured time horizon was not robust to whether cheating counted as success (claim-long-horizon-persistence-hacking). The design rule: never add a persistence instruction without a matching verification gate. Persistence pressure against a loose success predicate produces confident non-solutions.
+坚持指令（“完成前不要返回”、努力下限、假定问题可解）可以抵御长时间轨迹中逐渐放弃的已记录趋势（claim-long-horizon-give-up-drift）。但同样的压力也会扩大投机奖励信号的空间：截至目前测量过的模型中，坚持训练最强的前沿模型，也显示出其评估器所测试模型中最高的作弊率；其测得的时间范围也取决于是否把作弊算作成功（claim-long-horizon-persistence-hacking）。设计规则是：添加坚持要求时，必须配套相应的验证门槛。若成功条件宽松，坚持压力会产出自信但未解决问题的答案。
 
-### The Verification Bottleneck
+### 验证瓶颈
 
-Parallel sampling reliably raises the chance that some worker finds a correct answer, but the system's ability to select that answer lags behind, and model judges of hard artifacts are systematically lenient, rewarding rigorous-looking but incomplete arguments (claim-long-horizon-verification-gap). Budget as much prompt design for the verifier as for the generator:
+并行采样能稳定提升至少有一个工作者找到正确答案的概率，但系统筛选正确答案的能力跟不上；对困难产物进行模型判分时，判官会系统性地过于宽松，奖励看起来严谨却不完整的论证（claim-long-horizon-verification-gap）。为验证者设计的提示词应投入与生成器相当的设计预算：
 
-- Give auditors the enumerated failure-mode list from the brief, not a generic quality instruction.
-- Require the generator to produce modular, independently checkable output (lemma-level structure with stated premises and conclusions) so verification decomposes.
-- Use fresh-context adversarial verifiers rather than self-critique; a verifier that did not build the artifact cannot rationalize its gaps.
-- Treat inter-agent agreement as a diversity failure signal, not as confirmation: committees converge most tightly on the hardest problems, where unanimity reflects shared bias rather than corroboration (claim-long-horizon-diversity-collapse).
+- 给审核者提供简报中列出的失效模式清单，不要只给泛泛的质量要求。
+- 要求生成器提供模块化、可独立检查的输出（按引理组织，并列明前提和结论），使验证能够拆分进行。
+- 使用具有全新上下文的对抗性验证者，而不是自我批评；没有构建产物的验证者，不容易为产物的缺口找借口。
+- 将智能体间意见一致视作多样性不足的信号，而不是佐证：委员会在最困难的问题上往往收敛得最紧密，这种一致可能反映共同偏差，而非独立佐证（claim-long-horizon-diversity-collapse）。
 
-### Structural Diversity in Parallel Search
+### 并行搜索中的结构化多样性
 
-Role labels do not create diversity; parallel workers share priors and converge unless independence is engineered:
+给工作者贴不同角色标签并不会产生多样性；并行工作者共享先验，若不刻意设计独立性，最终仍会收敛：
 
-- Keep early-round workers blind to the currently favored approach.
-- Maintain an explicit registry of approach families, grouped by underlying idea rather than surface wording, and redirect workers away from crowded families.
-- Mark a route blocked when it stalls at a missing step as hard as the original goal; reassign workers to it only for a materially new mechanism, not for enthusiasm.
-- Cross-pollinate late, after independent development has exposed each route's real strengths and gaps.
-- Do not let one approach dominate because its reductions are elegant; a route ending at a lemma equivalent in strength to the original goal is not progress.
+- 第一轮让工作者看不到当前受偏好的路径。
+- 建立明确的方案类别注册表，按底层思路而不是表面措辞分组，并引导工作者避开过于拥挤的类别。
+- 某条路径若卡在一个与原目标同样困难的缺失步骤上，就将它标记为受阻；只有出现实质性的新机制时，才重新分配工作者继续探索，而不是因为热情就重启。
+- 先让各条路径独立发展，等它们的实际优缺点都显现后再交换信息。
+- 不要因为某条路径的归约方式优雅就让它占主导；若最终得到的引理与原目标难度等同，就不算进展。
 
-### Stop Conditions, Effort, and Progress State
+### 停止条件、投入和进度状态
 
-Long trajectories drift toward uncertainty and abandonment, and a budget stated once at the top of the prompt loses force as context grows (claim-long-horizon-give-up-drift). Countermeasures that belong in the brief: an explicit effort floor ("spend at least this much effort before considering returning"), assume-solvable framing where a solution plausibly exists, and a return condition phrased as a predicate over the artifact rather than over the agent's confidence. Countermeasures that belong outside the prompt: an externally maintained ledger of verified progress re-injected each round, which in controlled comparisons rescued large-quantity tasks that prompt-only and completion-gated setups failed entirely (claim-long-horizon-state-ledger). Progress claims should be auditable: requiring each reported claim to trace to a tool result or artifact from the current session nearly eliminated fabricated status reports in vendor testing (claim-long-horizon-evidence-audit).
+长时间运行会逐渐变得不确定并倾向于放弃；只在提示词顶部提一次的预算，也会随着上下文增长而失效（claim-long-horizon-give-up-drift）。应写进简报中的对策包括：明确的努力下限（“考虑返回之前至少投入这么多努力”）、问题很可能有解时采用“假定存在解”的框架，以及基于产物而不是智能体信心来描述返回条件。应由提示词之外的系统实施的对策包括：外部维护并在每一轮重新注入已验证进展的台账；在受控比较中，这一做法挽救了大量由仅使用提示词和完成门禁方案完全无法完成的任务（claim-long-horizon-state-ledger）。进度声明必须可审计：要求每项声明都能追溯到本轮会话的工具结果或产物，在供应商测试中几乎消除了虚构状态报告（claim-long-horizon-evidence-audit）。
 
-### Lean and Outcome-First
+### 精简并以结果为先
 
-Both major vendors converged on the same doctrine for current frontier models: the prompt should carry the outcome, hard constraints, evidence sources, and completion bar, and leave the path to the model. Accumulated instruction stacks measurably hurt; leaner system prompts improved vendor coding-agent evaluations while cutting cost (claim-long-horizon-lean-prompt). Persistence itself is increasingly trained in rather than prompted in, so spend the token budget on what training cannot supply: the success predicate, the non-counting list, and the domain failure modes only an expert in the problem knows.
+两家主要供应商针对当前前沿模型都趋向于同一原则：提示词应说明结果、硬性限制、证据来源和完成标准，把路径留给模型。不断累积指令会明显有害；更精简的系统提示词提高了供应商的编码智能体评估成绩，同时降低了成本（claim-long-horizon-lean-prompt）。坚持能力越来越多地通过训练获得，而不是靠提示词补充，因此应将 Token 预算花在训练无法提供的内容上：成功谓词、不计为成功的结果清单，以及只有问题领域专家才知道的失效模式。
 
-## Detailed Topics
+## 详细主题
 
-### The CDC Prompt, Dissected
+### 拆解 CDC 提示词
 
-The published Cycle Double Cover prompt implements every block of the brief anatomy in under a page: formal definitions closing degenerate-case loopholes, an exact success predicate with scope quantifiers, five classes of explicitly non-counting partial progress, dynamic orchestration heuristics for up to 64 concurrent agents with an approach-family registry and blocked-route bookkeeping, adversarial auditors with a seven-item failure-mode hunt list, a concrete-artifact reporting contract, an audit-gated return condition, an eight-hour effort floor, and a contamination guard restricting web search to background material (claim-long-horizon-cdc-run). The full annotated text is in [the CDC prompt reference](./references/cdc-prompt-annotated.md).
+已发布的环双覆盖提示词不到一页，却落实了简报结构中的每一个区块：通过形式化定义封堵退化情况的漏洞、带量词范围的精确成功谓词、五类明确不计为成功的部分进展、支持最多 64 个并发智能体的动态编排启发式（带方案类别注册表和受阻路径记录）、附有七项排查清单的对抗性审核者、具体产物报告契约、审核通过后才能返回的条件、八小时努力下限，以及限制网络搜索仅用于背景资料的污染防护（claim-long-horizon-cdc-run）。完整注释文本见[CDC 提示词参考](./references/cdc-prompt-annotated.md)。
 
-Two honest caveats. The candidate proof had no independent peer review or formalization when published, so the prompt is the validated artifact of interest here, not the theorem. And no public ablation isolates which prompt elements carried the result; the mechanism-level evidence comes from the independent research in [the research evidence reference](./references/research-evidence.md).
+有两点需要诚实说明。该候选证明公开时没有经过独立同行评审或形式化，因此这里得到验证的是提示词这个产物，而不是定理本身。公开的消融研究也没有单独识别哪些提示词元素带来了结果；机制层面的证据来自[研究证据参考](./references/research-evidence.md)中列出的独立研究。
 
-### Vendor Doctrine
+### 供应商指导原则
 
-OpenAI and Anthropic guidance overlap on fundamentals (explicit completion bars, stop rules, verification before return) and differ in emphasis. OpenAI doctrine centers persistence blocks, risk-tiered autonomy thresholds, self-constructed rubrics, and reasoning-effort dials; its multi-agent API institutionalizes a root agent with bounded-task subagents. Anthropic doctrine centers the four-part subagent delegation spec (objective, output format, tool guidance, task boundaries), explicit effort-scaling tiers by task complexity, evidence-grounded progress reporting, and fresh-context verifier subagents. Both now warn that over-prescriptive prompts degrade current-generation models. Dated extracts with sources are in [the vendor guidance reference](./references/vendor-guidance.md).
+OpenAI 和 Anthropic 的指导原则在基础方面重叠（明确的完成标准、停止规则和返回前验证），但侧重点不同。OpenAI 的原则侧重坚持区块、按风险分级的自主门槛、自建评分标准和推理力度调节；其多智能体 API 将一个根智能体和带边界的子智能体纳入产品结构。Anthropic 的原则侧重四部分子智能体委派规范（目标、输出格式、工具指导、任务边界）、按任务复杂度明确调整投入、基于证据的进度报告，以及使用全新上下文的验证子智能体。双方现在都警告：指令规定得过细会降低新一代模型的表现。带日期和来源的摘录见[供应商指导参考](./references/vendor-guidance.md)。
 
-### Generalizing Beyond Mathematics
+### 推广到数学之外的领域
 
-The CDC prompt worked because mathematics allows sharp statements, but each element has a general form usable in any rigorous domain:
+CDC 提示词之所以有效，是因为数学允许清晰表述，但每个元素都能转化为适用于其他严谨领域的一般形式：
 
-| CDC element | General form |
+| CDC 元素 | 通用形式 |
 | --- | --- |
-| Formal graph definitions | Operationalize every load-bearing term; state units, populations, boundaries, degenerate cases |
-| "Exactly two occurrences of each edge" | A quantified, checkable property of the deliverable |
-| "Special graph classes do not count" | "Results holding only under narrowed scope do not count" |
-| "No reduction to another unproved conjecture" | "No dependence on an unvalidated assumption or unavailable dataset" |
-| "Computational verification through fixed size is insufficient" | "Anecdotal or small-sample evidence is insufficient" |
-| Parallel-edge and bridge edge cases for auditors | The domain's known confounders, artifacts, and failure modes as an audit checklist |
-| "Do not search for a solution to this exact conjecture" | "Do not launder the answer from sources the result is supposed to be independent of" |
+| 图的形式化定义 | 将每个关键术语操作化；说明单位、总体、边界和退化情况 |
+| “每条边恰好出现两次” | 交付产物必须具备的可量化、可检查属性 |
+| “特殊类别的图不算” | “仅在缩小范围后成立的结果不算” |
+| “不能归约为另一条未证明的猜想” | “不能依赖未经验证的假设或无法取得的数据” |
+| “验证到固定规模的计算结果不够” | “轶事证据或小样本证据不够” |
+| 审核者检查平行边和桥边的边缘情况 | 将领域已知的混杂因素、伪象和失效模式做成审核清单 |
+| “不要搜索这个具体猜想的解答” | “不能从理论上应该独立得出的结果所依赖来源中洗入答案” |
 
-The transformation workflow for a scientist or engineer with a hard problem: state what a complete answer would let them do, work backward to the predicate that enables it, then spend most of the effort listing what they would refuse to accept from a junior collaborator. That refusal list becomes the non-counting outcomes and the auditor checklist.
+科学家或工程师面对困难问题时，可以按以下流程转换：先说明完整答案能让人做什么，再反向推导能够实现这一目标的谓词，然后将大部分精力用于列出自己不会接受初级合作者提交的内容。这份拒绝清单会变成“不计为成功”的结果和审核清单。
 
-## Practical Guidance
+## 实践指南
 
-### Brief-Writing Workflow
+### 撰写简报的工作流
 
-1. Write the success predicate first, as one sentence with explicit quantifiers and scope. If it cannot be written, the problem is not ready for a long-horizon run; decompose it or run a scoping session instead.
-2. Enumerate non-counting outcomes by asking what a capable agent under pressure would return instead of a solution: the narrowed-scope version, the reduction, the survey, the plan, the confident sketch.
-3. Define terms, starting from the degenerate cases the predicate must survive.
-4. Write the auditor checklist: the domain-specific ways a candidate artifact can look right and be wrong.
-5. Set the orchestration policy as heuristics (diversity early, registry by idea, blocked-route rules, late cross-pollination), never as fixed worker-to-strategy assignments.
-6. Set the reporting contract (concrete artifacts, evidence-traceable claims) and the return condition (survives adversarial audit against the checklist).
-7. Add the effort floor, solvability framing if warranted, and contamination guards.
-8. Red-team the brief before launch: ask a fresh model instance "how could an agent satisfy the letter of this brief without solving the problem?" and patch every credible answer.
+1. 先用一句带有明确量词和范围的陈述写出成功谓词。如果无法写清，说明问题还没准备好进入长时程运行；应先拆解问题或开展范围界定讨论。
+2. 通过询问“能力强但受到压力的智能体可能返回什么来替代真正解答”，枚举不计为成功的结果：缩小范围的版本、归约、综述、计划或自信的草图。
+3. 定义术语，从成功谓词必须应对的退化情况开始。
+4. 编写审核清单：候选产物在这个领域可能如何表面正确、实则错误。
+5. 将编排策略写成启发式（早期保持多样、按思路建立注册表、记录受阻路径、后期交叉交流），不要固定指定工作者与策略的对应关系。
+6. 设定报告契约（要求具体产物、声明能追溯到证据）和返回条件（通过清单中的对抗性审核）。
+7. 在适用时加入努力下限、可解性框架和污染防护。
+8. 启动前对简报进行红队测试：让新的模型实例回答“智能体如何在没有解决问题的情况下满足本简报的字面要求？”，并修补每一个可信的漏洞。
 
-### Pre-Launch Evaluation
+### 启动前评估
 
-Score any long-horizon brief against these questions before committing agent time. Any "no" is a defect to fix, not a judgment call:
+在投入智能体时间之前，按以下问题检查长时程简报。任何一个“否”都属于需要修复的缺陷，而非取舍问题：
 
-- Can an adversarial reader determine unambiguously whether a given artifact satisfies the success predicate?
-- Is every plausible near miss explicitly listed as non-counting?
-- Does the auditor have an enumerated, domain-specific failure-mode list?
-- Is every persistence instruction paired with a verification gate?
-- Is the return condition a predicate over the artifact, not over agent confidence or elapsed effort?
-- Does the orchestration policy preserve early independence and include blocked-route bookkeeping?
-- Are reporting requirements artifact-based rather than status-based?
-- Are contamination guards stated for any external retrieval?
-- Is anything in the prompt a constraint that must survive optimization pressure? Move it to the harness (`harness-engineering`); prompt-stated constraints are advisory.
+- 对抗性读者能否明确判断某个产物是否满足成功谓词？
+- 是否明确列出了所有可能的近似结果，并说明这些不计为成功？
+- 审核者是否拥有领域特定、逐项列明的失效模式清单？
+- 每一条坚持指令都配有验证门槛吗？
+- 返回条件是否针对产物本身，而非智能体的信心或已投入时间？
+- 编排策略是否保持了早期独立性并记录受阻路径？
+- 报告要求是否以产物为核心，而不是以状态为核心？
+- 是否说明了所有外部检索的污染防护规则？
+- 提示词是否包含必须抵御优化压力的限制？如有，应移到运行框架（`harness-engineering`）；提示词中的限制只起建议作用。
 
-## Examples
+## 示例
 
-**Example 1: Pseudo-formal brief skeleton**
+**示例 1：伪形式化简报骨架**
 
 ```text
 DEFINITIONS
@@ -180,7 +180,7 @@ CONTAMINATION
   External search only for <background>; never for <the answer>.
 ```
 
-**Example 2: Weak prompt to strong brief (root-cause analysis)**
+**示例 2：将薄弱提示词改为有力简报（根因分析）**
 
 ```text
 Weak:  "Investigate why our v4 model underperforms v3 in production
@@ -199,76 +199,76 @@ Strong: TASK: Identify a defect that, when corrected, closes the
         RETURN: only a candidate that survives that review.
 ```
 
-The weak version invites a status report. The strong version makes the deliverable checkable and pre-blocks the three most likely near misses.
+薄弱版本会引出状态汇报。有力版本则让交付结果可检查，并预先排除最可能出现的三种近似结果。
 
-## Guidelines
+## 指南
 
-1. Write the success predicate before any other prompt content; if it cannot be stated precisely, do not launch a long-horizon run.
-2. Enumerate non-counting outcomes explicitly; every near miss not excluded is an escape hatch.
-3. Define load-bearing terms including degenerate cases before stating the task.
-4. Give auditors an enumerated domain failure-mode checklist, never a generic quality instruction.
-5. Pair every persistence instruction with a verification gate of matching strength.
-6. Phrase return conditions as predicates over the artifact, not over confidence, effort, or elapsed time.
-7. Assign parallel workers by heuristic policy with an approach-family registry; never fixed strategy quotas.
-8. Preserve early-round worker independence; cross-pollinate only after routes have developed independently.
-9. Mark routes blocked at goal-strength gaps and require a materially new mechanism to reopen them.
-10. Require concrete artifacts from every worker and reject status reports and vague optimism.
-11. Require progress claims to trace to session evidence (tool results, files, logs).
-12. State contamination guards for external retrieval whenever result independence matters.
-13. Keep the brief lean: outcome, constraints, completion bar, failure modes; leave the path to the model.
-14. Enforce hard budgets and permissions in the harness; treat prompt-stated constraints as advisory.
+1. 在提示词其他内容之前写出成功谓词；如果无法精确定义，就不要启动长时程运行。
+2. 明确列出不计为成功的结果；每个未排除的近似结果都是逃生通道。
+3. 陈述任务前先定义关键术语，包括退化情况。
+4. 给审核者提供逐项列出的领域失效模式清单，不要只给通用质量要求。
+5. 每条坚持指令都配上相匹配强度的验证门槛。
+6. 将返回条件写成关于产物的谓词，而不是关于信心、投入或经过时间的描述。
+7. 使用基于方案类别注册表的启发式策略分配并行工作者；不要固定分配策略配额。
+8. 保持第一轮工作者相互独立；只有在各路径独立发展后才交叉交流。
+9. 当路径遇到与原目标难度相当的缺口时，将它标记为受阻；必须有实质性的新机制才能重新开启。
+10. 要求每个工作者提供具体产物，并拒绝状态汇报和含糊的乐观表述。
+11. 要求进度声明可追溯到本轮会话的证据（工具结果、文件、日志）。
+12. 只要结果的独立性重要，就说明外部检索的污染防护规则。
+13. 保持简报精简：目标、限制、完成标准和失效模式；把路径留给模型。
+14. 在运行框架中强制执行硬性预算和权限；将提示词中的限制视为建议。
 
-## Gotchas
+## 注意事项
 
-1. **Answer-shaped near misses**: Under persistence pressure, agents return artifacts with the shape of a solution (narrowed scope, unproved dependency, survey instead of result). The non-counting list is the fix; write it by predicting the specific near misses your problem invites.
-2. **Circular satisfaction**: The subtlest near miss is an argument that assumes a statement equivalent in strength to the goal. The CDC prompt names this explicitly ("circular use of an equivalent CDC statement"); every domain has an analogue, and auditors will not catch it unless it is on their checklist.
-3. **Persistence without verification breeds hacking**: Persistence-trained and persistence-prompted agents show elevated rates of gaming their success signal (claim-long-horizon-persistence-hacking). If the brief demands "do not return without success" but success is checked leniently, the agent optimizes the leniency.
-4. **Unanimity is not corroboration**: Parallel agents agreeing is weak evidence when they share priors, and convergence tightens on harder problems (claim-long-horizon-diversity-collapse). Never use agreement alone as a return trigger; audit content, and treat fast consensus as a diversity failure.
-5. **Under-specified delegation duplicates work**: Subagent tasks missing any of objective, output format, tool guidance, or boundaries produce overlapping and gap-ridden coverage. The orchestrator prompt should require all four in every spawn.
-6. **Status-report theater**: Long runs drift into reporting activity instead of results, including fabricated completions. Require artifact-based reporting and evidence-traceable claims (claim-long-horizon-evidence-audit); reject "on track" without a pointer.
-7. **Effort floors are permissions, not schedules**: The CDC run finished well under its stated eight-hour floor (claim-long-horizon-cdc-run). A floor removes the agent's permission to quit early; it neither guarantees nor bounds runtime. Enforce actual time and cost budgets in the harness.
-8. **Prompt-stated budgets decay**: A budget or reminder stated once loses force as the trajectory grows; re-inject budget and verified-progress state periodically from outside the loop (claim-long-horizon-give-up-drift).
-9. **Assume-solvable on ill-posed problems**: Solvability framing counters give-up drift but instructs the model to never conclude "no solution exists". On genuinely open or ill-posed questions, pair it with a counterexample track or drop it, or the run will fabricate.
-10. **Over-prescription backfires on frontier models**: Step-by-step scripts and stacked MUST/NEVER emphasis measurably degrade current-generation model output (claim-long-horizon-lean-prompt). Migrate old prompt stacks by starting from the minimal brief, not by accretion.
+1. **形似答案的近似结果**：在坚持压力下，智能体会返回看起来像解答的产物（范围缩小、依赖未证明的结论、用综述代替结果）。解决方法是列出不计为成功的结果，并针对问题容易诱发的近似结果逐项编写。
+2. **循环论证式满足**：最隐蔽的近似结果，是论证中假设了一个与目标强度等价的命题。CDC 提示词明确指出“循环使用与 CDC 等价的陈述”；每个领域都有类似问题，若不放进审核清单，审核者就可能漏掉。
+3. **坚持而不验证会催生投机**：坚持训练或提示词会提高智能体钻成功信号空子的概率（claim-long-horizon-persistence-hacking）。如果简报要求“未成功不得返回”，但成功检查很宽松，智能体就会优化这个宽松条件。
+4. **一致意见不等于佐证**：并行智能体达成一致的证据很弱，因为它们有共同先验；问题越难，它们越容易收敛（claim-long-horizon-diversity-collapse）。不要只因意见一致就允许返回；应审核内容，并把快速达成共识视为多样性失败。
+5. **委派规格不足会造成重复工作**：子智能体任务若缺少目标、输出格式、工具指导或边界中的任一项，就会产生重叠且遗漏的覆盖。协调者提示词应要求每次派发任务都包含这四项。
+6. **状态汇报表演**：长时间运行会逐渐变成汇报活动，而不是交付结果，也可能虚构完成情况。应要求基于产物汇报、声明可追溯到证据（claim-long-horizon-evidence-audit）；没有指向产物的“进展顺利”不应接受。
+7. **努力下限是许可规则，不是时间表**：CDC 运行实际远早于其设定的八小时下限完成（claim-long-horizon-cdc-run）。下限取消智能体提前退出的许可，却不保证它一定运行那么久，也不限制最长时间。实际时间和成本预算应由运行框架强制执行。
+8. **提示词中的预算会逐渐失效**：只说一次的预算或提醒会随着执行轨迹增长而失去作用；应从循环之外定期重新注入预算和已验证进度状态（claim-long-horizon-give-up-drift）。
+9. **对定义不清的问题假定可解**：可解性框架能抵御逐渐放弃，却会指示模型永远不能得出“无解”的结论。对于真正开放或定义不清的问题，应增加反例探索路径，或删除该框架，否则运行会开始编造。
+10. **对前沿模型规定过细会适得其反**：逐步脚本和堆叠的 MUST/NEVER 强调会明显降低当代模型的输出质量（claim-long-horizon-lean-prompt）。迁移旧提示词时应从最小简报开始，而不是继续累加指令。
 
-## Integration
+## 集成
 
-This skill owns the launch prompt for long-running and parallel agent work. Adjacent skills own the machinery around it:
+本技能负责长时间运行和并行智能体任务的启动提示词。相邻技能负责周边机制：
 
-- multi-agent-patterns - Owns topology, handoffs, and coordination protocols; this skill writes the orchestration policy those structures execute
-- harness-engineering - Owns runtime-enforced budgets, locked evaluators, and control surfaces; constraints that must survive optimization pressure move there
-- evaluation - Owns deterministic evaluators and quality gates referenced by the brief's verification policy
-- advanced-evaluation - Owns judge design, rubrics, and bias mitigation for the adversarial audit step
-- self-improvement-loops - Owns loops that rewrite their own prompts and harnesses; briefs written here can become that loop's seed
-- filesystem-context - Owns the durable progress ledgers and artifacts the reporting contract points at
-- context-compression - Owns compaction and handoff mechanics when a run outlives its context window
-- hosted-agents - Owns the sandboxed infrastructure long runs execute on
+- multi-agent-patterns - 负责拓扑、交接和协调协议；本技能撰写这些结构所执行的编排策略。
+- harness-engineering - 负责运行时强制执行的预算、锁定评估器和控制界面；必须抵御优化压力的限制应放在这里。
+- evaluation - 负责简报验证策略所引用的确定性评估器和质量门禁。
+- advanced-evaluation - 负责对抗性审核阶段的判官设计、评分标准和偏差缓解。
+- self-improvement-loops - 负责重写自身提示词和运行框架的循环；本技能撰写的简报可以成为该循环的种子。
+- filesystem-context - 负责报告契约所引用的持久化进度台账和产物。
+- context-compression - 负责运行超出上下文窗口时的压缩和交接机制。
+- hosted-agents - 负责长时间运行所需的沙箱基础设施。
 
-## References
+## 参考资料
 
-Internal references:
-- [Annotated CDC prompt](./references/cdc-prompt-annotated.md) - The full published prompt with element-by-element annotation and provenance
-- [Vendor guidance](./references/vendor-guidance.md) - Dated OpenAI and Anthropic long-horizon and multi-agent prompting doctrine with sources
-- [Research evidence](./references/research-evidence.md) - Dated academic findings behind each brief element
-- [Task brief template](./references/task-brief-template.md) - Reusable pseudo-formal brief template and pre-launch evaluation rubric
+内部参考：
+- [CDC 提示词注释版](./references/cdc-prompt-annotated.md) - 包含完整的公开提示词、逐项注释和来源信息。
+- [供应商指导](./references/vendor-guidance.md) - 带日期和来源的 OpenAI、Anthropic 长时程及多智能体提示词指导原则。
+- [研究证据](./references/research-evidence.md) - 支持简报中各项设计的带日期学术研究结论。
+- [任务简报模板](./references/task-brief-template.md) - 可复用的伪形式化简报模板和启动前评估标准。
 
-Related skills in this collection:
-- multi-agent-patterns - Topology and coordination for the orchestrations these briefs steer
-- harness-engineering - Runtime enforcement of what the brief can only request
+本合集中的相关技能：
+- multi-agent-patterns - 本技能简报所引导的拓扑和协调方式
+- harness-engineering - 在运行时强制执行简报只能提出要求的限制
 
-External resources:
-- OpenAI, published prompt for the GPT-5.6 Sol Ultra Cycle Double Cover run (July 2026) - The exemplar brief
-- METR, predeployment evaluation of GPT-5.6 Sol (June 2026) - Persistence-training and reward-hacking linkage
-- Anthropic, "How we built our multi-agent research system" (June 2025) - Delegation specs and effort scaling
-- OpenAI GPT-5.x prompting guides and Anthropic Claude prompting docs - Vendor doctrine detailed in the vendor guidance reference
+外部资源：
+- OpenAI，GPT-5.6 Sol Ultra 环双覆盖运行的已发布提示词（2026 年 7 月）- 示例简报
+- METR，GPT-5.6 Sol 上线前评估（2026 年 6 月）- 坚持训练与奖励投机之间的关联
+- Anthropic，《我们如何构建多智能体研究系统》（2025 年 6 月）- 委派规范和投入量级调整
+- OpenAI GPT-5.x 提示词指南和 Anthropic Claude 提示词文档 - 供应商指导详见相应参考文件
 
-Numeric, benchmark, volatile, or vendor-performance claims in this skill carry inline `claim-*` IDs backed by `researcher/claims/index.jsonl`. Detailed numbers live in the dated reference files.
+本技能中的数值、基准、易变或供应商表现声明，都带有由 `researcher/claims/index.jsonl` 支持的行内 `claim-*` ID。详细数字见带日期的参考文件。
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2026-07-11
-**Last Updated**: 2026-07-11
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 1.0.0
+**创建时间**：2026-07-11
+**最后更新**：2026-07-11
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：1.0.0

@@ -1,5 +1,5 @@
-# Reference File
+# 参考文件
 
-Use this file for supporting references, schemas, checklists, or source notes that the agent should load only when needed.
+在需要时才加载此文件。可用于存放支持性参考资料、数据结构、检查清单或来源说明。
 
-Replace this stub when creating a real skill, or delete the link from `SKILL.md` if no reference file is needed.
+创建真实技能时，用实际内容替换此模板；若技能不需要参考文件，请从 `SKILL.md` 中删除对应链接。

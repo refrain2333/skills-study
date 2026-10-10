@@ -1,74 +1,73 @@
-# SPEC-003: Schema registry and artifact identity
+# 技术规范 003：数据结构注册表与产物身份
 
-- Status: implemented
-- Wave: 0
-- Classification: split
-- Depends on: SPEC-001, SPEC-002
+- 状态：`implemented`
+- 阶段：0
+- 分类：`split`
+- 依赖：SPEC-001、SPEC-002
 
-## Decision
+## 决策
 
-Every durable object exchanged across agents, scripts, runtimes, and the private control plane must resolve to a versioned registered schema before execution. Typed immutable identifiers and content digests replace paths, titles, and chat references as organization keys. Runtime sessions are never canonical state.
+智能体、脚本、运行环境和私有控制面之间交换的持久对象，执行前必须解析到带版本且已登记的数据结构。采用带类型的不可变标识和内容摘要作为组织内的键，不再以路径、标题或聊天引用作为键。运行时会话不是规范状态。
 
-## Invariants
+## 不变量
 
-1. New identifiers are typed UUIDv7 values; deterministic UUIDv5 is reserved for declared legacy imports.
-2. Exact blob bytes and canonical JSON records use different, explicit digest profiles.
-3. Unknown kinds and unregistered major versions fail before execution and enter quarantine rather than receiving hidden defaults.
-4. Each registry entry pins its schema file digest, owner spec, lifecycle state, compatibility rule, classifications, canonicalization profile, and goldens.
-5. An `ArtifactEnvelope` resolves its declared target kind and version. Native envelopes carry a complete target record; legacy envelopes carry a digest-bound source record that validates through the declared adapter.
-6. An `ArtifactRef` has no private locator, grants no read authority, and binds its target kind,
-   version, typed-ID prefix, and native or legacy origin through the registry.
-7. A successful private write is digest-verified, atomic, fsynced, and complete before a reference is published.
-8. Classification may rise but cannot silently fall for the same content.
-9. Candidate bytes are copied into CAS and frozen before evaluation. Revisions use new candidate IDs.
-10. Credential references and durable grant specifications contain no secret value or capability token.
-11. Legacy migration is pure, idempotent, reversible, non-in-place, and collision-aware.
+1. 新标识采用带类型的 UUIDv7；确定性 UUIDv5 仅用于明确声明的旧数据导入。
+2. 原始字节和规范 JSON 记录使用不同且明确的数据摘要规则。
+3. 未知类型和未登记的大版本在执行前拒绝，并进入隔离区，不提供隐藏默认值。
+4. 每个注册项固定其数据结构文件摘要、负责规范、生命周期、兼容规则、分类、规范化规则和黄金样例。
+5. `ArtifactEnvelope` 必须解析其声明的目标类型与版本。本地封装包含完整目标记录；旧数据封装包含摘要绑定的来源记录，并通过声明的适配器验证。
+6. `ArtifactRef` 不含私有位置、不授予读取权限，并通过注册表绑定目标类型、版本、类型标识前缀及本地或旧数据来源。
+7. 发布引用前，私有写入必须完成摘要校验、原子写入、同步落盘和完整性检查。
+8. 同一内容的分类可以提高，但不得静默降低。
+9. 候选字节先复制到内容寻址存储（CAS）并冻结，再进行评估；修订版本使用新的候选编号。
+10. 凭据引用和持久授权说明不得包含秘密值或能力令牌。
+11. 旧数据迁移必须是纯操作、幂等、可逆、非就地且能处理标识冲突。
 
-## Bootstrap registry boundary
+## 初始注册范围
 
-SPEC-003 registers:
+SPEC-003 登记：
 
-- `SchemaRegistry`, `ArtifactEnvelope`, `ArtifactRef`, and private `StorageBinding`;
-- the immutable SPEC-002 export record family;
-- `CandidateArtifact` and `FreezeReceipt`;
-- `CredentialRef` and `CapabilityGrantSpec`;
-- `LegacyClaim`, `LegacyMechanism`, `LegacyRunState`, and `LegacyQueueRecord` adapters.
+- `SchemaRegistry`、`ArtifactEnvelope`、`ArtifactRef` 和私有 `StorageBinding`；
+- SPEC-002 的不可变导出记录；
+- `CandidateArtifact` 和 `FreezeReceipt`；
+- `CredentialRef` 和 `CapabilityGrantSpec`；
+- `LegacyClaim`、`LegacyMechanism`、`LegacyRunState`、`LegacyQueueRecord` 适配器。
 
-Later owner specs register events, work orders, commands, sources, context packages, evaluation observations, promotion records, execution environments, and contribution packets.
+后续负责规范再登记事件、工作单、命令、来源、上下文包、评估观察、晋级记录、执行环境和贡献数据包。
 
-## Interfaces
+## 接口
 
-- `SchemaRegistry.load()` meta-validates schemas, verifies exact file digests, and builds offline Draft 2020-12 validators.
-- `parse_json_strict()` and `canonicalize()` implement `jcs-rfc8785-integer-v1` without injected defaults.
-- `new_typed_id()` emits monotonic RFC 9562 UUIDv7 identifiers; `deterministic_import_id()` emits declared UUIDv5 imports.
-- `LocalArtifactStore.put|get|head|verify|materialize` validates the declared registered body and typed ID, then separates reference, private binding, and authority. Reads resolve and validate the binding instead of deriving around it.
-- `CandidateFreezer.freeze(candidate, root, expected_digest)` requires an authority-owned `EditableSurfacePolicy`, returns an immutable receipt, and stores exact bodies in CAS.
-- `FakeCapabilityProvider.issue|resolve` checks digest, audience, operation, resource, provider-owned resource classification, work order, attempt, and expiry, then consumes a one-use token.
-- `validate_schemas.py --check|--write|--json` owns registry, current-adapter, conformance, and generated-evidence validation.
-- `migrate_legacy.py --dry-run` proposes deterministic envelopes without editing source files.
+- `SchemaRegistry.load()`：校验注册表数据结构、精确文件摘要，并构建离线 Draft 2020-12 校验器。
+- `parse_json_strict()` 和 `canonicalize()`：实现 `jcs-rfc8785-integer-v1`，不注入默认值。
+- `new_typed_id()`：生成单调递增的 RFC 9562 UUIDv7；`deterministic_import_id()`：生成已声明的 UUIDv5 导入标识。
+- `LocalArtifactStore.put|get|head|verify|materialize`：验证已登记的正文及类型标识，并分离引用、私有绑定和权限；读取时解析并验证绑定，不从路径推导绑定。
+- `CandidateFreezer.freeze(candidate, root, expected_digest)`：要求权限方提供 `EditableSurfacePolicy`，生成不可变回执，并把精确正文写入 CAS。
+- `FakeCapabilityProvider.issue|resolve`：校验摘要、受众、操作、资源、由提供方维护的资源分类、工作单、尝试次数和过期时间，并消费一次性令牌。
+- `validate_schemas.py --check|--write|--json`：负责注册表、现有适配器、一致性和生成证据检查。
+- `migrate_legacy.py --dry-run`：提出确定性封装，不修改来源文件。
 
-Public migration evidence reads an explicit committed source manifest and admits only Git-tracked source files. It never discovers `researcher/runs/*`, so local private runs cannot change public output or expose private commitments. Reports bind both exact source-line bytes and canonical source-record bytes. Unexpected implementation failures stop the migration rather than being mislabeled as record quarantine.
+公开迁移证据只读取明确提交的来源清单，并且只接受 Git 跟踪的来源文件。它不会搜索 `researcher/runs/*`，因此本地私有运行不会改变公开输出或泄露私有承诺。报告同时绑定精确来源行字节和规范来源记录字节。未预期的实现错误会停止迁移，不得误报成单条记录隔离。
 
-Migration groups proposed envelopes by deterministic ID. Conflicting source records quarantine every claimant; byte-distinct inputs with the same canonical legacy identity are represented once and recorded in a deterministic deduplication section. No ambiguous ID is reported as migrated.
+迁移按确定性标识对提议封装分组。互相冲突的来源记录会把所有相关项隔离；规范旧身份相同但字节不同的输入只表示一次，并记录在确定性的去重章节中。任何有歧义的标识都不得报告为已迁移。
 
-## State and failure behavior
+## 状态与失败行为
 
-Schema lifecycle is `draft -> registered -> active -> deprecated -> retired`. Deprecated schemas remain readable and are not selected by new writers. Unknown kind, unsupported version, stale schema digest, invalid ID, duplicate key, unsafe number, digest mismatch, access denial, unavailable body, candidate mutation, and quarantine are distinct reason codes.
+数据结构生命周期为 `draft -> registered -> active -> deprecated -> retired`。已弃用结构仍可读取，但新写入者不会选择它。未知类型、不支持的版本、过期摘要、无效标识、重复键、不安全数字、摘要不匹配、访问被拒、正文不可用、候选被修改和隔离分别使用不同原因代码。
 
-CAS writes use a same-filesystem temporary file, file `fsync`, atomic no-clobber link, existing-object verification, metadata atomic replace, and directory `fsync`. Concurrent writes of the same body are idempotent. A private reader is authorized before the store checks whether a body exists. The digest-level classification is a high-water mark: deduplication can raise it, and all references then require the raised ceiling. `head()` may inspect unavailable metadata, while body reads, verification, materialization, and idempotent writes deny non-available references.
+CAS 写入使用同一文件系统上的临时文件、文件 `fsync`、原子且不覆盖的链接、现存对象验证、元数据原子替换和目录 `fsync`。相同正文的并发写入保持幂等。私有读取者先通过授权，存储区再检查正文是否存在。内容摘要的分类只允许向上提高：去重可能提高分类，后续所有引用都必须满足更高的权限门槛。`head()` 可以查看不可用元数据；读取正文、验证、物化和幂等写入均拒绝不可用引用。
 
-Freeze hashes a UTF-16-sorted manifest of NFC POSIX path, entry type, executable bit, exact byte length, and exact body digest. The actual files must equal `declared_changed_surfaces`, fit the selected editable-surface roots, and avoid locked paths. Empty directories are not artifacts. Links, devices, traversal errors, NFD names, file or directory ASCII case-insensitive collisions, hardlinks, open-time substitution, mutation between passes, stale expected digests, tree size limits, and candidate-ID reuse deny. The receipt binds the candidate record, registry, base freeze policy, editable-surface policy, and production epoch.
+冻结时对 UTF-16 排序的清单计算摘要；清单含 NFC POSIX 路径、条目类型、可执行位、精确字节数和正文摘要。实际文件必须与 `declared_changed_surfaces` 相符，位于选定的可编辑根目录内，并避开锁定路径。空目录不算产物。链接、设备、路径穿越、NFD 名称、忽略 ASCII 大小写后相同的文件或目录、硬链接、打开时替换、两次遍历间修改、预期摘要过期、目录树大小超限和候选编号复用都会导致拒绝。回执绑定候选记录、注册表、基础冻结规则、可编辑区域规则和生产环境纪元。
 
-## Acceptance criteria
+## 验收条件
 
-- [x] Bootstrap kinds have registered schemas, owner specs, lifecycle, compatibility, classifications, and exact schema digests.
-- [x] Canonical hashing and typed ID behavior are executable and cross-language vectors are committed.
-- [x] Unknown kinds, unsupported majors, unknown fields, unsafe numbers, and stale schema files fail closed.
-- [x] Current claims, mechanisms, run state, and queue records validate without source rewrites.
-- [x] Migration and rollback are deterministic, pure, and quarantine malformed input.
-- [x] Artifact reference, private binding, CAS integrity, concurrency, and classification behavior have negative tests.
-- [x] Candidate freeze, immutable identity, and clean materialization are implemented before evaluator work.
-- [x] Credential-reference and capability-grant contracts have a fake provider and scope/replay fixtures.
-- [x] Python and TypeScript consume the same golden corpus and compare to one committed report.
+- [x] 初始类型均有已登记数据结构、负责规范、生命周期、兼容规则、分类和精确摘要。
+- [x] 规范摘要算法与类型标识有可执行实现，并提交跨语言一致性向量。
+- [x] 未知类型、不支持的大版本、未知字段、不安全数字和过期数据结构文件均默认拒绝。
+- [x] 现有主张、机制、运行状态和队列记录无需改写即可通过验证。
+- [x] 迁移和回滚均为确定性纯操作，并隔离格式错误的输入。
+- [x] 对产物引用、私有绑定、CAS 完整性、并发和分类行为提供拒绝用例。
+- [x] 评估器工作开始前，已实现候选冻结、不可变身份和干净物化。
+- [x] 凭据引用和能力授权格式配有模拟提供方、范围和重放样例。
+- [x] Python 与 TypeScript 使用相同的黄金样例集合，并与同一份已提交报告比较。
 
-Production credential resolution, hosted storage, workflow events, and searchable candidate experience remain downstream work. This layer defines their portable artifact boundary.
+生产凭据解析、托管存储、工作流事件和可搜索的候选体验由后续工作负责。本规范只定义可跨运行环境传递的产物边界。

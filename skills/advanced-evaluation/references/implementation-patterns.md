@@ -1,90 +1,90 @@
-# LLM-as-Judge Implementation Patterns
+# LLM作为判官的实现模式
 
-This reference provides detailed implementation patterns for building production-grade LLM evaluation systems.
+本参考提供了构建生产级LLM评估系统的详细实现模式。
 
-## Pattern 1: Structured Evaluation Pipeline
+## 模式1：结构化评估流程
 
-The most reliable evaluation systems follow a structured pipeline that separates concerns:
+最可靠的评估系统遵循分离关注点的结构化流程：
 
 ```
-Input Validation → Criteria Loading → Scoring → Bias Mitigation → Output Formatting
+输入验证 → 标准加载 → 评分 → 偏差缓解 → 输出格式化
 ```
 
-### Input Validation Layer
+### 输入验证层
 
-Before evaluation begins, validate:
+在评估开始前，验证：
 
-1. **Response presence**: Non-empty response to evaluate
-2. **Prompt presence**: Original prompt for context
-3. **Criteria validity**: At least one criterion with name and description
-4. **Weight normalization**: Weights sum to 1.0 (or normalize them)
+1. **响应存在**：要评估的非空响应
+2. **提示存在**：用于上下文的原始提示
+3. **标准有效性**：至少一个具有名称和描述的标准
+4. **权重归一化**：权重总和为1.0（或归一化它们）
 
 ```python
 def validate_input(response, prompt, criteria):
     if not response or not response.strip():
-        raise ValueError("Response cannot be empty")
+        raise ValueError("响应不能为空")
     if not prompt or not prompt.strip():
-        raise ValueError("Prompt cannot be empty")
+        raise ValueError("提示不能为空")
     if not criteria or len(criteria) == 0:
-        raise ValueError("At least one criterion required")
-    
-    # Normalize weights
+        raise ValueError("至少需要一个标准")
+
+    # 归一化权重
     total_weight = sum(c.get('weight', 1) for c in criteria)
     for c in criteria:
         c['weight'] = c.get('weight', 1) / total_weight
 ```
 
-### Criteria Loading Layer
+### 标准加载层
 
-Criteria should be loaded from configuration, not hardcoded:
+标准应该从配置加载，而不是硬编码：
 
 ```python
 class CriteriaLoader:
     def __init__(self, rubric_path=None):
         self.rubrics = self._load_rubrics(rubric_path)
-    
+
     def get_criteria(self, task_type):
         return self.rubrics.get(task_type, self.default_criteria)
-    
+
     def get_rubric(self, criterion_name):
         return self.rubrics.get(criterion_name, {}).get('levels', [])
 ```
 
-### Scoring Layer
+### 评分层
 
-The scoring layer handles the actual LLM call:
+评分层处理实际的LLM调用：
 
 ```python
 async def score_response(response, prompt, criteria, rubric, model):
     system_prompt = build_system_prompt(criteria, rubric)
     user_prompt = build_user_prompt(response, prompt, criteria)
-    
+
     result = await generate_text(
         model=model,
         system=system_prompt,
         prompt=user_prompt,
-        temperature=0.3  # Lower temperature for consistency
+        temperature=0.3  # 降低温度以提高一致性
     )
-    
+
     return parse_scores(result.text)
 ```
 
-### Bias Mitigation Layer
+### 偏差缓解层
 
-For pairwise comparison, always include position swapping:
+对于成对比较，始终包含位置交换：
 
 ```python
 async def compare_with_bias_mitigation(response_a, response_b, prompt, criteria, model):
-    # First pass: A first
+    # 第一次：A优先
     pass1 = await compare_pair(response_a, response_b, prompt, criteria, model)
-    
-    # Second pass: B first
+
+    # 第二次：B优先
     pass2 = await compare_pair(response_b, response_a, prompt, criteria, model)
-    
-    # Map pass2 winner back
+
+    # 将pass2赢家映射回来
     pass2_mapped = map_winner(pass2.winner)  # A→B, B→A, TIE→TIE
-    
-    # Check consistency
+
+    # 检查一致性
     if pass1.winner == pass2_mapped:
         return {
             'winner': pass1.winner,
@@ -99,35 +99,35 @@ async def compare_with_bias_mitigation(response_a, response_b, prompt, criteria,
         }
 ```
 
-## Pattern 2: Hierarchical Evaluation
+## 模式2：分层评估
 
-For complex evaluations, use a hierarchical approach:
+对于复杂的评估，使用分层方法：
 
 ```
-Quick Screen (cheap model) → Detailed Evaluation (expensive model) → Human Review (edge cases)
+快速筛选（便宜模型） → 详细评估（昂贵模型） → 人工审查（边界情况）
 ```
 
-### Quick Screen Implementation
+### 快速筛选实现
 
 ```python
 async def quick_screen(response, prompt, threshold=0.7):
-    """Fast, cheap screening for obvious passes/fails."""
+    """快速、便宜的明显通过/失败筛选。"""
     result = await generate_text(
-        model='gpt-5.2',  # Cheaper model
-        prompt=f"Rate 0-1 if this response adequately addresses the prompt:\n\nPrompt: {prompt}\n\nResponse: {response}",
+        model='gpt-5.2',  # 较便宜的模型
+        prompt=f"对0-1评分如果此响应充分解决了提示：\n\n提示：{prompt}\n\n响应：{response}",
         temperature=0
     )
     score = float(result.text.strip())
     return score, score > threshold
 ```
 
-### Detailed Evaluation
+### 详细评估
 
 ```python
 async def detailed_evaluation(response, prompt, criteria):
-    """Full evaluation for borderline or important cases."""
+    """对边界或重要情况进行完整评估。"""
     result = await generate_text(
-        model='gpt-5.2',  # More capable model
+        model='gpt-5.2',  # 更强大的模型
         system=DETAILED_EVALUATION_PROMPT,
         prompt=build_detailed_prompt(response, prompt, criteria),
         temperature=0.3
@@ -135,24 +135,24 @@ async def detailed_evaluation(response, prompt, criteria):
     return parse_detailed_scores(result.text)
 ```
 
-## Pattern 3: Panel of LLM Judges (PoLL)
+## 模式3：LLM判官小组（PoLL）
 
-For high-stakes evaluation, use multiple models:
+对于高风险评估，使用多个模型：
 
 ```python
 async def poll_evaluation(response, prompt, criteria, models):
-    """Aggregate judgments from multiple LLM judges."""
+    """聚合多个LLM判官的判断。"""
     results = await asyncio.gather(*[
         score_with_model(response, prompt, criteria, model)
         for model in models
     ])
-    
-    # Aggregate scores
+
+    # 聚合评分
     aggregated = aggregate_scores(results)
-    
-    # Calculate agreement
+
+    # 计算一致性
     agreement = calculate_agreement(results)
-    
+
     return {
         'scores': aggregated,
         'agreement': agreement,
@@ -160,7 +160,7 @@ async def poll_evaluation(response, prompt, criteria, models):
     }
 
 def aggregate_scores(results):
-    """Aggregate scores using median (robust to outliers)."""
+    """使用中位数聚合评分（对离群值稳健）。"""
     scores = {}
     for criterion in results[0]['scores'].keys():
         criterion_scores = [r['scores'][criterion] for r in results]
@@ -171,31 +171,31 @@ def aggregate_scores(results):
     return scores
 ```
 
-## Pattern 4: Confidence Calibration
+## 模式4：置信度校准
 
-Confidence scores should be calibrated to actual reliability:
+置信度评分应该校准到实际可靠性：
 
 ```python
 def calibrate_confidence(raw_confidence, position_consistent, evidence_count):
-    """Calibrate confidence based on multiple signals."""
-    
-    # Base confidence from model output
+    """基于多个信号校准置信度。"""
+
+    # 来自模型输出的基础置信度
     calibrated = raw_confidence
-    
-    # Position consistency is a strong signal
+
+    # 位置一致性是强信号
     if not position_consistent:
-        calibrated *= 0.6  # Significant reduction
-    
-    # More evidence = higher confidence
-    evidence_factor = min(evidence_count / 3, 1.0)  # Cap at 3 pieces
+        calibrated *= 0.6  # 显著降低
+
+    # 更多证据 = 更高置信度
+    evidence_factor = min(evidence_count / 3, 1.0)  # 限制在3件
     calibrated *= (0.7 + 0.3 * evidence_factor)
-    
-    return min(calibrated, 0.99)  # Never 100% confident
+
+    return min(calibrated, 0.99)  # 永不100%确定
 ```
 
-## Pattern 5: Output Formatting
+## 模式5：输出格式化
 
-Always return structured outputs with consistent schemas:
+始终返回具有一致模式的结构化输出：
 
 ```python
 @dataclass
@@ -217,7 +217,7 @@ class EvaluationResult:
     metadata: Dict[str, Any]
 
 def format_output(scores, metadata) -> EvaluationResult:
-    """Format evaluation results consistently."""
+    """一致地格式化评估结果。"""
     return EvaluationResult(
         success=True,
         scores=scores,
@@ -228,19 +228,19 @@ def format_output(scores, metadata) -> EvaluationResult:
     )
 ```
 
-## Error Handling Patterns
+## 错误处理模式
 
-### Graceful Degradation
+### 优雅降级
 
 ```python
 async def evaluate_with_fallback(response, prompt, criteria):
     try:
         return await full_evaluation(response, prompt, criteria)
     except RateLimitError:
-        # Fall back to simpler evaluation
+        # 降级到更简单的评估
         return await simple_evaluation(response, prompt, criteria)
     except ParseError as e:
-        # Return partial results with error flag
+        # 返回部分结果加错误标志
         return {
             'success': False,
             'partial_results': e.partial_data,
@@ -248,7 +248,7 @@ async def evaluate_with_fallback(response, prompt, criteria):
         }
 ```
 
-### Retry Logic
+### 重试逻辑
 
 ```python
 async def evaluate_with_retry(response, prompt, criteria, max_retries=3):
@@ -258,58 +258,57 @@ async def evaluate_with_retry(response, prompt, criteria, max_retries=3):
             if is_valid_result(result):
                 return result
         except TransientError:
-            await asyncio.sleep(2 ** attempt)  # Exponential backoff
-    
-    raise EvaluationError("Max retries exceeded")
+            await asyncio.sleep(2 ** attempt)  # 指数退避
+
+    raise EvaluationError("最大重试次数超出")
 ```
 
-## Testing Patterns
+## 测试模式
 
-### Unit Tests for Parsing
+### 单元测试解析
 
 ```python
 def test_score_parsing():
-    raw_output = '{"scores": [{"criterion": "Accuracy", "score": 4}]}'
+    raw_output = '{"scores": [{"criterion": "准确性", "score": 4}]}'
     result = parse_scores(raw_output)
-    assert result.scores[0].criterion == "Accuracy"
+    assert result.scores[0].criterion == "准确性"
     assert result.scores[0].score == 4
 
 def test_malformed_output():
-    raw_output = 'Invalid JSON'
+    raw_output = '无效的JSON'
     with pytest.raises(ParseError):
         parse_scores(raw_output)
 ```
 
-### Integration Tests with Real API
+### 与真实API的集成测试
 
 ```python
 @pytest.mark.integration
 async def test_full_evaluation_pipeline():
     result = await evaluate(
-        response="Water boils at 100°C at sea level.",
-        prompt="At what temperature does water boil?",
-        criteria=[{"name": "Accuracy", "description": "Factual correctness", "weight": 1}]
+        response="在海平面，水在100°C沸腾。",
+        prompt="水在什么温度下沸腾？",
+        criteria=[{"name": "准确性", "description": "事实正确性", "weight": 1}]
     )
-    
+
     assert result.success
     assert len(result.scores) == 1
-    assert result.scores[0].score >= 4  # Should score high for accurate response
+    assert result.scores[0].score >= 4  # 应该对准确响应评分很高
 ```
 
-### Bias Detection Tests
+### 偏差检测测试
 
 ```python
 async def test_position_bias_mitigation():
-    # Same response in both positions should tie
+    # 相同的响应在两个位置都应该平局
     result = await compare(
-        response_a="Same response",
-        response_b="Same response",
-        prompt="Test prompt",
-        criteria=["quality"],
+        response_a="相同的响应",
+        response_b="相同的响应",
+        prompt="测试提示",
+        criteria=["质量"],
         swap_positions=True
     )
-    
+
     assert result.winner == "TIE"
     assert result.consistent == True
 ```
-

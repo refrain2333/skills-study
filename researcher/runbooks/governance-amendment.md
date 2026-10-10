@@ -1,18 +1,18 @@
-# Constitution amendment and emergency disable
+# 修改章程与紧急停用
 
-## Amendment
+## 修改章程
 
-1. Create a proposal branch from the current default branch.
-2. Change `governance/constitution.yaml`, increment `constitution_version`, and update the related spec and decision record.
-3. Run `python researcher/scripts/validate_governance.py --write` and the full deterministic validation suite.
-4. Open a pull request using the constitutional-change template. The PR must state changed authority, affected actors, migration behavior, and rollback digest.
-5. A human maintainer reviews the latest commit and merges only after required checks pass. Chat text is supporting context, not the promotion event.
-6. Runtime reconciliation observes the merged commit, pins the new constitution digest, and records the previous digest as superseded. In-flight work retains its original version for provenance, but newly denied actions fail at execution.
+1. 从当前默认分支创建提案分支。
+2. 修改 `governance/constitution.yaml`，递增 `constitution_version`，并更新相关技术规范和决策记录。
+3. 运行 `python researcher/scripts/validate_governance.py --write`，并按当前用户允许的范围执行确定性检查。若项目规范要求全量门禁，应先说明并等待用户指示。
+4. 使用章程变更模板创建拉取请求。正文必须说明权限变化、受影响参与者、迁移方式和回滚摘要。
+5. 人工维护者审查最新提交；只有必要检查通过后才合并。聊天文字可作为上下文，但不构成晋级事件。
+6. 运行时协调程序发现合并提交后，固定新章程摘要，并把旧摘要记录为已取代。进行中的工作保留原版本来源记录；新规则禁止的操作在执行时拒绝。
 
-Rollback means pinning the last effective constitution digest in the runtime configuration and opening a corrective PR. Do not delete historical constitutions or rewrite Git history.
+回滚时，在运行时配置中固定最后一个生效章程摘要，并创建修正拉取请求。不要删除历史章程，也不要重写 Git 历史。
 
-## Emergency disable
+## 紧急停用
 
-Emergency disable stops new dispatch and prevents further side effects. It does not grant authority, rewrite state, delete artifacts, approve a candidate, or merge a pull request. The operator records the reason and affected work IDs, then uses ordinary reconciliation to classify in-flight attempts as paused, cancelled, or unknown.
+紧急停用会停止新任务派发并阻止后续副作用。它不会授予权限、改写状态、删除产物、批准候选或合并拉取请求。操作人应记录原因和受影响的工作编号，再通过常规协调流程把进行中的尝试标记为暂停、取消或状态未知。
 
-Recovery requires an authenticated human command or reviewed configuration change. Resume from immutable checkpoints only after the loaded constitution digest matches the configured digest.
+恢复运行必须使用经过认证的人工命令或经审查的配置变更。只有加载的章程摘要与配置摘要一致后，才能从不可变检查点恢复。

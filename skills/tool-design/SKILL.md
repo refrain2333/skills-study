@@ -1,110 +1,121 @@
 ---
 name: tool-design
-description: "This skill should be used for the tool-interface layer of an agent system specifically: writing tool descriptions agents can route on, designing tool schemas and response formats, naming conventions, actionable error recovery messages, MCP server design, tool-set consolidation, and deciding when to add or remove an individual tool. Use this when the unit of work is a single tool or a set of tools. Route project-shape, pipeline architecture, and task-model-fit decisions to project-development; route deciding whether to introduce sub-agents to multi-agent-patterns."
+description: "用于设计智能体工具接口，包括工具说明、参数模式、响应格式、可操作的错误信息和工具集合精简。"
 ---
 
-# Tool Design for Agents
+# 智能体工具设计
 
-Design every tool as a contract between a deterministic system and a non-deterministic agent. Unlike human-facing APIs, agent-facing tools must make the contract unambiguous through the description alone: agents infer intent from descriptions and generate calls that must match expected formats. Every ambiguity becomes a potential failure mode that no amount of prompt engineering can fix.
+把每个工具都设计成确定性系统与非确定性智能体之间的契约。与面向人的 API 不同，面向智能体的工具必须仅凭描述就能明确契约：智能体会根据描述推断用途，并生成符合预期格式的调用。每一处歧义都可能导致失败，无法靠增加提示词工程来解决。
 
-The unit of work for this skill is a single tool or a tool catalog. Project-shape, pipeline architecture, task-model-fit, and cost-at-the-project-level decisions belong to `project-development`. Deciding whether to introduce sub-agents belongs to `multi-agent-patterns`. This skill owns the interface layer that connects deterministic code to the agent.
+本技能负责单个工具或工具目录的接口层。项目形态、工作流架构、任务与模型的匹配，以及项目级成本决策属于 `project-development`。是否引入子智能体属于 `multi-agent-patterns`。本技能负责连接确定性代码与智能体的接口层。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when the unit of work is a tool:
+当工作单位是一个工具时启用本技能：
 
-- Writing a new tool description, schema, or response format.
-- Debugging cases where the agent picked the wrong tool or generated malformed calls.
-- Consolidating an overlapping tool catalog (the classic "we have 17 tools, the agent picks wrong half the time" case).
-- Designing actionable error messages so the agent can self-correct.
-- Naming tools and parameters consistently across a catalog (MCP namespacing, verb-noun naming).
-- Evaluating a third-party tool against the consolidation principle before adding it.
+- 编写新工具的描述、模式或响应格式。
+- 排查智能体选错工具或生成格式错误调用的情况。
+- 合并功能重叠的工具目录（典型情况是“有 17 个工具，智能体有一半时候会选错”）。
+- 设计能指导智能体自行修正的错误信息。
+- 统一整个工具目录的名称和参数约定（MCP 命名空间、动词-名词命名等）。
+- 在添加第三方工具前，根据合并原则评估它。
 
-Do not activate this skill for adjacent work owned by other skills:
+相邻任务由其他技能负责，不要为这些任务启用本技能：
 
-- Deciding whether the project should use LLMs at all, or what the pipeline stages should be: `project-development`.
-- Deciding whether to split work across sub-agents or run a single agent with more tools: `multi-agent-patterns`.
-- Reducing the token weight of tool outputs at the trajectory level (observation masking, format-option choice at scale): `context-optimization`.
+- 判断项目是否应该使用 LLM，或工作流应有哪些阶段：`project-development`。
+- 判断应该拆分子智能体，还是由一个智能体使用更多工具：`multi-agent-patterns`。
+- 在执行轨迹层面减少工具输出的 Token 权重（观察结果遮罩、大规模选择响应格式）：`context-optimization`。
 
-## Core Concepts
+## 核心概念
 
-Design tools around the consolidation principle: if a human engineer cannot definitively say which tool should be used in a given situation, an agent cannot be expected to do better. Reduce the tool set until each tool has one unambiguous purpose, because agents select tools by comparing descriptions and any overlap introduces selection errors.
+围绕合并原则设计工具：如果人类工程师无法明确判断某个情境应该使用哪个工具，就不能指望智能体做得更好。精简工具集，直到每个工具都只有一个明确用途；智能体会通过比较描述来选择工具，功能重叠会造成选择错误。
 
-Treat every tool description as prompt engineering that shapes agent behavior. The description is not documentation for humans -- it is injected into the agent's context and directly steers reasoning. Write descriptions that answer what the tool does, when to use it, and what it returns, because these three questions are exactly what agents evaluate during tool selection.
+把每条工具描述都视为会影响智能体行为的提示词工程。描述不是供人阅读的文档——它会直接注入智能体上下文，并引导其推理。描述应回答工具做什么、何时使用、返回什么；智能体正是根据这三个问题来选择工具。
 
-## Detailed Topics
+## 详细主题
 
-### The Tool-Agent Interface
+### 工具与智能体之间的接口
 
-**Tools as Contracts**
-Design each tool as a self-contained contract. When humans call APIs, they read docs, understand conventions, and make appropriate requests. Agents must infer the entire contract from a single description block. Make the contract unambiguous by including format examples, expected patterns, and explicit constraints. Omit nothing that a caller needs to know, because agents cannot ask clarifying questions before making a call.
+**工具即契约**
 
-**Tool Description as Prompt**
-Write tool descriptions knowing they load directly into agent context and collectively steer behavior. A vague description like "Search the database" with cryptic parameter names forces the agent to guess -- and guessing produces incorrect calls. Instead, include usage context, parameter format examples, and sensible defaults. Every word in the description either helps or hurts tool selection accuracy.
+把每个工具设计成自包含的契约。人类调用 API 时会阅读文档、理解约定并发出恰当请求。智能体必须从一段描述中推断完整契约。应通过格式示例、预期模式和明确限制消除歧义。不要省略调用者需要知道的内容，因为智能体在调用前无法追问。
 
-**Namespacing and Organization**
-Namespace tools under common prefixes as the collection grows, because agents benefit from hierarchical grouping. When an agent needs database operations, it routes to the `db_*` namespace; when it needs web interactions, it routes to `web_*`. Without namespacing, agents must evaluate every tool in a flat list, which degrades selection accuracy as the count grows.
+**工具描述即提示词**
 
-### The Consolidation Principle
+工具描述会直接载入智能体上下文，并共同引导其行为。像“搜索数据库”这样含糊的描述，搭配难懂的参数名称，会迫使智能体猜测，进而造成错误调用。应加入使用情境、参数格式示例和合理默认值。描述中的每个词都会影响工具选择的准确性。
 
-**Single Comprehensive Tools**
-Build single comprehensive tools instead of multiple narrow tools that overlap. Rather than implementing `list_users`, `list_events`, and `create_event` separately, implement `schedule_event` that finds availability and schedules in one call. The comprehensive tool handles the full workflow internally, removing the agent's burden of chaining calls in the correct order.
+**命名空间与组织**
 
-**Why Consolidation Works**
-Apply consolidation because agents have limited context and attention. Each tool in the collection competes for attention during tool selection, each description consumes context budget tokens, and overlapping functionality creates ambiguity. Consolidation eliminates redundant descriptions, removes selection ambiguity, and shrinks the effective tool set. Vercel's d0 case study is a concrete example of reducing specialized tools into a smaller primitive tool set with better measured outcomes (claim-tool-design-vercel-d0-reduction).
+随着工具目录变大，使用共同前缀对工具分组，因为层级结构可以帮助智能体定位。例如，需要数据库操作时路由到 `db_*` 命名空间；需要网页交互时路由到 `web_*`。如果没有命名空间，智能体必须在一份扁平列表中评估所有工具，工具数量增加会降低选择准确性。
 
-**When Not to Consolidate**
-Keep tools separate when they have fundamentally different behaviors, serve different contexts, or must be callable independently. Over-consolidation creates a different problem: a single tool with too many parameters and modes becomes hard for agents to parameterize correctly.
+### 合并原则
 
-### Architectural Reduction
+**单个综合工具**
 
-Push the consolidation principle to its logical extreme by removing most specialized tools in favor of primitive, general-purpose capabilities. Production evidence shows this approach can outperform sophisticated multi-tool architectures.
+构建单个综合工具，而不是多个功能重叠的窄工具。例如，不要分别实现 `list_users`、`list_events` 和 `create_event`，可以实现一个 `schedule_event`，在一次调用中查找空闲时间并完成日程安排。综合工具在内部处理完整工作流，减轻智能体按正确顺序串联调用的负担。
 
-**The File System Agent Pattern**
-Provide direct file system access through a single command execution tool instead of building custom tools for data exploration, schema lookup, and query validation. The agent uses standard Unix utilities (grep, cat, find, ls) to explore and operate on the system. This works because file systems are a proven abstraction that models understand deeply, standard tools have predictable behavior, agents can chain primitives flexibly rather than being constrained to predefined workflows, and good documentation in files replaces summarization tools.
+**合并为何有效**
 
-**When Reduction Outperforms Complexity**
-Choose reduction when the data layer is well-documented and consistently structured, the model has sufficient reasoning capability, specialized tools were constraining rather than enabling the model, or more time is spent maintaining scaffolding than improving outcomes. Avoid reduction when underlying data is messy or poorly documented, the domain requires specialized knowledge the model lacks, safety constraints must limit agent actions, or operations genuinely benefit from structured workflows.
+合并能缓解智能体上下文和注意力有限的问题。工具目录中的每个工具都在选择时争夺注意力；每条描述都会消耗上下文预算中的 Token；功能重叠会造成歧义。合并可以去除重复描述、消除选择歧义并缩小有效工具集。Vercel 的 d0 案例展示了将专用工具合并为较少的基础工具后，测量结果有所改善（claim-tool-design-vercel-d0-reduction）。
 
-**Build for Future Models**
-Design minimal architectures that benefit from model improvements rather than sophisticated architectures that lock in current limitations. Ask whether each tool enables new capabilities or constrains reasoning the model could handle on its own -- tools built as "guardrails" often become liabilities as models improve.
+**何时不要合并**
 
-See [Architectural Reduction Case Study](./references/architectural_reduction.md) for production evidence.
+如果工具行为根本不同、服务于不同情境，或必须能够独立调用，就应分开保留。过度合并也会带来问题：如果一个工具包含过多参数和模式，智能体就难以正确设置参数。
 
-### Tool Description Engineering
+### 架构精简
 
-**Description Structure**
-Structure every tool description to answer four questions:
+将合并原则推向极致，就是用少数通用的基础能力替换大部分专用工具。生产证据表明，这种方法可能胜过复杂的多工具架构。
 
-1. What does the tool do? State exactly what the tool accomplishes -- avoid vague language like "helps with" or "can be used for."
-2. When should it be used? Specify direct triggers ("User asks about pricing") and indirect signals ("Need current market rates").
-3. What inputs does it accept? Describe each parameter with types, constraints, defaults, and format examples.
-4. What does it return? Document the output format, structure, successful response examples, and error conditions.
+**文件系统智能体模式**
 
-**Default Parameter Selection**
-Set defaults to reflect common use cases. Defaults reduce agent burden by eliminating unnecessary parameter specification and prevent errors from omitted parameters. Choose defaults that produce useful results without requiring the agent to understand every option.
+直接通过单个命令执行工具提供文件系统访问，而不是分别构建数据探索、模式查询和查询验证工具。智能体可以用常见 Unix 工具（grep、cat、find、ls）探索和操作系统。这种模式有效，是因为文件系统是模型熟悉的成熟抽象、标准工具的行为可预测、智能体可以灵活串联基础命令而不受预设工作流限制，并且文件中的优质文档可以代替摘要工具。
 
-### Response Format Optimization
+**精简胜过复杂的情况**
 
-Offer response format options (concise vs. detailed) because tool response size significantly impacts context usage. Concise format returns essential fields only, suitable for confirmations. Detailed format returns complete objects, suitable when full context drives decisions. Document when to use each format in the tool description so agents learn to select appropriately.
+在以下情况下优先考虑精简：数据层文档完善且结构一致；模型具备足够的推理能力；专用工具限制了模型而非帮助它；或者维护脚手架耗费的时间超过了改善结果所需的时间。若底层数据杂乱或文档不足、领域需要模型不具备的专业知识、安全约束必须限制智能体操作，或操作确实需要结构化工作流，则不应精简。
 
-### Error Message Design
+**为未来的模型构建**
 
-Design error messages for two audiences: developers debugging issues and agents recovering from failures. For agents, every error message must be actionable -- it must state what went wrong and how to correct it. Include retry guidance for retryable errors, corrected format examples for input errors, and specific missing fields for incomplete requests. An error that says only "failed" provides zero recovery signal.
+设计能从模型进步中获益的精简架构，而不是锁定当前局限性的复杂架构。逐一检查每个工具：它是在赋予模型新能力，还是在限制模型本可独立完成的推理？作为“护栏”构建的工具，可能会随着模型能力提升而变成负担。
 
-### Tool Definition Schema
+参阅[架构精简案例研究](./references/architectural_reduction.md)，了解生产环境证据。
 
-Establish a consistent schema across all tools. Use verb-noun pattern for tool names (`get_customer`, `create_order`), consistent parameter names across tools (always `customer_id`, never sometimes `id` and sometimes `identifier`), and consistent return field names. Consistency reduces the cognitive load on agents and improves cross-tool generalization.
+### 工具描述工程
 
-### Tool Collection Design
+**描述结构**
 
-Limit tool collections to the smallest set with non-overlapping purposes, because description overlap causes model confusion and more tools do not always lead to better outcomes. When more tools are genuinely needed, use namespacing to create logical groupings. Implement selection mechanisms: tool grouping by domain, example-based selection hints, and umbrella tools that route to specialized sub-tools.
+每条工具描述都应回答四个问题：
 
-### MCP Tool Naming Requirements
+1. 工具做什么？准确说明工具能完成什么，避免“有助于”或“可以用来”这类模糊措辞。
+2. 何时使用？给出直接触发条件（“用户询问价格”）和间接信号（“需要当前市场价格”）。
+3. 接受什么输入？说明每个参数的类型、限制、默认值和格式示例。
+4. 返回什么？说明输出格式和结构，并举例展示成功响应与错误情况。
 
-Always use fully qualified tool names with MCP (Model Context Protocol) to avoid "tool not found" errors.
+**默认参数选择**
 
-Format: `ServerName:tool_name`
+让默认值适用于常见场景。默认值能避免不必要的参数填写，减轻智能体负担，并减少因遗漏参数产生的错误。选择无需理解所有选项也能给出有用结果的默认值。
+
+### 响应格式优化
+
+提供简洁版与详细版响应格式，因为响应大小会明显影响上下文用量。简洁格式只返回必要字段，适合确认操作结果；详细格式返回完整对象，适合需要完整上下文才能做决定的情况。应在工具描述中说明何时使用哪种格式，让智能体学会作出合适选择。
+
+### 错误信息设计
+
+错误信息要同时服务于两类受众：排查问题的开发者和需要从失败中恢复的智能体。对智能体而言，每条错误信息都必须能指导下一步操作，说明哪里出错以及如何修正。可重试错误应提供重试建议；输入错误应给出正确格式示例；请求不完整时应指出缺少的字段。只说“失败”无法帮助恢复。
+
+### 工具定义模式
+
+在所有工具中使用一致的模式。工具名称采用动词-名词格式（`get_customer`、`create_order`），相同参数在所有工具中用相同名称（始终用 `customer_id`，不要有时用 `id`、有时用 `identifier`），返回字段也保持一致。统一命名能降低智能体的认知负担，改善跨工具泛化能力。
+
+### 工具目录设计
+
+将工具目录限制在用途不重叠的最小集合，因为描述重叠会让模型困惑，工具数量增加也不一定带来更好结果。确实需要更多工具时，使用命名空间建立逻辑分组。还可用以下方式辅助选择：按领域对工具分组、提供基于示例的选择提示，以及用伞状工具将请求路由给专用子工具。
+
+### MCP 工具命名要求
+
+使用 MCP（模型上下文协议）时，始终使用全限定工具名称，避免出现“找不到工具”的错误。
+
+格式：`ServerName:tool_name`
 
 ```python
 # Correct: Fully qualified names
@@ -115,13 +126,13 @@ Format: `ServerName:tool_name`
 "Use the bigquery_schema tool..."  # May fail with multiple servers
 ```
 
-Without the server prefix, agents may fail to locate tools when multiple MCP servers are available. Establish naming conventions that include server context in all tool references.
+如果没有服务器前缀，当存在多个 MCP 服务器时，智能体可能无法定位工具。应建立约定，在所有工具引用中都包含服务器名称。
 
-### Using Agents to Optimize Tools
+### 使用智能体优化工具
 
-Feed observed tool failures back to an agent to diagnose issues and improve descriptions. Treat reported efficiency gains as workload-specific until reproduced on the target tool catalog.
+将实际观察到的工具失败反馈给智能体，让它诊断问题并改进描述。把报告的效率提升视为特定工作负载下的结果，除非已在目标工具目录上复现。
 
-**The Tool-Testing Agent Pattern**:
+**工具测试智能体模式**
 
 ```python
 def optimize_tool_description(tool_spec, failure_examples):
@@ -153,39 +164,41 @@ def optimize_tool_description(tool_spec, failure_examples):
     return get_agent_response(prompt)
 ```
 
-This creates a feedback loop: agents using tools generate failure data, which agents then use to improve tool descriptions, which reduces future failures.
+通过这种方式形成反馈循环：智能体使用工具时产生失败数据，其他智能体据此改进工具描述，从而减少今后的错误。
 
-### Testing Tool Design
+### 测试工具设计
 
-Evaluate tool designs against five criteria: unambiguity, completeness, recoverability, efficiency, and consistency. Test by presenting representative agent requests and evaluating the resulting tool calls against expected behavior.
+从五个方面评估工具设计：明确性、完整性、可恢复性、效率和一致性。用有代表性的智能体请求进行测试，并检查生成的工具调用是否符合预期行为。
 
-## Practical Guidance
+## 实践指南
 
-### Tool Selection Framework
+### 工具选择框架
 
-When designing tool collections:
-1. Identify distinct workflows agents must accomplish
-2. Group related actions into comprehensive tools
-3. Ensure each tool has a clear, unambiguous purpose
-4. Document error cases and recovery paths
-5. Test with actual agent interactions
+设计工具目录时：
 
-### Tool Audit Checklist
+1. 找出智能体必须完成的不同工作流。
+2. 将相关操作组合成综合工具。
+3. 确保每个工具用途明确且没有歧义。
+4. 记录错误情况和恢复路径。
+5. 使用真实的智能体交互进行测试。
 
-Use this checklist for every tool before adding it to an agent:
+### 工具审查清单
 
-1. **Name**: verb-noun, namespaced if the catalog has multiple domains.
-2. **Description**: states what the tool does, when to use it, and what it returns.
-3. **Schema**: every parameter has type, constraints, defaults, and example values.
-4. **Return shape**: success and error payloads are documented and machine-readable.
-5. **Recovery**: each error tells the agent what to change before retrying.
-6. **Overlap**: no other tool has the same activation scenario.
-7. **Consolidation decision**: adjacent narrow tools are merged unless independent calls are required.
-8. **Token impact**: large responses support concise mode or file-reference mode.
+每次向智能体添加工具前，使用此清单检查：
 
-## Examples
+1. **名称**：采用动词-名词格式；目录中有多个领域时加入命名空间。
+2. **描述**：说明工具做什么、何时使用、返回什么。
+3. **模式**：每个参数都注明类型、限制、默认值和示例。
+4. **返回结构**：用机器可读格式记录成功和错误响应。
+5. **恢复能力**：每种错误都告诉智能体重试前要修改什么。
+6. **功能重叠**：没有其他工具拥有相同的触发场景。
+7. **合并决策**：除非必须独立调用，否则将相邻的窄工具合并。
+8. **Token 影响**：大响应提供简洁模式或文件引用模式。
 
-**Example 1: Well-Designed Tool**
+## 示例
+
+**示例 1：设计良好的工具**
+
 ```python
 def get_customer(customer_id: str, format: str = "concise"):
     """
@@ -209,9 +222,9 @@ def get_customer(customer_id: str, format: str = "concise"):
     """
 ```
 
-**Example 2: Poor Tool Design**
+**示例 2：设计不佳的工具**
 
-This example demonstrates several tool design anti-patterns:
+下面的示例展示了几种工具设计反模式：
 
 ```python
 def search(query):
@@ -219,78 +232,82 @@ def search(query):
     pass
 ```
 
-**Problems with this design:**
+**存在的问题：**
 
-1. **Vague name**: "search" is ambiguous - search what, for what purpose?
-2. **Missing parameters**: What database? What format should query take?
-3. **No return description**: What does this function return? A list? A string? Error handling?
-4. **No usage context**: When should an agent use this versus other tools?
-5. **No error handling**: What happens if the database is unavailable?
+1. **名称含糊**：“search”含义不明确——搜索什么、为了什么目的？
+2. **参数缺失**：搜索哪个数据库？`query` 应采用什么格式？
+3. **没有返回值说明**：函数返回什么？列表、字符串？如何处理错误？
+4. **缺少使用情境**：智能体何时该用这个工具，而不是其他工具？
+5. **没有错误处理**：数据库不可用时会怎样？
 
-**Failure modes:**
-- Agents may call this tool when they should use a more specific tool
-- Agents cannot determine correct query format
-- Agents cannot interpret results
-- Agents cannot recover from failures
+**可能的失败模式：**
 
-## Guidelines
+- 智能体可能在本该用专用工具时误用这个工具。
+- 智能体无法确定正确的查询格式。
+- 智能体无法解读结果。
+- 智能体无法从失败中恢复。
 
-1. Write descriptions that answer what, when, and what returns
-2. Use consolidation to reduce ambiguity
-3. Implement response format options for token efficiency
-4. Design error messages for agent recovery
-5. Establish and follow consistent naming conventions
-6. Limit tool count and use namespacing for organization
-7. Test tool designs with actual agent interactions
-8. Iterate based on observed failure modes
-9. Question whether each tool enables or constrains the model
-10. Prefer primitive, general-purpose tools over specialized wrappers
-11. Invest in documentation quality over tooling sophistication
-12. Build minimal architectures that benefit from model improvements
+## 指南
 
-## Gotchas
+1. 编写能够回答“做什么、何时用、返回什么”的工具描述。
+2. 运用合并原则消除歧义。
+3. 提供响应格式选项，提高 Token 使用效率。
+4. 设计便于智能体恢复的错误信息。
+5. 建立并遵循统一的命名约定。
+6. 限制工具数量，并使用命名空间组织工具。
+7. 使用真实的智能体交互测试工具设计。
+8. 根据观察到的失败模式迭代改进。
+9. 判断每个工具是在赋能模型，还是在限制模型。
+10. 优先选择通用基础工具，而不是专用封装。
+11. 优先投入文档质量，而不是增加工具复杂度。
+12. 构建能从模型进步中受益的精简架构。
 
-1. **Vague descriptions**: Descriptions like "Search the database for customer information" leave too many questions unanswered. State the exact database, query format, and return shape.
-2. **Cryptic parameter names**: Parameters named `x`, `val`, or `param1` force agents to guess meaning. Use descriptive names that convey purpose without reading further documentation.
-3. **Missing error recovery guidance**: Tools that fail with generic messages like "Error occurred" provide no recovery signal. Every error response must tell the agent what went wrong and what to try next.
-4. **Inconsistent naming across tools**: Using `id` in one tool, `identifier` in another, and `customer_id` in a third creates confusion. Standardize parameter names across the entire tool collection.
-5. **MCP namespace collisions**: When multiple MCP tool providers register tools with similar names (e.g., two servers both exposing `search`), agents cannot disambiguate. Always use fully qualified `ServerName:tool_name` format and audit for collisions when adding new providers.
-6. **Tool description rot**: Descriptions become inaccurate as underlying APIs evolve -- parameters get added, return formats change, error codes shift. Treat descriptions as code: version them, review them during API changes, and test them against current behavior.
-7. **Over-consolidation**: Making a single tool handle too many workflows produces parameter lists so large that agents struggle to select the right combination. If a tool requires more than 8-10 parameters or serves fundamentally different use cases, split it.
-8. **Parameter explosion**: Too many optional parameters overwhelm agent decision-making. Each parameter the agent must evaluate adds cognitive load. Provide sensible defaults, group related options into format presets, and move rarely-used parameters into an `options` object.
-9. **Missing error context**: Error messages that say only "failed" or "invalid input" without specifying which input, why it failed, or what a valid input looks like leave agents unable to self-correct. Include the invalid value, the expected format, and a concrete example in every error response.
+## 常见问题
 
-## Integration
+1. **描述含糊**：像“搜索数据库中的客户信息”这样的描述留下太多未说明之处。应指出具体数据库、查询格式和返回结构。
+2. **参数名称晦涩**：`x`、`val` 或 `param1` 等名称会迫使智能体猜含义。使用能直接体现用途的名称。
+3. **缺少错误恢复说明**：只返回“发生错误”这类通用信息的工具无法帮助恢复。每个错误响应都应告诉智能体哪里出错、接下来应尝试什么。
+4. **工具名称不一致**：一个工具用 `id`，另一个用 `identifier`，第三个用 `customer_id`，会让智能体困惑。应在整个工具目录中统一参数名。
+5. **MCP 命名空间冲突**：多个 MCP 工具提供方注册相似名称时（例如两个服务器都提供 `search`），智能体难以区分。始终使用 `ServerName:tool_name` 全限定格式；新增提供方时检查名称冲突。
+6. **工具描述过时**：底层 API 演进时，描述可能失真——参数被添加、返回格式变化、错误码调整。应像维护代码一样维护描述：对其版本化，在 API 变更时复审，并针对当前行为进行测试。
+7. **合并过度**：一个工具处理太多工作流，会形成过长的参数列表，智能体难以选出正确组合。如果工具需要超过 8–10 个参数，或服务于本质上不同的场景，应考虑拆分。
+8. **参数膨胀**：太多可选参数会增加智能体决策负担。每个需要评估的参数都会增加认知开销。提供合理默认值，把相关选项归入格式预设，并将很少使用的参数移到 `options` 对象中。
+9. **错误上下文不足**：错误信息若只写“失败”或“输入无效”，却不说明哪个输入、为何失败或正确格式是什么，智能体就无法自我修正。每条错误响应都应包含无效值、预期格式和具体示例。
 
-This skill owns the tool-interface layer. Adjacent decisions are owned elsewhere:
+## 集成
 
-- `project-development`: shape of the project, choice of pipeline stages, task-model-fit, cost estimation at the project level. If the question is "what is the right pipeline architecture" rather than "what is the right tool API," route there.
-- `multi-agent-patterns`: deciding whether one agent with more tools is better than two agents with smaller tool catalogs. If the question is "should this split into sub-agents," route there.
-- `context-optimization`: trajectory-level token efficiency, observation masking, choosing response-format options across many tool calls. If the question is "how do we reduce token weight of accumulated tool outputs," route there.
-- `context-fundamentals`: the conceptual question of how tool definitions consume the attention budget. If the question is "why does adding tools degrade routing accuracy," start there.
-- `evaluation`: judging whether the tool set improved agent outcomes overall.
+本技能负责工具接口层。相邻决策由其他技能负责：
 
-## References
+- `project-development`：项目形态、工作流阶段选择、任务与模型匹配、项目级成本估算。如果问题是“什么是正确的工作流架构”，而不是“什么是正确的工具 API”，应转到该技能。
+- `multi-agent-patterns`：一个拥有更多工具的智能体，是否优于多个各自拥有较小工具目录的智能体。如果问题是“是否应该拆成子智能体”，应转到该技能。
+- `context-optimization`：执行轨迹级 Token 效率、观察结果遮罩，以及跨多次工具调用选择响应格式。如果问题是“如何降低累计工具输出的 Token 权重”，应转到该技能。
+- `context-fundamentals`：工具定义如何消耗注意力预算的概念问题。如果问题是“为什么增加工具会降低路由准确性”，从该技能开始。
+- `evaluation`：评估工具集是否整体改善智能体结果。
 
-Internal references:
-- [Best Practices Reference](./references/best_practices.md) - Read when: designing a new tool from scratch or auditing an existing tool collection for quality gaps
-- [Architectural Reduction Case Study](./references/architectural_reduction.md) - Read when: considering removing specialized tools in favor of primitives, or evaluating whether a complex tool architecture is justified
+## 参考资料
 
-Related skills in this collection:
-- context-fundamentals - Tool context interactions
-- evaluation - Tool testing patterns
+内部参考：
 
-External resources:
-- MCP (Model Context Protocol) documentation - Read when: implementing tools for multi-server agent environments or debugging tool routing failures
-- Framework tool conventions - Read when: adopting a new agent framework and need to map tool design principles to framework-specific APIs
-- API design best practices for agents - Read when: translating existing human-facing APIs into agent-facing tool interfaces
-- Vercel d0 agent architecture case study - Read when: evaluating whether to consolidate tools or seeking production evidence for architectural reduction
+- [最佳实践参考](./references/best_practices.md)——从零设计工具或审查工具目录中的质量缺口时阅读。
+- [架构精简案例研究](./references/architectural_reduction.md)——考虑用基础工具替换专用工具，或评估复杂工具架构是否合理时阅读。
+
+本资料集中的相关技能：
+
+- `context-fundamentals`——工具与上下文的交互。
+- `evaluation`——工具测试模式。
+
+外部资源：
+
+- MCP（模型上下文协议）文档——在多服务器智能体环境中实现工具或排查工具路由问题时阅读。
+- 框架工具约定——采用新的智能体框架并需要将工具设计原则映射到框架 API 时阅读。
+- 面向智能体的 API 设计最佳实践——将现有的面向人类 API 转化为面向智能体的接口时阅读。
+- Vercel d0 智能体架构案例——评估是否应该合并工具，或寻找架构精简的生产证据时阅读。
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 2.2.0
+**创建时间**：2025-12-20
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering 贡献者
+**版本**：2.2.0

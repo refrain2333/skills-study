@@ -1,53 +1,53 @@
-# BDI Framework Integration Patterns
+# BDI 框架集成模式
 
-Integration patterns for connecting BDI ontology with executable agent frameworks.
+将 BDI 本体接入可执行智能体框架的集成模式。
 
-## SEMAS Rule Translation
+## SEMAS 规则转换
 
-Map BDI ontology constructs to SEMAS production rules.
+将 BDI 本体结构映射为 SEMAS 产生式规则。
 
-### Ontology-to-Rule Mapping
+### 本体到规则的映射
 
-| BDI Construct | SEMAS Element | Example |
+| BDI 结构 | SEMAS 元素 | 示例 |
 |---------------|---------------|---------|
-| Belief | HEAD fact | `belief(agent_a, store_open)` |
-| Supporting beliefs | CONDITIONALS | `[CONDITIONALS: time(weekday)]` |
-| Desire generation | TAIL action | `generate_desire(agent, goal)` |
-| Intention commitment | TAIL action | `commit_intention(agent, goal)` |
-| Plan specification | TAIL action | `create_plan(agent, plan_id)` |
+| 信念 | HEAD fact | `belief(agent_a, store_open)` |
+| 支持信念 | CONDITIONALS | `[CONDITIONALS: time(weekday)]` |
+| 生成愿望 | TAIL action | `generate_desire(agent, goal)` |
+| 确立意图 | TAIL action | `commit_intention(agent, goal)` |
+| 规定计划 | TAIL action | `create_plan(agent, plan_id)` |
 
-### Rule Templates
+### 规则模板
 
-**Belief triggers desire formation:**
+**信念触发愿望形成：**
 ```prolog
-[HEAD: belief(Agent, Fact)] / 
-[CONDITIONALS: context_condition(Agent, Context)] » 
+[HEAD: belief(Agent, Fact)] /
+[CONDITIONALS: context_condition(Agent, Context)] »
 [TAIL: generate_desire(Agent, DesiredState)].
 ```
 
-**Desire triggers intention commitment:**
+**愿望触发意图确立：**
 ```prolog
-[HEAD: desire(Agent, Goal)] / 
-[CONDITIONALS: belief(Agent, SupportingFact1), 
-               belief(Agent, SupportingFact2)] » 
+[HEAD: desire(Agent, Goal)] /
+[CONDITIONALS: belief(Agent, SupportingFact1),
+               belief(Agent, SupportingFact2)] »
 [TAIL: commit_intention(Agent, Goal)].
 ```
 
-**Intention triggers planning:**
+**意图触发计划制定：**
 ```prolog
-[HEAD: intention(Agent, Goal)] / 
-[CONDITIONALS: goal(GoalSpec)] » 
+[HEAD: intention(Agent, Goal)] /
+[CONDITIONALS: goal(GoalSpec)] »
 [TAIL: create_plan(Agent, PlanId)].
 ```
 
-**Plan triggers execution:**
+**计划触发执行：**
 ```prolog
-[HEAD: plan(Agent, PlanId)] / 
-[CONDITIONALS: ready_to_execute(Agent)] » 
+[HEAD: plan(Agent, PlanId)] /
+[CONDITIONALS: ready_to_execute(Agent)] »
 [TAIL: execute_plan(Agent, PlanId)].
 ```
 
-### Complete SEMAS Example
+### 完整的 SEMAS 示例
 
 ```prolog
 % ============================================================
@@ -55,44 +55,44 @@ Map BDI ontology constructs to SEMAS production rules.
 % ============================================================
 
 % Phase 1: Belief formation from world state
-[HEAD: perceive(agent_a, store_open)] / 
-[CONDITIONALS: time(weekday_afternoon)] » 
+[HEAD: perceive(agent_a, store_open)] /
+[CONDITIONALS: time(weekday_afternoon)] »
 [TAIL: add_belief(agent_a, store_open)].
 
 % Phase 2: Desire generation from belief
-[HEAD: belief(agent_a, store_open)] / 
-[CONDITIONALS: belief(agent_a, needs_groceries)] » 
+[HEAD: belief(agent_a, store_open)] /
+[CONDITIONALS: belief(agent_a, needs_groceries)] »
 [TAIL: generate_desire(agent_a, buy_groceries)].
 
 % Phase 3: Intention commitment from desire
-[HEAD: desire(agent_a, buy_groceries)] / 
-[CONDITIONALS: belief(agent_a, has_shopping_list), 
+[HEAD: desire(agent_a, buy_groceries)] /
+[CONDITIONALS: belief(agent_a, has_shopping_list),
                belief(agent_a, store_open),
-               belief(agent_a, has_transportation)] » 
+               belief(agent_a, has_transportation)] »
 [TAIL: commit_intention(agent_a, buy_groceries)].
 
 % Phase 4: Plan creation from intention
-[HEAD: intention(agent_a, buy_groceries)] / 
-[CONDITIONALS: goal(complete_shopping)] » 
+[HEAD: intention(agent_a, buy_groceries)] /
+[CONDITIONALS: goal(complete_shopping)] »
 [TAIL: create_plan(agent_a, shopping_plan)].
 
 % Phase 5: Plan execution
-[HEAD: plan(agent_a, shopping_plan)] / 
-[CONDITIONALS: preconditions_met(shopping_plan)] » 
+[HEAD: plan(agent_a, shopping_plan)] /
+[CONDITIONALS: preconditions_met(shopping_plan)] »
 [TAIL: execute_task(agent_a, drive_to_store),
        execute_task(agent_a, select_items),
        execute_task(agent_a, checkout),
        execute_task(agent_a, return_home)].
 
 % Phase 6: World state update
-[HEAD: task_complete(agent_a, checkout)] / 
-[CONDITIONALS: items_purchased(agent_a)] » 
+[HEAD: task_complete(agent_a, checkout)] /
+[CONDITIONALS: items_purchased(agent_a)] »
 [TAIL: update_world_state(has_groceries),
        remove_desire(agent_a, buy_groceries),
        remove_intention(agent_a, buy_groceries)].
 ```
 
-### Python Translation Layer
+### Python 转换层
 
 ```python
 from rdflib import Graph, Namespace, RDF
@@ -104,29 +104,29 @@ def ontology_to_semas_rules(bdi_graph: Graph) -> list[str]:
     Translate BDI ontology instances to SEMAS production rules.
     """
     rules = []
-    
-    # Extract belief-desire-intention chains
+
+    # 提取信念—愿望—意图链
     for intention in bdi_graph.subjects(RDF.type, BDI.Intention):
-        # Get supporting beliefs
+        # 获取支持信念
         supporting_beliefs = list(bdi_graph.objects(intention, BDI.isSupportedBy))
-        
-        # Get fulfilled desire
+
+        # 获取要实现的愿望
         fulfilled_desires = list(bdi_graph.objects(intention, BDI.fulfils))
-        
-        # Get specified plan
+
+        # 获取指定计划
         specified_plans = list(bdi_graph.objects(intention, BDI.specifies))
-        
+
         if fulfilled_desires and supporting_beliefs:
             desire = fulfilled_desires[0]
             beliefs_str = ", ".join([format_belief(b, bdi_graph) for b in supporting_beliefs])
-            
+
             rule = (
                 f"[HEAD: {format_desire(desire, bdi_graph)}] / "
                 f"[CONDITIONALS: {beliefs_str}] » "
                 f"[TAIL: commit_intention({format_intention(intention, bdi_graph)})]"
             )
             rules.append(rule)
-        
+
         if specified_plans:
             plan = specified_plans[0]
             rule = (
@@ -135,7 +135,7 @@ def ontology_to_semas_rules(bdi_graph: Graph) -> list[str]:
                 f"[TAIL: create_plan({format_plan(plan, bdi_graph)})]"
             )
             rules.append(rule)
-    
+
     return rules
 
 def format_belief(belief_uri, graph):
@@ -155,11 +155,11 @@ def format_plan(plan_uri, graph):
     return f"plan({label or plan_uri.split('/')[-1]})"
 ```
 
-## Logic Augmented Generation (LAG)
+## 逻辑增强生成（LAG）
 
-Augment LLM outputs with BDI ontological constraints.
+使用 BDI 本体约束增强大语言模型的输出。
 
-### LAG Pipeline Architecture
+### LAG 流程架构
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -174,7 +174,7 @@ Augment LLM outputs with BDI ontological constraints.
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
-### LAG Implementation
+### LAG 实现
 
 ```python
 from rdflib import Graph, Namespace
@@ -187,117 +187,117 @@ class BDILogicAugmentedGenerator:
         self.ontology = Graph()
         self.ontology.parse(ontology_path, format='turtle')
         self.llm = llm_client
-    
+
     def generate_mental_states(self, context: str) -> Graph:
         """
         Generate BDI mental states from context using LAG.
         """
-        # Phase 1: Inject ontology into prompt
+        # 阶段 1：将本体注入提示词
         ontology_turtle = self.ontology.serialize(format='turtle')
         augmented_prompt = self._build_augmented_prompt(context, ontology_turtle)
-        
-        # Phase 2: Generate with LLM
+
+        # 阶段 2：使用大语言模型生成
         response = self.llm.generate(augmented_prompt)
-        
-        # Phase 3: Extract and validate triples
+
+        # 阶段 3：提取并验证三元组
         triples = self._extract_triples(response)
         validated = self._validate_against_ontology(triples)
-        
+
         if not validated['is_consistent']:
-            # Retry with feedback
+            # 根据反馈重试
             return self._retry_with_feedback(context, validated['errors'])
-        
+
         return validated['graph']
-    
+
     def _build_augmented_prompt(self, context: str, ontology: str) -> str:
         return f"""
-You are a BDI mental state modeler. Given the following context, generate 
-RDF triples representing the agent's beliefs, desires, and intentions.
+你是一个 BDI 心理状态建模器。请根据以下上下文生成表示智能体信念、愿望和意图的
+RDF 三元组。
 
-## BDI Ontology (use these classes and properties):
+## BDI 本体（使用以下类和属性）：
 {ontology}
 
-## Context to Model:
+## 要建模的上下文：
 {context}
 
-## Instructions:
-1. Identify world states from the context
-2. Generate beliefs that refer to those world states
-3. Generate desires motivated by those beliefs
-4. Generate intentions that fulfill desires and are supported by beliefs
-5. Include justifications for each mental state
-6. Include temporal validity intervals
+## 指令：
+1. 从上下文中识别世界状态
+2. 生成指向这些世界状态的信念
+3. 生成由这些信念促成的愿望
+4. 生成实现愿望且有信念支持的意图
+5. 为每项心理状态补充理由
+6. 补充时间有效范围
 
-Output valid Turtle RDF triples only.
+只输出有效的 Turtle RDF 三元组。
 """
-    
+
     def _extract_triples(self, response: str) -> str:
-        """Extract Turtle content from LLM response."""
-        # Find turtle block in response
+        """从大语言模型回复中提取 Turtle 内容。"""
+        # 查找回复中的 Turtle 代码块
         if "```turtle" in response:
             start = response.find("```turtle") + 9
             end = response.find("```", start)
             return response[start:end].strip()
         return response
-    
+
     def _validate_against_ontology(self, triples: str) -> dict:
-        """Validate generated triples against BDI ontology."""
+        """根据 BDI 本体验证生成的三元组。"""
         result = {'is_consistent': True, 'errors': [], 'graph': None}
-        
+
         try:
             generated = Graph()
             generated.parse(data=triples, format='turtle')
             result['graph'] = generated
-            
-            # Validate constraints
+
+            # 检查约束
             errors = []
-            
-            # Check: Every intention must fulfill a desire
+
+            # 检查：每项意图都必须实现一项愿望
             for intention in generated.subjects(RDF.type, BDI.Intention):
                 if not list(generated.objects(intention, BDI.fulfils)):
                     errors.append(f"Intention {intention} does not fulfill any desire")
-            
-            # Check: Every belief should reference a world state
+
+            # 检查：每项信念都应指向一个世界状态
             for belief in generated.subjects(RDF.type, BDI.Belief):
                 if not list(generated.objects(belief, BDI.refersTo)):
                     errors.append(f"Belief {belief} does not reference a world state")
-            
-            # Check: Desires should be motivated by beliefs
+
+            # 检查：愿望应由信念促成
             for desire in generated.subjects(RDF.type, BDI.Desire):
                 if not list(generated.objects(desire, BDI.isMotivatedBy)):
                     errors.append(f"Desire {desire} has no motivating belief")
-            
+
             if errors:
                 result['is_consistent'] = False
                 result['errors'] = errors
-                
+
         except BadSyntax as e:
             result['is_consistent'] = False
             result['errors'] = [f"Invalid Turtle syntax: {e}"]
-        
+
         return result
-    
+
     def _retry_with_feedback(self, context: str, errors: list) -> Graph:
-        """Retry generation with error feedback."""
+        """根据错误反馈重试生成。"""
         feedback_prompt = f"""
-Previous generation had errors:
+上一次生成存在以下错误：
 {chr(10).join(errors)}
 
-Please regenerate the mental states fixing these issues.
+请修复这些问题并重新生成心理状态。
 
-Context: {context}
+上下文：{context}
 """
         response = self.llm.generate(feedback_prompt)
         triples = self._extract_triples(response)
         result = self._validate_against_ontology(triples)
-        
+
         if result['is_consistent']:
             return result['graph']
         else:
             raise ValueError(f"Failed to generate valid mental states: {result['errors']}")
 ```
 
-### Inconsistency Detection Example
+### 不一致检测示例
 
 ```python
 def detect_location_inconsistency(graph: Graph) -> list[str]:
@@ -305,11 +305,11 @@ def detect_location_inconsistency(graph: Graph) -> list[str]:
     Detect inconsistencies where agent cannot be in two places.
     """
     inconsistencies = []
-    
-    # Query for location beliefs
+
+    # 查询地点信念
     query = """
     PREFIX bdi: <https://w3id.org/fossr/ontology/bdi/>
-    
+
     SELECT ?agent ?belief1 ?belief2 ?loc1 ?loc2 WHERE {
         ?agent bdi:hasBelief ?belief1 , ?belief2 .
         ?belief1 bdi:refersTo ?ws1 .
@@ -317,7 +317,7 @@ def detect_location_inconsistency(graph: Graph) -> list[str]:
         ?ws1 bdi:hasLocation ?loc1 .
         ?ws2 bdi:hasLocation ?loc2 .
         FILTER(?belief1 != ?belief2 && ?loc1 != ?loc2)
-        
+
         # Check temporal overlap
         ?belief1 bdi:hasValidity ?interval1 .
         ?belief2 bdi:hasValidity ?interval2 .
@@ -326,71 +326,71 @@ def detect_location_inconsistency(graph: Graph) -> list[str]:
         FILTER(?start1 < ?end2 && ?start2 < ?end1)
     }
     """
-    
+
     for row in graph.query(query):
         inconsistencies.append(
             f"Agent {row.agent} has conflicting location beliefs: "
             f"{row.loc1} and {row.loc2} at overlapping times"
         )
-    
+
     return inconsistencies
 ```
 
-## JADE/JADEX Integration
+## JADE/JADEX 集成
 
-Map BDI ontology to JADE/JADEX agent platform structures.
+将 BDI 本体映射到 JADE/JADEX 智能体平台结构。
 
-### JADE Agent Structure
+### JADE 智能体结构
 
 ```java
 public class BDIAgent extends Agent {
-    // Mental state storage (maps to ontology individuals)
+    // 心理状态存储（映射到本体个体）
     private Set<Belief> beliefs = new HashSet<>();
     private Set<Desire> desires = new HashSet<>();
     private Set<Intention> intentions = new HashSet<>();
-    
-    // Ontology-backed mental state management
+
+    // 基于本体管理心理状态
     private Graph mentalStateGraph;
-    
+
     public void addBelief(Belief belief) {
         beliefs.add(belief);
-        
-        // Add to RDF graph
+
+        // 添加到 RDF 图
         Resource beliefResource = mentalStateGraph.createResource(belief.getUri());
         beliefResource.addProperty(RDF.type, BDI.Belief);
         beliefResource.addProperty(BDI.refersTo, belief.getWorldState().getUri());
         beliefResource.addProperty(BDI.hasValidity, createInterval(belief.getValidity()));
-        
-        // Trigger desire formation
+
+        // 触发愿望形成
         triggerDesireProcess(belief);
     }
-    
+
     public void commitIntention(Intention intention) {
         intentions.add(intention);
-        
+
         Resource intentionResource = mentalStateGraph.createResource(intention.getUri());
         intentionResource.addProperty(RDF.type, BDI.Intention);
         intentionResource.addProperty(BDI.fulfils, intention.getDesire().getUri());
-        
+
         for (Belief support : intention.getSupportingBeliefs()) {
             intentionResource.addProperty(BDI.isSupportedBy, support.getUri());
         }
-        
-        // Trigger planning
+
+        // 触发计划制定
         triggerPlanning(intention);
     }
-    
-    // Export mental states as RDF
+
+    // 将心理状态导出为 RDF
     public String exportMentalStates() {
         return mentalStateGraph.serialize(Format.TURTLE);
     }
-    
-    // Import mental states from RDF
+
+    // 从 RDF 导入心理状态
     public void importMentalStates(String turtle) {
         Graph imported = new Graph();
         imported.parse(turtle, Format.TURTLE);
-        
-        // Reconstruct Java objects from RDF
+
+        // 根据 RDF 重建 Java 对象
         for (Resource belief : imported.listSubjectsWithProperty(RDF.type, BDI.Belief)) {
             Belief b = reconstructBelief(belief);
             beliefs.add(b);
@@ -400,26 +400,26 @@ public class BDIAgent extends Agent {
 }
 ```
 
-### JADEX Goal Mapping
+### JADEX 目标映射
 
 ```java
-// Map BDI ontology goals to JADEX goals
+// 将 BDI 本体目标映射到 JADEX 目标
 @Goal
 public class OntologyBackedGoal {
     @GoalParameter
     protected String goalUri;
-    
+
     @GoalParameter
     protected Graph ontologyGraph;
-    
+
     public OntologyBackedGoal(Resource goalResource, Graph graph) {
         this.goalUri = goalResource.getURI();
         this.ontologyGraph = graph;
     }
-    
+
     @GoalTargetCondition
     public boolean isAchieved() {
-        // Query ontology for goal achievement
+        // 查询本体，判断目标是否实现
         String query = """
             PREFIX bdi: <https://w3id.org/fossr/ontology/bdi/>
             ASK {
@@ -427,13 +427,13 @@ public class OntologyBackedGoal {
                            bdi:bringsAbout ?worldState .
             }
             """.formatted(goalUri);
-        
+
         return ontologyGraph.ask(query);
     }
-    
+
     @GoalDropCondition
     public boolean shouldDrop() {
-        // Check if supporting beliefs are invalidated
+        // 检查支持信念是否已失效
         String query = """
             PREFIX bdi: <https://w3id.org/fossr/ontology/bdi/>
             ASK {
@@ -445,15 +445,15 @@ public class OntologyBackedGoal {
                 FILTER(?end < NOW())
             }
             """.formatted(goalUri);
-        
+
         return ontologyGraph.ask(query);
     }
 }
 ```
 
-## RDF Triple Store Integration
+## RDF 三元组存储集成
 
-### Triple Store Configuration
+### 三元组存储配置
 
 ```python
 from rdflib import Graph
@@ -464,30 +464,30 @@ class BDIMentalStateStore:
         self.store = SPARQLUpdateStore()
         self.store.open((endpoint + "/query", endpoint + "/update"))
         self.graph = Graph(store=self.store, identifier="http://example.org/bdi")
-    
+
     def add_belief(self, agent_uri: str, belief_data: dict):
-        """Add belief to triple store."""
+        """将信念添加到三元组存储。"""
         belief_uri = f"{agent_uri}/belief/{belief_data['id']}"
-        
+
         self.graph.add((URIRef(belief_uri), RDF.type, BDI.Belief))
         self.graph.add((URIRef(belief_uri), RDFS.label, Literal(belief_data['label'])))
         self.graph.add((URIRef(belief_uri), BDI.refersTo, URIRef(belief_data['world_state'])))
         self.graph.add((URIRef(agent_uri), BDI.hasMentalState, URIRef(belief_uri)))
-        
+
         # Add temporal validity
         interval_uri = f"{belief_uri}/validity"
         self.graph.add((URIRef(belief_uri), BDI.hasValidity, URIRef(interval_uri)))
-        self.graph.add((URIRef(interval_uri), BDI.hasStartTime, 
+        self.graph.add((URIRef(interval_uri), BDI.hasStartTime,
                         Literal(belief_data['start_time'], datatype=XSD.dateTime)))
         self.graph.add((URIRef(interval_uri), BDI.hasEndTime,
                         Literal(belief_data['end_time'], datatype=XSD.dateTime)))
-    
+
     def get_active_beliefs(self, agent_uri: str, at_time: datetime) -> list:
-        """Query beliefs active at specific time."""
+        """查询指定时间有效的信念。"""
         query = """
         PREFIX bdi: <https://w3id.org/fossr/ontology/bdi/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-        
+
         SELECT ?belief ?label WHERE {
             <%s> bdi:hasMentalState ?belief .
             ?belief a bdi:Belief ;
@@ -498,14 +498,14 @@ class BDIMentalStateStore:
             FILTER(?start <= "%s"^^xsd:dateTime && ?end >= "%s"^^xsd:dateTime)
         }
         """ % (agent_uri, at_time.isoformat(), at_time.isoformat())
-        
+
         return list(self.graph.query(query))
-    
+
     def get_cognitive_chain(self, intention_uri: str) -> dict:
-        """Trace complete cognitive chain for an intention."""
+        """追踪某项意图的完整认知链。"""
         query = """
         PREFIX bdi: <https://w3id.org/fossr/ontology/bdi/>
-        
+
         SELECT ?intention ?desire ?belief ?worldState ?plan WHERE {
             <%s> a bdi:Intention ;
                  bdi:fulfils ?desire ;
@@ -515,7 +515,7 @@ class BDIMentalStateStore:
             ?belief bdi:refersTo ?worldState .
         }
         """ % (intention_uri, intention_uri)
-        
+
         results = list(self.graph.query(query))
         if results:
             row = results[0]
@@ -529,9 +529,9 @@ class BDIMentalStateStore:
         return None
 ```
 
-## FIPA ACL Integration
+## FIPA ACL 集成
 
-Map BDI mental states to FIPA Agent Communication Language.
+将 BDI 心理状态映射到 FIPA 智能体通信语言。
 
 ```python
 from fipa_acl import ACLMessage, Performative
@@ -540,11 +540,11 @@ class BDICommunicator:
     def __init__(self, agent_id: str, mental_state_store: BDIMentalStateStore):
         self.agent_id = agent_id
         self.store = mental_state_store
-    
+
     def share_belief(self, belief_uri: str, receiver: str) -> ACLMessage:
-        """Create INFORM message to share belief."""
+        """创建用于分享信念的 INFORM 消息。"""
         belief_triples = self.store.get_belief_as_turtle(belief_uri)
-        
+
         message = ACLMessage()
         message.performative = Performative.INFORM
         message.sender = self.agent_id
@@ -552,31 +552,30 @@ class BDICommunicator:
         message.content = belief_triples
         message.ontology = "https://w3id.org/fossr/ontology/bdi/"
         message.language = "turtle"
-        
+
         return message
-    
+
     def request_belief_confirmation(self, belief_uri: str, receiver: str) -> ACLMessage:
-        """Create QUERY-IF message to confirm shared belief."""
+        """创建用于确认共享信念的 QUERY-IF 消息。"""
         message = ACLMessage()
         message.performative = Performative.QUERY_IF
         message.sender = self.agent_id
         message.receiver = receiver
         message.content = f"ASK {{ <{belief_uri}> a bdi:Belief }}"
         message.language = "sparql"
-        
+
         return message
-    
+
     def propose_intention(self, intention_uri: str, receiver: str) -> ACLMessage:
-        """Create PROPOSE message for coordinated intention."""
+        """创建用于协调意图的 PROPOSE 消息。"""
         intention_triples = self.store.get_intention_as_turtle(intention_uri)
-        
+
         message = ACLMessage()
         message.performative = Performative.PROPOSE
         message.sender = self.agent_id
         message.receiver = receiver
         message.content = intention_triples
         message.ontology = "https://w3id.org/fossr/ontology/bdi/"
-        
+
         return message
 ```
-

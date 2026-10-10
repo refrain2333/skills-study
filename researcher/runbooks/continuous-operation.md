@@ -1,96 +1,94 @@
-# Continuous Operation Runbook
+# 持续运行操作手册
 
-This runbook explains how to run the researcher harness as a daemon on macOS so it can advance the research-to-skill loop for days without manual intervention.
+本文说明如何在 macOS 上将研究运行框架作为守护进程运行，使研究转技能循环在无人手动操作时也能持续数日。
 
-## What Runs
+## 定时任务
 
-| Job | Frequency | Purpose |
+| 任务 | 频率 | 作用 |
 | --- | --- | --- |
-| `loop_step.py` | every 10 minutes | pull from inbox, advance one active run by one state, park anything that needs human or judge review |
-| `loop_discover.py` | twice daily (05:00 and 17:00 local) | append new candidate sources from configured feeds into the inbox |
-| `loop_daily.py` | once daily (06:30 local) | run repo validation, activation cases, benchmarks, write a dated snapshot, flag volatile claims due for review |
-| `loop_status.py` | piggy-backs on every `loop_step` and `loop_daily` | refresh the dashboard and parked review surface |
+| `loop_step.py` | 每 10 分钟 | 从收件箱取任务，将一个活跃运行推进一个状态；需要人工或评审模型审查时暂停 |
+| `loop_discover.py` | 每日两次（本地时间 05:00、17:00） | 从已配置的信息源发现候选并追加到收件箱 |
+| `loop_daily.py` | 每日一次（本地时间 06:30） | 执行仓库检查、启用案例和基准测试，写入带日期快照，并标记需要复核的易变主张 |
+| `loop_status.py` | 随每次 `loop_step` 和 `loop_daily` 执行 | 更新仪表板和待审查视图 |
 
-All schedules and budgets live in `researcher/orchestration/config.json`. Default budgets:
+所有计划和预算都在 `researcher/orchestration/config.json` 中。默认预算如下：
 
-- max active runs: 3
-- max runs per day: 6
-- max parked: 12
-- max failures per day: 5
-- max inbox size: 200
+- 活跃运行最多 3 个。
+- 每日运行最多 6 个。
+- 暂停待审查运行最多 12 个。
+- 每日失败最多 5 次。
+- 收件箱最多 200 项。
 
-When any budget is exceeded the loop stops doing destructive work and continues only with bookkeeping until the human reviews.
+超过任一预算后，循环会停止可能造成副作用的操作，只继续记录状态，直到人工审查。
 
-## Install
+## 安装
 
 ```bash
 researcher/orchestration/launchd/install.sh
 ```
 
-The script:
+该脚本会：
 
-1. Substitutes the repository path into the launchd plists.
-2. Writes them under `~/Library/LaunchAgents/`.
-3. Bootstraps them under the current user agent domain.
-4. Enables the labels so they survive logout/login.
+1. 把仓库路径写入 launchd 配置文件。
+2. 将配置写入 `~/Library/LaunchAgents/`。
+3. 在当前用户的 launchd 域中启动配置。
+4. 启用对应任务标签，使任务在用户注销和重新登录后仍保留。
 
-Logs land in `researcher/reports/logs/`:
+日志位于 `researcher/reports/logs/`：
 
-- `loop_step.log`, `loop_discover.log`, `loop_daily.log`, `loop_status.log`
-- `launchd-loop-step.out` and `.err` for raw launchd output
+- `loop_step.log`、`loop_discover.log`、`loop_daily.log`、`loop_status.log`。
+- `launchd-loop-step.out` 和 `.err`：原始 launchd 输出。
 
-## Uninstall
+## 卸载
 
 ```bash
 researcher/orchestration/launchd/uninstall.sh
 ```
 
-## Manual Operation
+## 手动运行
 
-You can run the loop scripts directly without launchd:
+无需 launchd，也可以直接运行循环脚本：
 
 ```bash
-python3 researcher/scripts/loop_discover.py            # pull new sources into inbox
-python3 researcher/scripts/loop_step.py --allow-fetch  # advance one step
-python3 researcher/scripts/loop_daily.py               # benchmarks + snapshot
-python3 researcher/scripts/loop_status.py              # refresh dashboard
+python3 researcher/scripts/loop_discover.py            # 将新来源加入收件箱
+python3 researcher/scripts/loop_step.py --allow-fetch  # 推进一步
+python3 researcher/scripts/loop_daily.py               # 运行基准并生成快照
+python3 researcher/scripts/loop_status.py              # 更新仪表板
 ```
 
-`--allow-fetch` enables HTTP GET retrieval through Python's stdlib `urllib`. Without it the loop parks runs that need source retrieval and waits for a human.
+`--allow-fetch` 会通过 Python 标准库 `urllib` 执行 HTTP GET。未启用时，需要获取来源的运行会暂停等待人工处理。
 
-## Human Review Surface
+## 人工审查入口
 
-Read these files when checking on the loop:
+检查循环状态时阅读以下文件：
 
-- `researcher/reports/status.md` - high-level dashboard.
-- `researcher/reports/parked-review.md` - runs waiting for a reviewer.
-- `researcher/reports/snapshots/<date>.md` - daily snapshot.
-- `researcher/reports/benchmark-history.jsonl` - append-only benchmark trend.
-- `researcher/queue/inbox.jsonl` - candidate sources awaiting initialization.
-- `researcher/queue/quarantine.jsonl` - sources removed from rotation.
+- `researcher/reports/status.md`：总体仪表板。
+- `researcher/reports/parked-review.md`：等待审查的运行。
+- `researcher/reports/snapshots/<日期>.md`：每日快照。
+- `researcher/reports/benchmark-history.jsonl`：只追加的基准趋势记录。
+- `researcher/queue/inbox.jsonl`：等待初始化的候选来源。
+- `researcher/queue/quarantine.jsonl`：已移出轮换的来源。
 
-Parked runs require one of these actions:
+暂停运行需要按原因采取下列操作：
 
-| Reason | Action |
+| 原因 | 操作 |
 | --- | --- |
-| `needs source retrieval` | retrieve manually and run `research_loop.py retrieve --run-dir <run> --file <evidence>` |
-| `needs evaluation` | complete the source evaluation JSON and run `research_loop.py evaluate --run-dir <run>` |
-| `needs human or model action from state proposed` | finish the proposal and run `research_loop.py novelty --run-dir <run>` |
-| `needs merge approval` | review the PR notes; merge only after explicit approval |
+| `needs source retrieval` | 手动获取来源，再运行 `research_loop.py retrieve --run-dir <运行目录> --file <证据文件>` |
+| `needs evaluation` | 完成来源评估 JSON，再运行 `research_loop.py evaluate --run-dir <运行目录>` |
+| `needs human or model action from state proposed` | 完成提案，再运行 `research_loop.py novelty --run-dir <运行目录>` |
+| `needs merge approval` | 审查拉取请求说明；只有收到明确批准后才合并 |
 
-## Safety
+## 安全边界
 
-- The loop never invokes LLMs or paid APIs.
-- Source retrieval uses stdlib `urllib` with a 30-second timeout and a 1.5MB cap.
-- Sources that fail twice are quarantined.
-- The mechanism registry can only be updated through `research_loop.py promote-mechanisms` with a recorded reviewer; the loop does not edit it.
-- Push and merge are always human-controlled.
+- 循环不会调用大语言模型或付费 API。
+- 来源获取使用 Python 标准库 `urllib`，超时为 30 秒，响应大小上限为 1.5 MB。
+- 同一来源连续获取失败两次后会进入隔离区。
+- 机制注册表只能通过 `research_loop.py promote-mechanisms` 更新，并且必须记录审查者；循环本身不会修改注册表。
+- 推送和合并始终由人控制。
 
-## Daily Rhythm
+## 每日人工检查节奏
 
-A reasonable cadence for a human running this:
-
-1. Morning: read the latest snapshot and parked review.
-2. Pick up to three parked runs and either advance, reject, or abandon them.
-3. Approve any mechanism promotions whose runs are publish-ready.
-4. Leave the loop running for the next day.
+1. 上午阅读最新快照和待审查列表。
+2. 最多挑选三个暂停运行，选择继续、拒绝或放弃。
+3. 批准通过发布准备检查的机制晋级。
+4. 让循环继续运行，等待次日审查。

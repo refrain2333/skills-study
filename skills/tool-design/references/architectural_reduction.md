@@ -1,41 +1,41 @@
-# Architectural Reduction: Production Evidence
+# 架构精简：生产实践证据
 
-This document provides detailed evidence and implementation patterns for the architectural reduction approach to agent tool design.
+本文档提供了智能体工具设计的架构精简（Architectural Reduction）方法的详细证据和实现模式。
 
-## Case Study: Text-to-SQL Agent
+## 案例研究：Text-to-SQL 智能体
 
-A production text-to-SQL agent was rebuilt using architectural reduction principles. The original architecture used specialized tools with heavy prompt engineering and careful context management. The reduced architecture used a single bash command execution tool.
+一个生产环境下的 Text-to-SQL 智能体根据架构精简原则进行了重构。原始架构使用了大量经过繁重提示词工程和精细上下文管理的专用工具。精简后的架构仅使用了一个单一的 Bash 命令执行工具。
 
-### Original Architecture (Many Specialized Tools)
+### 原始架构（许多专用工具）
 
-The original system included:
-- GetEntityJoins: Find relationships between entities
-- LoadCatalog: Load data catalog information
-- RecallContext: Retrieve previous context
-- LoadEntityDetails: Get entity specifications
-- SearchCatalog: Search data catalog
-- ClarifyIntent: Clarify user intent
-- SearchSchema: Search database schema
-- GenerateAnalysisPlan: Create query plan
-- FinalizeQueryPlan: Complete query plan
-- FinalizeNoData: Handle no-data cases
-- JoinPathFinder: Find join paths
-- SyntaxValidator: Validate SQL syntax
-- FinalizeBuild: Complete query build
-- ExecuteSQL: Run SQL queries
-- FormatResults: Format query results
-- VisualizeData: Create visualizations
-- ExplainResults: Explain query results
+原始系统包含：
+- GetEntityJoins: 查找实体间的关系
+- LoadCatalog: 加载数据目录信息
+- RecallContext: 检索先前的上下文
+- LoadEntityDetails: 获取实体规范
+- SearchCatalog: 搜索数据目录
+- ClarifyIntent: 澄清用户意图
+- SearchSchema: 搜索数据库模式
+- GenerateAnalysisPlan: 创建查询计划
+- FinalizeQueryPlan: 完成查询计划
+- FinalizeNoData: 处理无数据情况
+- JoinPathFinder: 查找连接路径
+- SyntaxValidator: 验证 SQL 语法
+- FinalizeBuild: 完成查询构建
+- ExecuteSQL: 执行 SQL 查询
+- FormatResults: 格式化查询结果
+- VisualizeData: 创建可视化
+- ExplainResults: 解释查询结果
 
-Each tool solved a specific problem the team anticipated the model would face. The assumption was that the model would get lost in complex schemas, make bad joins, or hallucinate table names.
+每个工具都旨在解决团队预见到的模型可能面临的特定问题。当时的假设是，模型会在复杂的模式中迷失方向，做出错误的连接，或者幻觉出表名。
 
-### Reduced Architecture (Two Primitive Tools)
+### 精简架构（两个原始工具）
 
-The reduced system included:
-- ExecuteCommand: Run arbitrary bash commands in a sandbox
-- ExecuteSQL: Run SQL queries against the database
+精简后的系统包含：
+- ExecuteCommand: 在沙箱中执行任意 Bash 命令
+- ExecuteSQL: 对数据库执行 SQL 查询
 
-The agent explores the semantic layer using standard Unix tools:
+智能体现在使用标准的 Unix 工具探索语义层：
 
 ```python
 from vercel_sandbox import Sandbox
@@ -44,7 +44,7 @@ sandbox = Sandbox.create()
 await sandbox.write_files(semantic_layer_files)
 
 def execute_command(command: str):
-    """Execute arbitrary bash command in sandbox."""
+    """在沙箱中执行任意 Bash 命令。"""
     result = sandbox.exec(command)
     return {
         "stdout": result.stdout,
@@ -53,78 +53,78 @@ def execute_command(command: str):
     }
 ```
 
-The agent now uses `grep`, `cat`, `find`, and `ls` to navigate YAML, Markdown, and JSON files containing dimension definitions, measure calculations, and join relationships.
+智能体现在使用 `grep`、`cat`、`find` 和 `ls` 来导航包含维度定义、度量计算和连接关系的 YAML、Markdown 和 JSON 文件。
 
-### Comparative Results
+### 对比结果
 
-| Metric | Original (17 tools) | Reduced (2 tools) | Change |
+| 指标 | 原始架构 (17 个工具) | 精简架构 (2 个工具) | 变化 |
 |--------|---------------------|-------------------|--------|
-| Average execution time | 274.8s | 77.4s | 3.5x faster |
-| Success rate | 80% (4/5) | 100% (5/5) | +20% |
-| Average token usage | ~102k tokens | ~61k tokens | 37% fewer |
-| Average steps | ~12 steps | ~7 steps | 42% fewer |
+| 平均执行时间 | 274.8s | 77.4s | 快 3.5 倍 |
+| 成功率 | 80% (4/5) | 100% (5/5) | +20% |
+| 平均 Token 使用量 | ~102k tokens | ~61k tokens | 减少 37% |
+| 平均步骤数 | ~12 步 | ~7 步 | 减少 42% |
 
-The worst case in the original architecture: 724 seconds, 100 steps, 145,463 tokens, and a failure. The reduced architecture completed the same query in 141 seconds with 19 steps and 67,483 tokens, successfully.
+原始架构中最糟糕的情况：724 秒，100 个步骤，145,463 个 Token，且最终失败。精简后的架构在 141 秒内通过 19 个步骤和 67,483 个 Token 成功完成了同样的查询。
 
-## Why Reduction Works
+## 为什么精简有效
 
-### File Systems Are Powerful Abstractions
+### 文件系统是强大的抽象
 
-File systems have 50+ years of refinement. Standard Unix tools like `grep` are well-documented, predictable, and understood by models. Building custom tools for what Unix already solves adds complexity without value.
+文件系统经过了 50 多年的精炼。像 `grep` 这样的标准 Unix 工具文档齐全、可预测，且被模型深刻理解。为 Unix 已经解决的问题构建自定义工具只会增加复杂性而没有价值。
 
-### Tools Were Constraining Reasoning
+### 工具约束了推理
 
-The specialized tools were solving problems the model could handle on its own:
-- Pre-filtering context the model could navigate
-- Constraining options the model could evaluate
-- Wrapping interactions in validation logic the model didn't need
+专用工具解决的是模型本身可以处理的问题：
+- 预过滤模型可以自行导航的上下文
+- 限制模型可以评估的选项
+- 将交互包装在模型并不需要的验证逻辑中
 
-Each guardrail became a maintenance burden. Each model update required recalibrating constraints. The team spent more time maintaining scaffolding than improving the agent.
+每个护栏都变成了维护负担。每次模型更新都需要重新校准约束。团队花在维护脚手架上的时间比改进智能体的时间还要多。
 
-### Good Documentation Replaces Tool Sophistication
+### 良好的文档取代了工具的复杂性
 
-The semantic layer was already well-documented:
-- Dimension definitions in structured YAML
-- Measure calculations with clear naming
-- Join relationships in navigable files
+语义层本身就已经文档齐全：
+- 结构化 YAML 中的维度定义
+- 命名清晰的度量计算
+- 可导航文件中的连接关系
 
-The custom tools were summarizing what was already legible. The model needed access to read the documentation directly, not abstractions on top of it.
+自定义工具只是在总结那些原本就很清晰的内容。模型需要的是直接阅读文档的权限，而不是建立在文档之上的抽象。
 
-## Implementation Pattern
+## 实现模式
 
-### The File System Agent
+### 文件系统智能体
 
 ```python
 from ai import ToolLoopAgent, tool
 from sandbox import Sandbox
 
-# Create sandboxed environment with your data layer
+# 创建包含数据层的沙箱环境
 sandbox = Sandbox.create()
 await sandbox.write_files(data_layer_files)
 
-# Single primitive tool
+# 单一原始工具
 def create_execute_tool(sandbox):
     return tool(
         name="execute_command",
         description="""
-        Execute a bash command in the sandbox environment.
-        
-        Use standard Unix tools to explore and understand the data layer:
-        - ls: List directory contents
-        - cat: Read file contents
-        - grep: Search for patterns
-        - find: Locate files
-        
-        The sandbox contains the semantic layer documentation:
-        - /data/entities/*.yaml: Entity definitions
-        - /data/measures/*.yaml: Measure calculations  
-        - /data/joins/*.yaml: Join relationships
-        - /docs/*.md: Additional documentation
+        在沙箱环境中执行 Bash 命令。
+
+        使用标准 Unix 工具探索和理解数据层：
+        - ls: 列出目录内容
+        - cat: 读取文件内容
+        - grep: 搜索模式
+        - find: 查找文件
+
+        沙箱包含语义层文档：
+        - /data/entities/*.yaml: 实体定义
+        - /data/measures/*.yaml: 度量计算
+        - /data/joins/*.yaml: 连接关系
+        - /docs/*.md: 补充文档
         """,
         execute=lambda command: sandbox.exec(command)
     )
 
-# Minimal agent
+# 极简智能体
 agent = ToolLoopAgent(
     model="claude-opus-4.5",
     tools={
@@ -134,77 +134,62 @@ agent = ToolLoopAgent(
 )
 ```
 
-### Prerequisites for Success
+### 成功的先决条件
 
-This pattern works when:
+此模式在以下情况下奏效：
 
-1. **Documentation quality is high**: Files are well-structured, consistently named, and contain clear definitions.
+1. **文档质量高**：文件结构良好、命名一致且包含清晰的定义。
+2. **模型能力足够**：模型可以在没有手把手引导的情况下推理复杂性。
+3. **安全约束允许**：沙箱限制了智能体可以访问和修改的内容。
+4. **领域可导航**：问题空间可以通过文件检查来探索。
 
-2. **Model capability is sufficient**: The model can reason through complexity without hand-holding.
+### 何时不使用
 
-3. **Safety constraints permit**: The sandbox limits what the agent can access and modify.
+精简在以下情况下会失败：
 
-4. **Domain is navigable**: The problem space can be explored through file inspection.
+1. **数据层混乱**：遗留的命名规范、未记录的连接、不一致的结构。模型只会更快地产生糟糕的查询。
+2. **需要专业知识**：无法在文件中记录的领域专业知识。
+3. **安全需要限制**：出于安全或合规性考虑必须严格限制的操作。
+4. **工作流真正复杂**：受益于结构化编排的多步骤过程。
 
-### When Not to Use
+## 设计原则
 
-Reduction fails when:
+### 以减为增（Addition by Subtraction）
 
-1. **Data layer is messy**: Legacy naming conventions, undocumented joins, inconsistent structure. The model will produce faster bad queries.
+最好的智能体可能是工具最少的智能体。每一个工具都是为模型做出的选择。有时，当给予模型原始能力而不是受限的工作流时，模型能做出更好的选择。
 
-2. **Specialized knowledge is required**: Domain expertise that can't be documented in files.
+### 信任模型推理
 
-3. **Safety requires restrictions**: Operations that must be constrained for security or compliance.
+现代模型可以处理复杂性。因为不信任模型的推理能力而约束推理通常适得其反。在构建护栏之前，先测试模型实际能做什么。
 
-4. **Workflows are genuinely complex**: Multi-step processes that benefit from structured orchestration.
+### 投资于上下文，而非工具
 
-## Design Principles
+基础比精巧的工具更重要：
+- 清晰的文件命名规范
+- 结构良好的文档
+- 一致的数据组织
+- 清晰的关系定义
 
-### Addition by Subtraction
+### 为未来的模型构建
 
-The best agents may be the ones with the fewest tools. Every tool is a choice made for the model. Sometimes the model makes better choices when given primitive capabilities rather than constrained workflows.
+模型的进步速度超过了工具的更新速度。为今天的模型局限性优化的架构可能会对明天的模型能力产生过度约束。构建能从模型改进中受益的极简架构。
 
-### Trust Model Reasoning
+## 评估框架
 
-Modern models can handle complexity. Constraining reasoning because you don't trust the model to reason is often counterproductive. Test what the model can actually do before building guardrails.
+在考虑架构精简时，评估：
 
-### Invest in Context, Not Tooling
+1. **维护开销**：花在维护工具与改进产出上的时间比例是多少？
+2. **故障分析**：故障是由模型局限性还是工具约束引起的？
+3. **文档质量**：如果给予模型访问权限，它能否直接导航你的数据层？
+4. **约束必要性**：护栏是在防范真实风险还是假设的顾虑？
+5. **模型能力**：自工具设计以来，模型是否有所改进？
 
-The foundation matters more than clever tooling:
-- Clear file naming conventions
-- Well-structured documentation
-- Consistent data organization
-- Legible relationship definitions
+## 结论
 
-### Build for Future Models
+架构精简并非普适，但这一原则挑战了一个普遍假设：更复杂的工具必然带来更好的结果。有时事实恰恰相反。从最简单的架构开始，仅在证明必要时增加复杂性，并持续质疑工具是在赋能还是在约束模型的能力。
 
-Models improve faster than tooling can keep up. An architecture optimized for today's model limitations may be over-constrained for tomorrow's model capabilities. Build minimal architectures that benefit from model improvements.
+## 参考资料
 
-## Evaluation Framework
-
-When considering architectural reduction, evaluate:
-
-1. **Maintenance overhead**: How much time is spent maintaining tools vs. improving outcomes?
-
-2. **Failure analysis**: Are failures caused by model limitations or tool constraints?
-
-3. **Documentation quality**: Could the model navigate your data layer directly if given access?
-
-4. **Constraint necessity**: Are guardrails protecting against real risks or hypothetical concerns?
-
-5. **Model capability**: Has the model improved since tools were designed?
-
-## Conclusion
-
-Architectural reduction is not universally applicable, but the principle challenges a common assumption: that more sophisticated tooling leads to better outcomes. Sometimes the opposite is true. Start with the simplest possible architecture, add complexity only when proven necessary, and continuously question whether tools are enabling or constraining model capabilities.
-
-## References
-
-- Vercel Engineering: "We removed 80% of our agent's tools" (December 2025)
-- AI SDK ToolLoopAgent documentation
-- Vercel Sandbox documentation
-
-
-
-
-
+- Vercel Engineering: "We removed 80% of our agent's tools" (2025年12月)
+- AI SDK ToolLoopAgent 文档
+- Vercel Sandbox 文档

@@ -1,281 +1,281 @@
 ---
 name: context-compression
-description: "This skill should be used when long-running agent sessions need context compression, structured summarization, compaction, token-per-task optimization, or durable handoff summaries that preserve decisions, files, risks, and next actions."
+description: "用于压缩长时间运行的智能体会话，保留决定、文件状态、风险和后续步骤等可延续的信息。"
 ---
 
-# Context Compression Strategies
+# 上下文压缩策略
 
-When agent sessions generate millions of tokens of conversation history, compression becomes mandatory. The naive approach is aggressive compression to minimize tokens per request. The correct optimization target is tokens per task: total tokens consumed to complete a task, including re-fetching costs when compression loses critical information.
+智能体会话可能产生数百万 token 的对话历史，这时压缩就成了必需步骤。简单粗暴的做法是大幅压缩，以减少每次请求的 token 数。正确的优化目标应是每项任务的 token 总量：完成任务所消耗的全部 token，包括因压缩丢失关键信息而需要重新检索信息所产生的成本。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
-- Agent sessions exceed context window limits
-- Codebases exceed context windows (5M+ token systems)
-- Designing conversation summarization strategies
-- Debugging cases where agents "forget" what files they modified
-- Building evaluation frameworks for compression quality
-- Creating durable handoff summaries that preserve decisions, files, risks, and next actions
+遇到以下情况时启用本技能：
+- 智能体会话超出上下文窗口限制。
+- 代码库大于上下文窗口容量（超过 500 万 token）。
+- 设计对话摘要策略。
+- 调试智能体“忘记”自己修改过哪些文件的情况。
+- 构建压缩质量评估框架。
+- 创建可持久保存的交接摘要，其中要保留决策、文件、风险和后续行动。
 
-Do not activate this skill for adjacent work owned by other skills:
-- General token-efficiency tactics such as masking, prefix caching, or partitioning: `context-optimization`.
-- Diagnosing why a long context is failing before choosing a mitigation: `context-degradation`.
-- Writing raw outputs, logs, or plans to files without summarizing them: `filesystem-context`.
-- Designing long-term semantic memory across sessions: `memory-systems`.
-- The model deciding when and where to rewrite its own context: `self-managed-context`. This skill still owns what the replacement text must preserve.
+以下相邻工作由其他技能负责，不要为此启用本技能：
+- 一般性的 token 效率技巧，例如屏蔽、前缀缓存或分区：`context-optimization`。
+- 在选择缓解方法之前诊断长上下文失效的原因：`context-degradation`。
+- 将大型输出、日志或计划原样写入文件，而不对其做摘要：`filesystem-context`。
+- 设计跨会话的长期语义记忆：`memory-systems`。
+- 由模型自行决定何时、何处改写自身上下文：`self-managed-context`。本技能仍负责说明替代文本必须保留哪些内容。
 
-## Core Concepts
+## 核心概念
 
-Context compression trades token savings against information loss. Select from three production-ready approaches based on session characteristics:
+上下文压缩是在节省 token 与丢失信息之间权衡。根据会话特点，从以下三种适用于生产环境的方法中选择：
 
-1. **Anchored Iterative Summarization**: Implement this for long-running sessions where file tracking matters. Maintain structured, persistent summaries with explicit sections for session intent, file modifications, decisions, and next steps. When compression triggers, summarize only the newly-truncated span and merge with the existing summary rather than regenerating from scratch. This prevents drift that accumulates when summaries are regenerated wholesale — each regeneration risks losing details the model considers low-priority but the task requires. Structure forces preservation because dedicated sections act as checklists the summarizer must populate, catching silent information loss.
+1. **锚定式迭代摘要**：适用于需要追踪文件的长时间会话。维护包含明确章节的结构化持久摘要，记录会话目标、文件修改、决策和后续步骤。触发压缩时，只摘要新近被截去的内容，再与现有摘要合并，不要从头重写。这样可以避免整体重写摘要时不断产生的偏移——每次重新生成都可能舍弃模型认为不重要、但任务实际上需要的细节。固定结构会迫使摘要者逐项填写各节，起到检查清单的作用，因而能发现悄无声息的信息丢失。
 
-2. **Opaque Compression**: Reserve this for short sessions where re-fetching costs are low and maximum token savings are required. It produces compressed representations optimized for reconstruction fidelity, achieving 99%+ compression ratios but sacrificing interpretability entirely. The tradeoff matters: there is no way to verify what was preserved without running probe-based evaluation, so never use this when debugging or artifact tracking is critical.
+2. **不透明压缩**：仅用于重新检索成本较低、且需要最大限度节省 token 的短会话。它生成便于高保真还原的压缩表示，压缩率可达 99% 以上，但会完全牺牲可读性。这个取舍很重要：若不运行基于探测问题的评估，就无法核实保留了什么；因此，在调试或追踪产物至关重要时，绝不要使用这种方法。
 
-3. **Regenerative Full Summary**: Use this when summary readability is critical and sessions have clear phase boundaries. It generates detailed structured summaries on each compression trigger. The weakness is cumulative detail loss across repeated cycles — each full regeneration is a fresh pass that may deprioritize details preserved in earlier summaries.
+3. **重新生成完整摘要**：摘要可读性至关重要、且会话有明确阶段边界时使用。每次触发压缩时，都重新生成详细的结构化摘要。它的弱点是多轮压缩会累积细节损失：每次完整重写都相当于重新审阅一遍，可能降低先前摘要中保留细节的优先级。
 
-## Detailed Topics
+## 详细主题
 
-### Optimize for Tokens-Per-Task, Not Tokens-Per-Request
+### 优化每项任务的 token 总量，而非每次请求的 token 数
 
-Measure total tokens consumed from task start to completion, not tokens per individual request. When compression drops file paths, error messages, or decision rationale, the agent must re-explore, re-read files, and re-derive conclusions — wasting far more tokens than the compression saved. A strategy saving 0.5% more tokens per request but causing 20% more re-fetching costs more overall. Track re-fetching frequency as the primary quality signal: if the agent repeatedly asks to re-read files it already processed, compression is too aggressive.
+应衡量从任务开始到结束消耗的 token 总量，而不是单次请求的 token 数。压缩时如果丢失文件路径、错误消息或决策依据，智能体就必须重新探索、重新读取文件、重新推导结论，浪费的 token 远超压缩节省的数量。某种策略每次请求多省 0.5% 的 token，却多造成 20% 的重新检索，整体成本反而更高。应把重新检索的频率作为首要质量信号：如果智能体反复要求重新读取已经处理过的文件，说明压缩过于激进。
 
-### Solve the Artifact Trail Problem First
+### 先解决产物追踪问题
 
-Artifact trail integrity is often the weakest dimension in compression evaluations (claim-context-compression-factory-benchmark). Address this proactively because general summarization cannot reliably maintain it.
+在压缩评估中，产物追踪完整性往往是最薄弱的维度（claim-context-compression-factory-benchmark）。应主动处理这个问题，因为一般性的摘要无法可靠维持这些信息。
 
-Preserve these categories explicitly in every compression cycle:
-- Which files were created (full paths)
-- Which files were modified and what changed (include function names, not just file names)
-- Which files were read but not changed
-- Specific identifiers: function names, variable names, error messages, error codes
+每次压缩时都要明确保留下列类别：
+- 创建了哪些文件（完整路径）。
+- 修改了哪些文件，以及做了什么更改（要写出函数名，不能只写文件名）。
+- 读取过但没有修改的文件。
+- 具体标识符：函数名、变量名、错误消息和错误码。
 
-Implement a separate artifact index or explicit file-state tracking in agent scaffolding rather than relying on the summarizer to capture these details. Even structured summarization with dedicated file sections struggles with completeness over long sessions.
+应在智能体脚手架中实现独立的产物索引或明确的文件状态追踪，而不要依赖摘要器自行捕捉这些细节。即使结构化摘要专门留有文件章节，长会话中仍很难确保内容完整。
 
-### Structure Summaries with Mandatory Sections
+### 使用必填章节组织摘要
 
-Build structured summaries with explicit sections that prevent silent information loss. Each section acts as a checklist the summarizer must populate, making omissions visible rather than silent.
+构建包含明确章节的结构化摘要，避免信息悄无声息地丢失。每个章节都相当于一份检查清单，摘要器必须逐项填写，让遗漏显现出来，而不是无声地消失。
 
 ```markdown
-## Session Intent
+## 会话目标
 [What the user is trying to accomplish]
 
-## Files Modified
+## 已修改文件
 - auth.controller.ts: Fixed JWT token generation
 - config/redis.ts: Updated connection pooling
 - tests/auth.test.ts: Added mock setup for new config
 
-## Decisions Made
+## 已作出的决定
 - Using Redis connection pool instead of per-request connections
 - Retry logic with exponential backoff for transient failures
 
-## Current State
+## 当前状态
 - 14 tests passing, 2 failing
 - Remaining: mock setup for session service tests
 
-## Next Steps
+## 后续步骤
 1. Fix remaining test failures
 2. Run full test suite
 3. Update documentation
 ```
 
-Adapt sections to the agent's domain. A debugging agent needs "Root Cause" and "Error Messages"; a migration agent needs "Source Schema" and "Target Schema." The structure matters more than the specific sections — any explicit schema outperforms freeform summarization.
+根据智能体的领域调整章节。调试智能体需要“根因”和“错误消息”；迁移智能体则需要“源 schema”和“目标 schema”。章节结构比章节本身的具体名称更重要；任何明确的 schema 都比自由形式的摘要更可靠。
 
-### Choose Compression Triggers Strategically
+### 谨慎选择压缩触发条件
 
-When to trigger compression matters as much as how to compress. Select a trigger strategy based on session predictability:
+何时触发压缩与如何压缩同样重要。应根据会话的可预测性选择触发策略：
 
-| Strategy | Trigger Point | Trade-off |
+| 策略 | 触发点 | 权衡 |
 |----------|---------------|-----------|
-| Fixed threshold | 70-80% context utilization | Simple but may compress too early |
-| Sliding window | Keep last N turns + summary | Predictable context size |
-| Importance-based | Compress low-relevance sections first | Complex but preserves signal |
-| Task-boundary | Compress at logical task completions | Clean summaries but unpredictable timing |
+| 固定阈值 | 上下文利用率达到 70% 到 80% | 简单，但可能过早压缩 |
+| 滑动窗口 | 保留最近 N 轮对话和一份摘要 | 上下文大小可预测 |
+| 按重要性压缩 | 先压缩相关性较低的章节 | 复杂，但能保留信号 |
+| 按任务边界压缩 | 在逻辑任务完成时压缩 | 摘要清晰，但触发时间不可预测 |
 
-Default to sliding window with structured summaries for coding agents — it provides the best balance of predictability and quality. Use task-boundary triggers when sessions have clear phase transitions (e.g., research then implementation then testing).
+对编程智能体，默认采用滑动窗口与结构化摘要相结合的方法，兼顾可预测性和质量。当会话包含明确的阶段切换（例如先研究、再实现、最后测试）时，可在任务边界触发压缩。
 
-### Evaluate Compression with Probes, Not Metrics
+### 使用探测问题评估压缩，而不是依赖指标
 
-Traditional metrics like ROUGE or embedding similarity fail to capture functional compression quality. A summary can score high on lexical overlap while missing the one file path the agent needs to continue.
+ROUGE、嵌入相似度等传统指标无法衡量压缩在实际功能上的质量。摘要即使在词汇重合度上得分很高，也可能漏掉智能体继续工作所需的某个文件路径。
 
-Use probe-based evaluation: after compression, pose questions that test whether critical information survived. If the agent answers correctly, compression preserved the right information. If not, it guesses or hallucinates.
+使用基于探测问题的评估：压缩后提出一些问题，检查关键信息是否保留下来。智能体回答正确，就说明压缩保留了需要的信息；否则它只能猜测或产生幻觉。
 
-| Probe Type | What It Tests | Example Question |
-|------------|---------------|------------------|
-| Recall | Factual retention | "What was the original error message?" |
-| Artifact | File tracking | "Which files have we modified?" |
-| Continuation | Task planning | "What should we do next?" |
-| Decision | Reasoning chain | "What did we decide about the Redis issue?" |
+| 探测类型 | 测试内容 | 示例问题 |
+|------------|------------------|------------------|
+| 回忆 | 是否保留事实 | “最初的错误消息是什么？” |
+| 产物 | 是否追踪文件 | “我们修改了哪些文件？” |
+| 延续 | 是否能规划任务 | “接下来应该做什么？” |
+| 决策 | 是否保留推理链 | “我们对 Redis 问题做出了什么决定？” |
 
-### Score Compression Across Six Dimensions
+### 从六个维度为压缩评分
 
-Evaluate compression quality for coding agents across these dimensions. Accuracy and artifact-trail preservation tend to separate methods more clearly than lexical similarity (claim-context-compression-factory-benchmark), so compression needs specialized handling beyond general summarization.
+从以下维度评估编程智能体的压缩质量。准确性和产物追踪保留情况通常比词汇相似度更能区分不同方法（claim-context-compression-factory-benchmark），因此压缩需要比一般摘要更专门的处理方式。
 
-1. **Accuracy**: Are technical details correct — file paths, function names, error codes?
-2. **Context Awareness**: Does the response reflect current conversation state?
-3. **Artifact Trail**: Does the agent know which files were read or modified?
-4. **Completeness**: Does the response address all parts of the question?
-5. **Continuity**: Can work continue without re-fetching information?
-6. **Instruction Following**: Does the response respect stated constraints?
+1. **准确性**：技术细节是否正确，例如文件路径、函数名和错误码？
+2. **上下文感知**：回答是否反映了当前对话状态？
+3. **产物追踪**：智能体是否知道读过或修改过哪些文件？
+4. **完整性**：回答是否涵盖问题的所有部分？
+5. **连续性**：能否不重新检索信息而继续工作？
+6. **指令遵循**：回答是否遵守已说明的约束？
 
-## Practical Guidance
+## 实践指南
 
-### Apply the Three-Phase Compression Workflow for Large Codebases
+### 对大型代码库采用三阶段压缩工作流
 
-For codebases or agent systems exceeding context windows, compress through three sequential phases. Each phase narrows context so the next phase operates within budget.
+对于超过上下文窗口容量的代码库或智能体系统，按顺序分三个阶段压缩。每个阶段都会缩小上下文，让下一阶段能在预算内进行。
 
-1. **Research Phase**: Explore architecture diagrams, documentation, and key interfaces. Compress exploration into a structured analysis of components, dependencies, and boundaries. Output: a single research document that replaces raw exploration.
+1. **研究阶段**：探索架构图、文档和关键接口。把探索结果压缩为对组件、依赖关系和边界的结构化分析。输出：一份研究文档，用它替代原始探索内容。
 
-2. **Planning Phase**: Convert the research document into an implementation specification with function signatures, type definitions, and data flow. A 5M-token codebase compresses to approximately 2,000 words of specification at this stage.
+2. **规划阶段**：将研究文档转化为实现规格，其中包含函数签名、类型定义和数据流。此时，一个 500 万 token 的代码库可以压缩为约 2,000 词的规格说明。
 
-3. **Implementation Phase**: Execute against the specification. Context stays focused on the spec plus active working files, not raw codebase exploration. This phase rarely needs further compression because the spec is already compact.
+3. **实现阶段**：按照规格执行。上下文聚焦于规格和当前正在处理的文件，而非代码库探索过程的原始内容。由于规格已经足够精简，此阶段通常不需要再次压缩。
 
-### Use Example Artifacts as Compression Seeds
+### 用示例产物作为压缩种子
 
-When provided with a manual migration example or reference PR, use it as a template to understand the target pattern rather than exploring the codebase from scratch. The example reveals constraints static analysis cannot surface: which invariants must hold, which services break on changes, and what a clean implementation looks like.
+如果有手动迁移示例或参考 PR，应将其作为理解目标模式的模板，而不是从头探索整个代码库。示例会揭示静态分析无法发现的约束：哪些不变量必须保持、哪些服务会因更改而出问题，以及什么样的实现才算干净。
 
-This matters most when the agent cannot distinguish essential complexity (business requirements) from accidental complexity (legacy workarounds). The example artifact encodes that distinction implicitly, saving tokens that would otherwise go to trial-and-error exploration.
+当智能体无法区分必要的复杂性（业务需求）与偶然的复杂性（遗留规避方案）时，这一点尤为重要。示例产物会隐含地呈现这种区别，省去原本需要试错探索的 token。
 
-### Implement Anchored Iterative Summarization Step by Step
+### 分步实现锚定式迭代摘要
 
-1. Define explicit summary sections matching the agent's domain (debugging, migration, feature development)
-2. On first compression trigger, summarize the truncated history into those sections
-3. On subsequent compressions, summarize only newly truncated content — do not re-summarize the existing summary
-4. Merge new information into existing sections rather than regenerating them, deduplicating by file path and decision identity
-5. Tag which information came from which compression cycle — this enables debugging when summaries drift
+1. 根据智能体的领域（调试、迁移、功能开发）定义明确的摘要章节。
+2. 第一次触发压缩时，把被截去的历史汇总到这些章节中。
+3. 后续触发压缩时，只摘要新近被截去的内容，不要重新摘要现有摘要。
+4. 将新信息合并到现有章节中，而不是重新生成；根据文件路径和决策标识去重。
+5. 标记每条信息来自哪轮压缩，这样摘要发生偏移时便于排查。
 
-### Select the Right Approach for the Session Profile
+### 根据会话特点选择合适的方法
 
-**Use anchored iterative summarization when:**
-- Sessions are long-running (100+ messages)
-- File tracking matters (coding, debugging)
-- Verification of preserved information is needed
+**适用锚定式迭代摘要的情况：**
+- 会话持续时间长（超过 100 条消息）。
+- 需要追踪文件（编程、调试）。
+- 需要验证信息是否保留。
 
-**Use opaque compression when:**
-- Maximum token savings are required
-- Sessions are relatively short
-- Re-fetching costs are low (e.g., no file system access needed)
+**适用不透明压缩的情况：**
+- 需要尽可能节省 token。
+- 会话相对较短。
+- 重新检索成本低（例如不需要访问文件系统）。
 
-**Use regenerative summaries when:**
-- Summary interpretability is critical for human review
-- Sessions have clear phase boundaries
-- Full context review is acceptable on each compression trigger
+**适用重新生成摘要的情况：**
+- 摘要需要便于人工审阅。
+- 会话有清晰的阶段边界。
+- 可以接受每次触发压缩时都重新审阅完整上下文。
 
-### Calibrate Compression Ratios by Method
+### 根据方法校准压缩率
 
-| Method | Compression Ratio | Quality Score | Trade-off |
+| 方法 | 压缩率 | 质量分数 | 权衡 |
 |--------|-------------------|---------------|-----------|
-| Anchored Iterative | 98.6% | 3.70 | Best quality, slightly less compression |
-| Regenerative | 98.7% | 3.44 | Good quality, moderate compression |
-| Opaque | 99.3% | 3.35 | Best compression, quality loss |
+| 锚定式迭代摘要 | 98.6% | 3.70 | 质量最好，压缩率略低 |
+| 重新生成摘要 | 98.7% | 3.44 | 质量较好，压缩程度适中 |
+| 不透明压缩 | 99.3% | 3.35 | 压缩率最高，但质量有所损失 |
 
-Use these as source-specific benchmark figures, not universal constants (claim-context-compression-factory-benchmark). For any task where re-fetching costs exist, this tradeoff generally favors structured approaches.
+这些数据来自特定来源的基准，不是普遍适用的常数（claim-context-compression-factory-benchmark）。对于重新检索有成本的任务，这种权衡通常更有利于结构化方法。
 
-## Examples
+## 示例
 
-**Example 1: Debugging Session Compression**
+**示例 1：压缩调试会话**
 
-Original context (89,000 tokens, 178 messages):
-- 401 error on /api/auth/login endpoint
-- Traced through auth controller, middleware, session store
-- Found stale Redis connection
-- Fixed connection pooling, added retry logic
-- 14 tests passing, 2 failing
+压缩前的上下文（89,000 token，178 条消息）：
+- `/api/auth/login` 端点返回 401 错误。
+- 沿着身份验证控制器、中间件和会话存储逐步追查。
+- 找到过期的 Redis 连接。
+- 修复连接池配置，添加重试逻辑。
+- 14 个测试通过，2 个测试失败。
 
-Structured summary after compression:
+压缩后的结构化摘要：
 
 ```markdown
-## Session Intent
+## 会话目标
 Debug 401 Unauthorized error on /api/auth/login despite valid credentials.
 
-## Root Cause
+## 根本原因
 Stale Redis connection in session store. JWT generated correctly but session could not be persisted.
 
-## Files Modified
+## 已修改文件
 - auth.controller.ts: No changes (read only)
 - middleware/cors.ts: No changes (examined)
 - config/redis.ts: Fixed connection pooling configuration
 - services/session.service.ts: Added retry logic for transient failures
 - tests/auth.test.ts: Updated mock setup
 
-## Test Status
+## 检查状态
 14 passing, 2 failing (mock setup issues)
 
-## Next Steps
+## 后续步骤
 1. Fix remaining test failures (mock session service)
 2. Run full test suite
 3. Deploy to staging
 ```
 
-**Example 2: Probe Response Quality**
+**示例 2：探测回答质量**
 
-After compression, asking "What was the original error?":
+压缩后询问“最初的错误是什么？”：
 
-Good response (structured summarization):
-> "The original error was a 401 Unauthorized response from the /api/auth/login endpoint. Users received this error with valid credentials. Root cause was stale Redis connection in session store."
+良好回答（结构化摘要）：
+> “最初的错误是 `/api/auth/login` 端点返回 401 Unauthorized。用户提供有效凭据时仍会收到此错误。根因是会话存储中的 Redis 连接已过期。”
 
-Poor response (aggressive compression):
-> "We were debugging an authentication issue. The login was failing. We fixed some configuration problems."
+较差回答（激进压缩）：
+> “我们在排查身份验证问题。登录失败了。我们修复了一些配置问题。”
 
-The structured response preserves endpoint, error code, and root cause. The aggressive response loses all technical detail.
+结构化回答保留了端点、错误码和根因。激进压缩后的回答则丢失了所有技术细节。
 
-## Guidelines
+## 指南
 
-1. Optimize for tokens-per-task, not tokens-per-request
-2. Use structured summaries with explicit sections for file tracking
-3. Trigger compression at 70-80% context utilization
-4. Implement incremental merging rather than full regeneration
-5. Test compression quality with probe-based evaluation
-6. Track artifact trail separately if file tracking is critical
-7. Accept slightly lower compression ratios for better quality retention
-8. Monitor re-fetching frequency as a compression quality signal
+1. 优化每项任务的 token 总量，而不是每次请求的 token 数。
+2. 使用明确章节的结构化摘要来追踪文件。
+3. 在上下文利用率达到 70% 到 80% 时触发压缩。
+4. 逐步合并新增信息，而不是每次都完整重写摘要。
+5. 使用基于探测问题的评估测试压缩质量。
+6. 文件追踪至关重要时，单独记录产物路径和状态。
+7. 为更好地保留质量，接受略低的压缩率。
+8. 监控重新检索频率，将其作为压缩质量信号。
 
-## Gotchas
+## 易错点
 
-1. **Never compress tool definitions or schemas**: Compressing function call schemas, API specs, or tool definitions destroys agent functionality entirely. The agent cannot invoke tools whose parameter names or types have been summarized away. Treat tool definitions as immutable anchors that bypass compression.
+1. **绝不要压缩工具定义或 schema**：压缩函数调用 schema、API 规格或工具定义，会彻底破坏智能体功能。参数名称或类型一旦被摘要掉，智能体就无法调用工具。工具定义应视为不可变的锚点，不参与压缩。
 
-2. **Compressed summaries hallucinate facts**: When an LLM summarizes conversation history, it may introduce plausible-sounding details that never appeared in the original. Always validate compressed output against source material before discarding originals — especially for file paths, error codes, and numeric values that the summarizer may "round" or fabricate.
+2. **压缩摘要会产生幻觉**：LLM 摘要对话历史时，可能编造原文中不存在、但听起来合理的细节。丢弃原文之前，应始终对照来源核实压缩结果；尤其要检查摘要器可能会“取整”或捏造的文件路径、错误码和数值。
 
-3. **Compression breaks artifact references**: File paths, commit SHAs, variable names, and code snippets get paraphrased or dropped during compression. A summary saying "updated the config file" when the agent needs `config/redis.ts` causes re-exploration. Preserve identifiers verbatim in dedicated sections rather than embedding them in prose.
+3. **压缩会破坏产物引用**：压缩过程中，文件路径、提交 SHA、变量名和代码片段可能被改写或丢弃。若智能体需要 `config/redis.ts`，摘要却只写“更新了配置文件”，它就必须重新探索。应在专门章节逐字保留标识符，而不是把它们融进散文描述。
 
-4. **Early turns contain irreplaceable constraints**: The first few turns of a session often contain task setup, user constraints, and architectural decisions that cannot be re-derived. Protect early turns from compression or extract their constraints into a persistent preamble that survives all compression cycles.
+4. **早期轮次包含无法替代的约束**：会话最初几轮通常包含任务设置、用户约束和架构决策，这些内容无法重新推导。应保护早期轮次不被压缩，或将约束提取到能跨越所有压缩周期的持久前导内容中。
 
-5. **Aggressive ratios compound across cycles**: A 95% compression ratio seems safe once, but applying it repeatedly compounds losses. After three cycles at 95%, only 0.0125% of original tokens remain. Calibrate ratios assuming multiple compression cycles, not a single pass.
+5. **多轮激进压缩会累积损失**：一次压缩率为 95% 看起来可能安全，但反复应用会让信息损失层层累积。连续三轮、每轮压缩率为 95% 后，只剩下原始 token 的 0.0125%。校准压缩率时应考虑多轮压缩，而不只是单次压缩。
 
-6. **Code and prose need different compression**: Prose compresses well because natural language is redundant. Code does not — removing a single token from a function signature or import path can make it useless. Apply domain-specific compression strategies: summarize prose sections aggressively while preserving code blocks and structured data verbatim.
+6. **代码和散文需要不同的压缩方法**：散文中常有冗余，容易压缩；代码则不然，函数签名或导入路径少一个 token 都可能让代码失效。应采用领域特定的压缩策略：大幅摘要散文部分，同时逐字保留代码块和结构化数据。
 
-7. **Probe-based evaluation gives false confidence**: Probes can pass despite critical information being lost, because the probes test only what they ask about. A probe set that checks file names but not function signatures will miss signature loss. Design probes to cover all six evaluation dimensions, and rotate probe sets across evaluation runs to avoid blind spots.
+7. **基于探测问题的评估也会造成虚假的信心**：即使探测问题通过了测试，仍可能有重要信息已经丢失，因为这些问题只检查了实际询问的内容。只检查文件名、不检查函数签名的探测集，会漏掉签名丢失的问题。应设计覆盖全部六项评估维度的探测，并在不同评估运行中轮换探测集，避免盲区。
 
-## Integration
+## 集成
 
-This skill connects to several others in the collection:
+本技能与本系列的其他技能有以下联系：
 
-- context-degradation - Compression is a mitigation strategy for degradation
-- context-optimization - Compression is one optimization technique among many
-- evaluation - Probe-based evaluation applies to compression testing
-- memory-systems - Compression relates to scratchpad and summary memory patterns
-- self-managed-context - When the model triggers and places its own compaction edits, this skill supplies what the replacement note preserves
+- context-degradation - 压缩是缓解上下文退化的一种策略。
+- context-optimization - 压缩是多种优化技术中的一种。
+- evaluation - 压缩测试可采用基于探测问题的评估。
+- memory-systems - 压缩与草稿区及摘要记忆模式相关。
+- self-managed-context - 模型决定何时以及何处修改自身上下文时，本技能规定替代说明需要保留什么。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Evaluation Framework Reference](./references/evaluation-framework.md) - Read when: building or calibrating a probe-based evaluation pipeline, or when needing scoring rubrics and LLM judge configuration for compression quality assessment
+内部参考资料：
+- [Evaluation Framework Reference](./references/evaluation-framework.md) - 阅读时机：构建或校准基于探测问题的评估流水线，或需要压缩质量评分标准和 LLM 评审配置时
 
-Related skills in this collection:
-- context-degradation - Read when: diagnosing why agent performance drops over long sessions, before applying compression as a mitigation
-- context-optimization - Read when: compression alone is insufficient and broader optimization strategies (pruning, caching, routing) are needed
-- evaluation - Read when: designing evaluation frameworks beyond compression-specific probes, including general LLM-as-judge methodology
+本系列的相关技能：
+- context-degradation - 阅读时机：应用压缩进行缓解之前，先诊断智能体表现为何会随会话变长而下降
+- context-optimization - 阅读时机：仅靠压缩仍然不够，需要更广泛的优化策略（剪枝、缓存、路由）时
+- evaluation - 阅读时机：设计超出压缩专项探测范围的评估框架，包括通用 LLM 评审方法时
 
-External resources:
-- Factory Research: Evaluating Context Compression for AI Agents (December 2025) - Read when: needing benchmark data on compression method comparisons or the 36,000-message evaluation dataset
-- Research on LLM-as-judge evaluation methodology (Zheng et al., 2023) - Read when: implementing or validating LLM judge scoring to understand bias patterns and calibration
-- Netflix Engineering: "The Infinite Software Crisis" - Three-phase workflow and context compression at scale (AI Summit 2025) - Read when: implementing the three-phase compression workflow for large codebases or understanding production-scale context management
+外部资源：
+- Factory Research：《Evaluating Context Compression for AI Agents》（2025 年 12 月）——需要压缩方法对比基准数据或 36,000 条消息评估数据集时阅读
+- 关于 LLM 评审评估方法的研究（Zheng 等，2023 年）——实现或验证 LLM 评审评分、了解偏差模式和校准方法时阅读
+- Netflix Engineering：《The Infinite Software Crisis》——在大型代码库中实现三阶段工作流和上下文压缩，或了解生产级上下文管理时阅读（AI Summit 2025）
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-22
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 1.3.0
+**创建时间**：2025-12-22
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：1.3.0

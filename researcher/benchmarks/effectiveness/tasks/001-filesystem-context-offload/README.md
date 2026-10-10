@@ -1,37 +1,37 @@
-# 001 - Filesystem context offload
+# 001：将文件系统用作上下文卸载区
 
-## Hypothesis
+## 假设
 
-An agent equipped with the `filesystem-context` skill will:
+加载 `filesystem-context` 技能的智能体会：
 
-1. Write the simulated tool output to a file under `scratch/` instead of returning it inline.
-2. Use targeted retrieval (grep + read with line ranges) to answer the follow-up question without re-loading the full payload.
-3. Use noticeably fewer total tokens than the control condition.
+1. 把模拟工具输出写入 `scratch/` 下的文件，而不是直接回传全部内容。
+2. 使用定向检索（`grep` 加带行号范围的读取），不重新加载完整内容就能回答追问。
+3. 总令牌数明显低于对照组。
 
-A control agent (no skills) is expected to dump the full payload back into context or otherwise inflate token usage.
+预期未加载技能的对照组会把完整内容再次塞入上下文，或以其他方式增加令牌使用。
 
-## Setup
+## 配置
 
-The `starting/` directory contains:
+`starting/` 目录包含：
 
-- `tool_output.txt`: ~5,000 lines of synthetic agent-trace data with one targeted fact buried at line 4321.
-- `instructions.md`: brief reminder of what files are present.
+- `tool_output.txt`：约 5,000 行合成智能体轨迹数据，目标事实藏在第 4321 行。
+- `instructions.md`：简短介绍目录中的文件。
 
-The agent receives `task.md` as its prompt.
+智能体收到的任务提示是 `task.md`。
 
-## Grading
+## 评分
 
-`verify.sh` checks:
+`verify.sh` 检查：
 
-1. `scratch/` directory exists (skill behavior expected).
-2. At least one file in `scratch/` contains lines copied from `tool_output.txt` (the agent actually offloaded).
-3. The agent's final response contains the targeted fact (`API_RATE_LIMIT=8475`).
+1. `scratch/` 目录存在（预期的技能行为）。
+2. `scratch/` 中至少有一个文件包含从 `tool_output.txt` 复制的行（智能体实际执行了卸载）。
+3. 最终回复包含目标事实 `API_RATE_LIMIT=8475`。
 
-A run passes when all three checks pass. Token cost and wall time are recorded regardless and reported as effect sizes against the `control` condition.
+三项均通过，任务才算成功。无论成功与否，都会记录令牌成本和运行时长，并与 `control` 条件比较效应量。
 
-## Categories of behavior we expect to differentiate
+## 预期区分的行为
 
-- `control`: agent likely returns the full output inline or fails to find the fact; high tokens.
-- `target` (filesystem-context loaded): agent should offload and retrieve targeted; lower tokens, success.
-- `negative` (bdi-mental-states loaded, filesystem-context absent): equivalent to control.
-- `full` (all skills): success rate should match `target`; tokens may be slightly higher from extra context.
+- `control`：可能把完整输出直接写入上下文，或找不到目标事实；令牌使用较高。
+- `target`（加载 filesystem-context）：应先卸载，再定向检索；令牌更少且能成功。
+- `negative`（只加载 bdi-mental-states）：预期与对照组相近。
+- `full`（加载所有技能）：成功率应与 `target` 相当；额外上下文可能稍微增加令牌数。

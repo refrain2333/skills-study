@@ -1,336 +1,234 @@
-# How We Built v2.3.0
+# 我们如何构建 v2.3.0
 
-A narrative companion to `auto-research-experiment.md`. That document captures the technical findings. This one captures the process: what we read, how we worked, what each session produced, what shipped, and how to talk about it without overselling.
+本文是 `auto-research-experiment.md` 的叙事补充。前者记录技术发现；本文记录过程：读了什么、如何协作、每个阶段产出了什么、发布了什么，以及如何准确介绍成果而不过度宣传。
 
-If you want the engineering rationale, read `auto-research-experiment.md`. If you want the project story or templates for sharing it, read this.
+需要工程决策理由时读 `auto-research-experiment.md`；需要了解项目故事或分享提纲时读本文。
 
-## Origins
+## 起点
 
-The starting question was small and concrete: how do we keep this skill repository alive without it becoming a one-person editorial backlog. The 10k stars made the answer matter; the absence of a curation pipeline made it urgent.
+最初的问题很具体：如何让技能仓库持续更新，而不变成一个人的编辑待办清单？仓库已有约一万个星标，维护需求重要；但当时缺少内容筛选流程，问题也很紧迫。
 
-Three pieces of prior work shaped the design.
+设计受三项工作影响。
 
-### Karpathy's autoresearch
+### Karpathy 的 autoresearch
 
-[karpathy/autoresearch](https://github.com/karpathy/autoresearch) is the smallest interesting autonomous experimentation harness. It has one editable file (`train.py`), one locked evaluator (`prepare.py`), one scalar metric, a `results.tsv` results log, fixed wall-clock budgets, and `git` rollback on non-improving attempts. That is the entire harness.
+[karpathy/autoresearch](https://github.com/karpathy/autoresearch) 展示了一个极简自主实验运行框架：一个可编辑的 `train.py`、一个锁定的 `prepare.py` 评估器、一个标量指标、一份 `results.tsv` 日志、固定墙钟预算，以及表现未提升时通过 Git 回滚。整个运行框架只有这些内容。
 
-The lesson it teaches is not that every loop needs one scalar metric. The lesson is that ambiguous feedback produces ambiguous autonomy. If the agent can change the evaluator, it will eventually optimize the benchmark instead of the task.
+重要经验不是所有循环都必须使用单一标量指标，而是反馈含糊会导致自主行为也含糊。如果智能体能修改评估器，最终就会优化基准本身，而非真实任务。
 
-This became the architectural seed for our `locked-editable-surfaces` mechanism: classify every file as locked, editable, append-only, or human-controlled before the loop starts.
+这成为 `locked-editable-surfaces` 机制的设计种子：运行开始前，将所有文件划分为锁定、可编辑、只追加或人工控制区域。
 
-### Prime Intellect's auto-NanoGPT
+### Prime Intellect 的 auto-NanoGPT
 
-[primeintellect.ai/auto-nanogpt](https://www.primeintellect.ai/auto-nanogpt) showed what durable agent state looks like in practice. Their `THREAD.md` pattern, the source queue files, the rejected-attempt log, the explicit handover summary at the bottom of each thread: these are not nice-to-haves. They are the difference between a loop that survives context compaction and one that does not.
+[auto-nanogpt](https://www.primeintellect.ai/auto-nanogpt) 展示了持久智能体状态的实际形式。`THREAD.md` 讨论日志、来源队列、拒绝尝试记录和明确的交接摘要，并非锦上添花，而是循环能否在上下文压缩后继续运行的区别。
 
-This became our `durable-research-thread` mechanism and the run-directory layout we ship today: every run has `THREAD.md`, `sources/queue.jsonl`, `proposals/`, `reports/`, and `logs/`.
+这形成了 `durable-research-thread` 机制和当前运行目录结构：每次运行都有 `THREAD.md`、`sources/queue.jsonl`、`proposals/`、`reports/` 和 `logs/`。
 
-### Parallel deep research on autonomous research frameworks
+### 关于自主研究框架的 Parallel 深度研究
 
-We then ran a targeted deep-research query through Parallel (interaction `trun_64f5be03055a4b52adf17481e4b865bc`) asking specifically how to build an autonomous research-to-skill system inside a file-based repository. The raw output is preserved under the seed run's `sources/evidence/raw/` directory. The findings that survived rubric scoring became the v2.2.0 architecture:
+团队使用 Parallel 进行了针对性深度研究（交互编号 `trun_64f5be03055a4b52adf17481e4b865bc`），询问如何在文件化仓库中构建自主研究转技能系统。原始输出保存在种子运行 `sources/evidence/raw/` 下。通过评分规则筛选后，以下结论进入 v2.2.0 架构：
 
-- Deterministic validation harnesses as the locked evaluator.
-- Durable scratchpads and THREAD-style logs for auditability.
-- Novelty gates to prevent redundant skill revisions.
-- Pairwise skill revision evaluation for competing drafts.
-- Auto-PR workflows that prepare changes but never auto-merge.
+- 将确定性验证运行框架作为锁定评估器。
+- 用持久草稿区和 `THREAD.md` 式日志支持审计。
+- 用新颖性门槛避免重复技能修订。
+- 对竞争草案进行技能修订成对评估。
+- 自动化流程可以准备拉取请求，但绝不自动合并。
 
-All five made it into the published harness. The deep-research summary at `researcher/runs/20260515-035228-executable-autonomous-research-frameworks/sources/evidence/deep-research-summary.md` is the worked-example artifact.
+这些机制都进入了正式运行框架。`researcher/runs/20260515-035228-executable-autonomous-research-frameworks/sources/evidence/deep-research-summary.md` 是对应的完整示例产物。
 
-## How We Worked
+## 协作方式
 
-The collaboration ran across multiple sessions. The pattern that worked was always the same:
+整个过程跨多个会话进行。有效模式始终是：
 
-```
-research -> plan -> implement -> review -> harden -> verify
-```
-
-### Mode switching
-
-When the next step was unclear or had real architectural trade-offs, the conversation went into plan mode. The plan was written, the user approved it, then the conversation switched back to agent mode for execution. This matters because the plan became a contract that future steps could be checked against, and it stopped premature implementation on ambiguous goals.
-
-### Subagent reviews
-
-After every meaningful batch of implementation, a `code-reviewer` subagent was invoked with a tightly scoped prompt: "find only HIGH-CONFIDENCE issues that would cause incorrect behavior, data loss, runaway resource use, or security risk. Skip stylistic comments."
-
-Those reviews found bugs the implementation pass missed:
-
-- Closed runs would never be reaped (the loop would silently fill `parked.jsonl` until it halted).
-- `write_jsonl` was non-atomic and could corrupt queue files on kill mid-write.
-- `pop_inbox_item` released the lock before `init_run`, so two concurrent loop_step invocations could exceed `max_active_runs`.
-- The HTTP fetcher accepted `file://` and `data:` schemes (SSRF/LFI risk).
-- The launchd wrapper short-circuited the status refresh when `loop_step` exited 78 (no work).
-- URL deduplication used the raw URL while `source_id` hashed the normalized form.
-
-Each of these had a one-line root cause and a clean fix once surfaced. None would have shown up in unit tests of individual functions because they were interactions between components.
-
-### Live execution as a deterministic gate
-
-The continuous loop was built and then actually run for thirteen iterations during the session: discovered eight sources from a manual seed, initialized six runs (capped by the daily budget), fetched four sources via stdlib HTTP totalling about 1.7 MB, parked five runs at the correct gates, closed one run and watched the reaper move it to `done.jsonl`.
-
-This is mundane in description but high-signal in practice. Half the bugs above were only obvious because the live execution exposed them. Paper review of orchestration code consistently misses interaction bugs.
-
-### Tools that mattered
-
-- `code-reviewer` subagent: caught the compound failures listed above.
-- `code-explorer` subagent: mapped the existing skill corpus before designing the breakthrough roadmap.
-- `code-architect` subagent: produced the first draft of the evaluation strategy that became the benchmark harness.
-- Parallel deep research: provided the architectural recommendations that the rubrics later turned into accepted mechanisms.
-- DeepWiki: already linked from the README; useful for reviewers who want a higher-level overview without reading every skill.
-
-## Stage 2: The Description-Benchmark Loop Closes
-
-The narrative above ends with v2.2.0 shipping the scaffolding. v2.3.0 is the chapter where the scaffolding produces measurements that change what gets written.
-
-### The first run was honest about its own failures
-
-The v2.2.0 router benchmark sweep ran 566 of 600 calls before the sequential runner stalled silently. The aggregate numbers across four models (composer-2, claude-opus-4-7, gpt-5.5, gemini-3.1-pro) clustered at ~88.6% top-1, which sounded fine until we looked at the per-skill confusion matrix.
-
-One skill carried almost all of the routing failure: `context-fundamentals` was predicted correctly only 12 of 47 times. The rest split across `context-degradation` (12), `project-development` (12), `context-optimization` (8). A second pair, `tool-design` vs `project-development`, leaked symmetrically at ~25%. The other 11 skills were near-perfect.
-
-### What we changed
-
-Two interventions, both small:
-
-- Rewrote `context-fundamentals` to be unambiguously about conceptual foundations. The old description claimed ownership of "designing agent architectures," "debugging context quality issues," and "setting context budgets" - all of which belong to other skills. The new description explicitly routes operational work to the specialized skills.
-- Rewrote `tool-design` and `project-development` with explicit cross-references to each other. The old descriptions both mentioned "architectural" or "structuring" framings that overlapped. The new descriptions define the unit of work: tool-design owns single-tool decisions; project-development owns project-shape decisions; each routes the other.
-
-We also fixed the runner so the next sweep would not silently die: bounded parallelism (concurrency=4), resume capability (scans results folder on startup), and per-run progress logging.
-
-### What we measured
-
-The second sweep ran 600/600 in 15 minutes (4x speedup from concurrency). Per-skill effect sizes for the three targeted descriptions:
-
-- `context-fundamentals`: 0.255 -> 0.489 (**+23.4pp**)
-- `project-development`: 0.750 -> 1.000 (**+25pp**, now perfect routing)
-- `tool-design`: 0.729 -> 0.807 (**+7.8pp**)
-
-Aggregate top-1: 0.888 -> 0.900. Three of four models gained on top-1; all four gained on top-3. Format compliance: 99.5% across 600 calls. Total Cursor SDK cost: ~$7.20.
-
-### Why this matters more than the absolute numbers
-
-The aggregate moved by ~1pp; individual skills moved by 25pp. **The aggregate is the wrong unit**. The confusion matrix tells you which descriptions need work and which directions the leakage goes. The delta-vs-baseline comparison tells you whether the fix worked. Without per-skill effect sizes, this entire feedback loop is invisible.
-
-End to end from "the v2.2.0 benchmark finished" to "v2.3.0 measured the rewrites" was under two hours of focused work. This is the cheapest, highest-leverage feedback loop in the system. Future contributions should run it whenever a skill description changes.
-
-### The shortcut we corrected
-
-The first post-benchmark fix was too narrow: rewrite three descriptions, align those three bodies, and call the release ready. That improved the measured router surface, but it did not make the whole repo better through auto-research.
-
-The correction was a corpus-wide hardening pass. Three read-only audits looked at activation boundaries, mechanism and claim coverage, and the skill-quality standard. Then every skill was brought under the same rule: explicit owned scope, explicit adjacent routes, practical guidance an agent can execute, examples, gotchas, integration as a boundary map, and machine-readable mechanisms/claims where the prose makes reusable or volatile claims.
-
-Concrete result:
-
-- `bdi-mental-states` and `hosted-agents` were no longer structural outliers; both gained missing practical guidance/examples and passed strict health.
-- Mechanisms increased from 5 to 16, so every skill now owns at least one accepted behavior pattern.
-- Claim provenance increased from 6 to 12, with concrete repo source paths replacing vague research-run summaries.
-- Activation fixtures increased from 14 to 19, covering previously untested skills.
-- `validate_repo.py --strict` now enforces full body sections and explicit non-activation boundaries.
-- Skill health moved from 0.8111 with 2 flagged skills to 0.9117 with 0 flagged skills.
-- A fresh 600-record router sweep on May 19 verified the corpus-wide pass did not introduce broad routing collapse: 0 format failures after retrying transient blanks, Gemini 0.920 top-1, Composer 0.913, GPT-5.5 0.913, Claude Opus 4.7 0.840. The remaining failures are still concentrated in ambiguous/negative-control prompts and the `context-fundamentals` catch-all boundary.
-
-This is the release's real lesson: improving a skill corpus means changing prose, metadata, and gates together. A prettier SKILL.md without updated mechanisms, claims, corpus index, fixtures, and validators is not self-improving.
-
-### What v2.3.0 inherits from v2.2.0
-
-Everything that shipped in v2.2.0 is still here: the file-based researcher operating system, the run state machine, the continuous loop, the launchd service definitions, the deterministic gates, the adversarial benchmark scenarios. v2.3.0 adds the measured results and the description fixes that those results justified.
-
-## What v2.3.0 Actually Ships
-
-Five concrete pieces of infrastructure, plus a corpus-wide hardening pass across all 15 skills:
-
-1. **Researcher operating system** under `researcher/`: source registry, content/skill/harness rubrics, pairwise revision rubric, mechanism registry, mechanism ledgers, claim provenance index, corpus index, activation regression fixtures, adversarial benchmark scenarios with goldens, append-only benchmark history.
-
-2. **Run state machine**: every run has `run-state.json` with explicit transitions (`initialized -> retrieved -> evaluated -> proposed -> novelty_checked -> validated -> pr_ready -> closed`). `research_loop.py` advances state via subcommands; `validate_run.py` enforces publish readiness without false positives on intentionally incomplete runs.
-
-3. **Continuous loop**: `loop_discover.py`, `loop_step.py`, `loop_daily.py`, `loop_status.py`. Backed by `researcher/queue/` (inbox, parked, done, quarantine) with atomic JSONL writes and `fcntl` locks. Runs unattended from launchd; never invokes paid LLMs; HTTP retrieval is stdlib-only with a 1.5 MB cap and a 30-second timeout.
-
-4. **CI**: `.github/workflows/validate.yml` runs Python compile, `validate_repo.py --strict`, `check_activation_cases.py`, and `run_benchmarks.py` on every push and PR.
-
-5. **Documentation**: `CHANGELOG.md`, refreshed `README.md` / `CLAUDE.md` / `CONTRIBUTING.md`, `AGENTS.md` for workspace memory, `researcher/runs/README.md` for operator orientation, and the two insight documents (this one and `auto-research-experiment.md`).
-
-By the numbers: 15 published skills, **16 accepted mechanisms**, **12 provenance-tracked claims**, **19 activation cases** (up from 8), 7 adversarial benchmark scenarios, 1 worked-example seed run, 50 router benchmark prompts, **1,800 completed router benchmark records** across three sweeps (baseline, post-description rewrite, post-corpus hardening), 4 frontier models evaluated, 1 worked-example effectiveness task scaffolded, and a strict skill-health score of **0.9117 with 0 flagged skills**.
-
-## What You Should Tell People
-
-### What was built
-
-A skill collection that can keep itself alive. Not a one-off skill drop. A file-based research-to-skill operating system that:
-
-- Discovers candidate sources from a curated registry.
-- Scores them against locked rubrics that the agent cannot relax.
-- Extracts implementable mechanisms instead of generic takeaways.
-- Promotes only behaviors that survive both deterministic checks and human review.
-- Runs the whole thing in a continuous loop without spending a single LLM token on retrieval or judgment.
-- Falls back to a human review queue for anything that needs judgment.
-
-### Why it matters
-
-Most public skill collections are anthologies. They accumulate good content and then drift, because there is no process for keeping them current and no machine-readable layer for compounding what they know. v2.2.0 is the bet that an open repository can be more than that: a source of truth that improves with use.
-
-### Concrete artifacts you can point to
-
-- The mechanism registry: `researcher/mechanisms/registry.jsonl`
-- The claim provenance index: `researcher/claims/index.jsonl`
-- The corpus index: `researcher/corpus/index.json`
-- The run state machine in action: `researcher/runs/20260515-035228-executable-autonomous-research-frameworks/`
-- The adversarial benchmark harness: `researcher/benchmarks/`
-- The continuous loop scripts: `researcher/scripts/loop_*.py`
-- The launchd daemon installer: `researcher/orchestration/launchd/install.sh`
-- The runbooks: `researcher/runbooks/`
-- The technical findings: `researcher/insights/auto-research-experiment.md`
-
-### Sound bites that survive copy-paste
-
-- "Activation scenarios beat keyword triggers." (Documented as finding #1.)
-- "Deterministic gates before model judges." (The validator costs zero tokens and catches categorical failures the judge would miss.)
-- "Mechanism registry as encyclopedia backbone." (Making behavior changes first-class data is the unlock.)
-- "Closed-run reaping is non-negotiable." (Every queue needs an explicit exit path.)
-- "Adversarial benchmarks before declaring the harness safe." (Write the attack before claiming the defense.)
-- "Continuous operation is a separate milestone from per-task correctness."
-- "Live execution is the highest-signal validation for orchestration code."
-
-## Templates For Sharing
-
-Use these as starting points, not as final copy. Strip what is not true for your audience.
-
-### X / Twitter thread (8 tweets)
-
-```
-1/  Shipped v2.2.0 of the Agent Skills for Context Engineering repo.
-
-It is no longer just a skill collection. It is a file-based research-to-skill operating system that keeps the corpus alive without becoming editorial debt.
-
-github.com/muratcankoylan/Agent-Skills-for-Context-Engineering
-
-2/  Origins: Karpathy's autoresearch showed that one editable file + one locked evaluator + a results log + git rollback is enough for autonomy. Prime Intellect's auto-nanoGPT showed why durable scratchpads matter. Parallel deep research filled in the rest.
-
-3/  What it does: discovers sources from a curated registry, scores them against locked rubrics, extracts implementable mechanisms (not generic takeaways), promotes only behaviors that pass deterministic checks plus human review.
-
-4/  Mechanism registry as encyclopedia backbone. Every accepted behavior change is a JSONL row with owning_skill, activation_scenario, behavior_change, evidence, and failure_modes. Novelty checks compare against the registry first, then the corpus.
-
-5/  Claim provenance for every volatile number. BrowseComp variance, LoCoMo accuracy, multi-agent token multipliers: each has a claim_id, source_url, evidence_strength, volatility, and last_reviewed. Claims that rot will not silently propagate.
-
-6/  Continuous loop runs from launchd on macOS. No paid LLMs. HTTP retrieval is stdlib-only. Atomic JSONL writes, fcntl locks, closed-run reaping, parked-review queue, daily ops with adversarial benchmarks against the harness itself.
-
-7/  CI is the floor. validate_repo + run_benchmarks + check_activation_cases on every PR. The validator catches duplicate JSON keys, wrong rubric math, APPROVE on partial retrievals, manifest drift, and missing run artifacts before any model judge runs.
-
-8/  Lessons in researcher/insights/. Headline findings: activation scenarios beat keyword triggers, deterministic gates before model judges, closed-run reapers are non-negotiable, adversarial benchmarks find what unit tests miss, live execution > paper review for orchestration.
+```text
+研究 → 规划 → 实现 → 审查 → 加固 → 验证
 ```
 
-### LinkedIn post
+### 规划与执行模式
 
-```
-Released v2.2.0 of Agent Skills for Context Engineering: an open collection that now ships a file-based research-to-skill operating system with deterministic gates and a continuous loop.
+下一步不明确或存在真实架构取舍时，先进入规划模式并写出计划；用户批准后再切换到执行。这使计划成为后续可核对的契约，也避免在目标含糊时过早实现。
 
-The starting question was small: how do you keep a 10k-star skill repository alive without it becoming a one-person editorial backlog. The answer turned into infrastructure.
+### 独立代码审查
 
-Three pieces of prior work shaped the design.
+每个有意义的实现批次后，都让独立审查者只寻找高置信度问题，范围限定为错误行为、数据丢失、资源失控和安全风险，跳过风格意见。
 
-Andrej Karpathy's autoresearch repo demonstrated the minimal autonomy harness: one editable file, one locked evaluator, a results log, git rollback. The lesson is not that every loop needs a single scalar metric. It is that ambiguous feedback produces ambiguous autonomy.
+审查发现了实现阶段漏掉的缺陷：关闭运行没有清理，`write_jsonl` 不是原子操作，`pop_inbox_item` 在 `init_run` 前就释放锁，HTTP 获取器接受 `file://` 和 `data:`，launchd 包装器在 `loop_step` 返回 78（无操作）时跳过状态刷新，以及 URL 去重和来源 ID 使用了不同的规范形式。
 
-Prime Intellect's auto-nanoGPT work showed why durable agent state matters in practice. Their THREAD.md pattern, source queues, and explicit handover summaries are the difference between a loop that survives context compaction and one that does not.
+每个问题暴露后都有明确根因和简单修复；单独测试函数往往发现不了这些组件之间的交互问题。
 
-Targeted deep research filled in the missing pieces: deterministic validation as the locked evaluator, durable run directories, novelty gates, pairwise revision, human-controlled merge.
+### 实际执行作为确定性门槛
 
-What shipped:
-- Mechanism registry with gated promotion and append-only ledgers
-- Claim provenance for volatile benchmark numbers
-- Run state machine with enforceable transitions
-- Activation regression tests for skill-boundary confusion
-- Adversarial benchmark harness with append-only history
-- Continuous loop scripts and launchd service definitions
-- CI workflow running deterministic gates on every PR
-- 15 skills, all migrated from keyword triggers to task-boundary scenarios
+团队构建持续循环后，实际运行了 13 轮：从手动种子发现八个来源，受每日预算限制初始化六次运行，通过标准库 HTTP 获取四个来源、总计约 1.7 MB，五次运行在正确门槛暂停，一次运行关闭后由清理器移入 `done.jsonl`。
 
-The technical findings and the full process narrative live in researcher/insights/. The repo: github.com/muratcankoylan/Agent-Skills-for-Context-Engineering
+这些执行暴露了多项只读代码不易发现的问题。编排代码的交互缺陷往往只能通过真实运行定位。
 
-Honest scope: no LLM-judge adapter yet, no automated source discovery beyond the manual seed, no log rotation. Tracked at the end of CHANGELOG.md.
-```
+### 起作用的工具
 
-### Blog post outline
+- `code-reviewer`：发现组合缺陷。
+- `code-explorer`：在设计路线图前梳理技能语料。
+- `code-architect`：提出后来成为基准运行框架的评估策略初稿。
+- Parallel 深度研究：提供架构建议，经评分规则转化为已接受机制。
+- DeepWiki：README 中的导航资源，方便审查者快速了解项目。
 
-```
-# Title: From Karpathy's autoresearch to a self-compounding skill encyclopedia
+## 第二阶段：描述基准闭环
 
-## 1. Why this exists
-The 10k-star skill repository was at a fork: stay an anthology, or become infrastructure.
+v2.2.0 发布了脚手架；v2.3.0 则展示脚手架如何产生测量结果并改变技能内容。
 
-## 2. The three inputs
-- Karpathy autoresearch: minimal autonomy harness, locked evaluator, results log
-- Prime Intellect auto-nanoGPT: durable scratchpads, THREAD.md, handover discipline
-- Parallel deep research on autonomous research frameworks: deterministic gates, novelty, pairwise, human-controlled merge
+### 首轮结果如实记录失败
 
-## 3. The breakthrough roadmap
-- Split repo health from run readiness
-- Mechanism registry as the unit of accumulated learning
-- Claim provenance to prevent claim rot
-- Activation regression for skill boundaries
-- Adversarial benchmarks instead of self-congratulatory ones
-- Corpus index as the machine-readable map
+v2.2.0 的路由扫描在顺序运行中完成 600 次中的 566 次后静默停滞。四个模型的总体 top-1 约为 88.6%，看起来不错；但逐技能混淆矩阵显示，`context-fundamentals` 47 次中仅 12 次正确。误路由分别流向 `context-degradation`（12 次）、`project-development`（12 次）和 `context-optimization`（8 次）。另一个问题是 `tool-design` 与 `project-development` 约有四分之一案例双向混淆。其余 11 项技能接近满分。
 
-## 4. The continuous loop
-- Queue + state machine + reaper + parked review
-- launchd daemon, no paid LLMs, atomic writes, fcntl locks
-- Live execution as the validation gate
+### 两项小改动
 
-## 5. The lessons
-(17 findings from researcher/insights/auto-research-experiment.md)
+- 重写 `context-fundamentals`，明确它只负责概念基础。旧描述还声称负责智能体架构设计、上下文质量调试和预算设定，而这些属于其他技能；新版明确把操作类工作路由给专门技能。
+- 重写 `tool-design` 和 `project-development`，添加彼此的明确转介。新说明用工作对象划界：单个工具决策归 tool-design，项目形态决策归 project-development。
 
-## 6. What it does not solve yet
-Honest list of out-of-scope items
+同时加固运行器，增加并发上限（并发度 4）、扫描结果目录并跳过已完成任务的恢复能力，以及逐次运行日志。
 
-## 7. How to use it
-- Install the plugin (Claude Code, Cursor, Open Plugins)
-- Install the daemon (macOS launchd)
-- Read the runbook before extending
-```
+### 测量结果
 
-## How To Improve The Repo From Here
+第二轮使用并发 4，在 15 分钟内完成 600/600 次。三项技能描述的变化：
 
-The 2.2.0 release deliberately left several things off. These are the obvious next steps in roughly the order they pay off:
+- `context-fundamentals`：0.255 → 0.489（+23.4 个百分点）。
+- `project-development`：0.750 → 1.000（+25 个百分点，达到满分）。
+- `tool-design`：0.729 → 0.807（+7.8 个百分点）。
 
-1. **LLM-judge adapter** for the `retrieved -> evaluated` transition, gated by a per-day budget config. This is the single change that unlocks "the loop actually decides what to publish" instead of "the loop stages everything for human review."
+总体 top-1 从 0.888 提高到 0.900。四个模型中三个 top-1 提升，四个模型 top-3 均提升；600 次调用的格式合规率为 99.5%，Cursor SDK 总成本约 7.20 美元。
 
-2. **Automated source discovery adapters**. Parallel deep research, a Cohere/OpenAI/Anthropic engineering blog RSS, an arXiv author-watch list. Each is a self-contained file under `researcher/scripts/feeds/`.
+### 为什么单项数据比总分重要
 
-3. **Log rotation and benchmark history pruning**. The current implementation appends forever. Acceptable for weeks, painful at one year.
+总体只提高约 1 个百分点，单项技能却提高 25 个百分点。**总分不是正确行动单位。** 混淆矩阵会指出哪些描述需要改写以及具体被哪些技能抢走任务；前后差异则说明修复是否有效。若没有单技能效应量，这个反馈循环就不可见。
 
-4. **pytest suite** for the loop scripts. Smoke-tested via live execution is fine for v2.2.0; refactor safety needs unit and integration tests.
+从“v2.2.0 基准完成”到“v2.3.0 测量描述改写效果”，专注工作不到两小时。这是系统中成本最低、杠杆最高的反馈循环；以后每次技能描述变更都应运行该循环。
 
-5. **More activation cases** as skill boundaries get challenged in the wild. Each confusion that shows up in user activations should become a fixture.
+### 修正过窄的改进方式
 
-6. **More claim provenance**. The current 12 claims cover the highest-volatility ones; the corpus has additional softer claims that would benefit from explicit provenance.
+最初的基准修复范围太窄：改写三项描述、对齐这三项正文，然后宣布发布准备完成。这改善了已测路由界面，却没有通过自动研究改进整个仓库。
 
-7. **Self-spawning agents for parallel runs**. The loop currently processes one run per step. With proper locking and per-run budget tracking, parallel runs are safe and would amortize cost.
+之后进行全语料加固：分别审查启用边界、机制和主张覆盖、技能质量标准；再让每项技能遵循相同发布规则，包括明确归属范围、相邻技能转介、可执行指导、示例、易错点、作为边界地图的集成章节，以及复用或易变主张对应的机器可读机制和来源记录。
 
-8. **Cross-skill integration tests**. The corpus index already maps skills to mechanisms; the next step is asserting that integration sections in each skill reference real skills and stay accurate as the corpus evolves.
+结果包括：
 
-If you want to contribute, look at the open items above. Each is scoped to fit in a single PR.
+- `bdi-mental-states` 和 `hosted-agents` 补齐实践指导与示例，不再是结构异常项。
+- 机制从 5 项增加到 16 项，每项技能至少对应一种已接受行为模式。
+- 主张来源从 6 条增加到 12 条，用具体仓库路径替换模糊研究运行摘要。
+- 启用样例从 14 条扩充到 19 条，覆盖此前未测试技能。
+- `validate_repo.py --strict` 开始强制检查正文章节和不适用边界。
+- 技能健康度从 0.8111（2 项被标记）提高到 0.9117（0 项被标记）。
+- 5 月 19 日新一轮 600 条路由扫描没有发现普遍退化；重试暂时空输出后格式失败为 0。Gemini top-1 为 0.920，Composer 0.913，GPT-5.5 0.913，Claude Opus 4.7 为 0.840。剩余问题仍集中于歧义/负向对照和 `context-fundamentals` 兜底边界。
 
-## Your Learnings (Best Inference From The Process)
+v2.3.0 的真正经验是：改进技能语料必须同时改正文、元数据和门槛。若机制、主张、语料索引、启用样例和验证器没有同步更新，技能文件只是更好看，不代表系统更会自我改进。
 
-This section is necessarily an inference. Adjust before sharing.
+### v2.3.0 继承的 v2.2.0 内容
 
-- A repository with this many stars is a public surface, and that surface benefits more from infrastructure than from more content. The instinct to add another skill is almost always less valuable than the instinct to add another gate.
-- The cheapest way to compound a knowledge base is to make its units machine-readable. Mechanisms, claims, activation scenarios, run states, benchmark scenarios. Prose is publication, not memory.
-- "Improve all skills" means improving the corpus substrate, not just editing Markdown. The mechanism registry, claim index, corpus index, activation cases, validators, and template have to move with the skill bodies.
-- "Run it for days" is a real architectural milestone, not a feature flag. The system has to be designed for unattended operation from the beginning.
-- Subagent code review is the cheapest way to find category-of-error bugs that you would otherwise hit in production.
-- Plan mode for irreversible decisions, agent mode for everything else. Mixing them silently is how scope creep happens.
-- An AI collaborator works best as a load-bearing technical lead, not as a writing assistant. Direct instructions, named subagents, explicit budgets, deterministic gates: this is how the work compounds rather than dissipates.
+v2.3.0 保留 v2.2.0 发布的文件化研究系统、运行状态机、持续循环、launchd 服务、确定性门槛和对抗基准；新增测量结果和由结果支持的描述修复。
 
-## Joint Findings From The Experiment
+## v2.3.0 实际交付
 
-These are documented in detail in `auto-research-experiment.md`. The five most reusable across other projects:
+五项基础设施和一次全语料加固：
 
-1. Atomic file writes + fcntl locks are the default for any shared file the loop touches.
-2. Closed-state reapers in every queue.
-3. Split validators by question, not by artifact.
-4. Adversarial benchmarks before model judges.
-5. Live execution as the highest-signal validation for orchestration code.
+1. `researcher/` 研究运行体系：来源注册表、内容/技能/运行框架评分规则、成对修订规则、机制注册表和账本、主张来源索引、语料索引、启用回归样例、带黄金答案的对抗基准和只追加基准历史。
+2. 运行状态机：每次运行使用 `run-state.json` 表示 `initialized -> retrieved -> evaluated -> proposed -> novelty_checked -> validated -> pr_ready -> closed` 转换。通过 `research_loop.py` 子命令推进；`validate_run.py` 检查发布准备状态，避免将未完成运行误判为可发布。
+3. 持续循环：`loop_discover.py`、`loop_step.py`、`loop_daily.py`、`loop_status.py`；配合 inbox、parked、done 和 quarantine 队列，采用原子 JSONL 写入与 `fcntl` 锁。launchd 可无人值守运行，不调用付费模型；HTTP 获取只使用标准库，限制 1.5 MB 和 30 秒超时。
+4. 持续集成：`.github/workflows/validate.yml` 在推送和拉取请求时执行 Python 编译、严格仓库检查、启用案例和基准测试。
+5. 文档：更新 CHANGELOG、README、CLAUDE、CONTRIBUTING、AGENTS、运行目录指南和两篇研究洞见文档。
 
-## What This Document Is For
+按 v2.3.0 当时的统计：15 项正式技能、16 项已接受机制、12 条带来源主张、19 个启用案例（原为 8）、7 项对抗情景、1 个完整运行示例、50 条路由提示、三轮共完成 1,800 条路由记录、4 个前沿模型、1 项有效性任务脚手架，以及技能健康度 0.9117、0 项被标记。
 
-This file is the narrative version of the release. Use it when explaining what was built and why. Use `auto-research-experiment.md` when explaining the engineering decisions. Use `CHANGELOG.md` when you need the precise inventory.
+## 对外介绍时可以说明
 
-Keep all three accurate as the next versions ship.
+### 构建了什么
+
+不再只是一次性发布技能，而是可持续维护语料的文件化研究转技能系统：从精选注册表发现来源；用锁定评分规则评估；提取可执行机制；通过确定性检查和人工审查后晋级；持续循环不为检索或判断消耗模型令牌；需要判断的事项进入人工队列。
+
+### 为什么重要
+
+公开技能集合经常只是内容选集：内容不断过时，却没有维护流程，也没有可累积知识的机器可读层。v2.2.0 的目标是让开源仓库不仅保存内容，还能依据使用反馈持续改进。
+
+### 可展示的产物
+
+- `researcher/mechanisms/registry.jsonl`：机制注册表。
+- `researcher/claims/index.jsonl`：主张来源索引。
+- `researcher/corpus/index.json`：语料索引。
+- `researcher/runs/20260515-035228-executable-autonomous-research-frameworks/`：完整运行示例。
+- `researcher/benchmarks/`：对抗基准。
+- `researcher/scripts/loop_*.py`：持续循环脚本。
+- `researcher/orchestration/launchd/install.sh`：launchd 安装脚本。
+- `researcher/runbooks/`：操作手册。
+- `researcher/insights/auto-research-experiment.md`：技术经验。
+
+### 可复用的简短结论
+
+- 启用场景比关键词触发更稳定。
+- 先做确定性门槛，再考虑模型评审。
+- 机制注册表是知识积累的主干。
+- 每条队列都必须有关闭状态清理器。
+- 声称运行框架安全前，先做对抗测试。
+- 持续运行与单次任务正确性是两个里程碑。
+- 对编排代码，真实运行比纸面审查更有信号。
+
+## 分享模板
+
+以下是起草素材，使用前应按受众修改，不要照搬不符合实际的内容。
+
+### 社交平台串文提纲
+
+1. 发布 v2.2.0/v2.3.0：从技能集合发展为可持续维护的研究转技能系统。
+2. 介绍 autoresearch 的锁定评估器、auto-NanoGPT 的持久状态，以及深度研究提供的补充建议。
+3. 说明系统如何发现来源、执行锁定评分、提取机制并保留人工合并。
+4. 介绍机制注册表和主张来源记录。
+5. 说明 launchd 循环、原子写入、队列和对抗基准。
+6. 报告每个拉取请求都会执行的确定性门槛。
+7. 分享启用场景、关闭清理器和真实执行的经验。
+8. 链接仓库和 `researcher/insights/`。
+
+### LinkedIn 帖子提纲
+
+介绍为何要让大型技能仓库摆脱个人编辑待办；说明三项研究如何影响架构；列出机制注册表、主张来源、状态机、启用测试、对抗基准和持续循环；明确目前仍未实现的模型评审器、自动发现和日志轮转；附仓库链接。
+
+### 博客文章提纲
+
+1. 为什么需要该系统。
+2. 三项设计输入：autoresearch、auto-NanoGPT 和 Parallel 深度研究。
+3. 关键路线：区分语料健康与运行就绪、机制注册表、来源记录、启用回归和对抗基准。
+4. 持续循环：队列、状态机、清理器和人工审查。
+5. 17 项技术经验。
+6. 当前未解决的问题。
+7. 如何使用和扩展。
+
+## 后续改进方向
+
+v2.2.0 有意没有实现以下内容，按潜在收益排序：
+
+1. 为 `retrieved -> evaluated` 增加受每日预算控制的 LLM 评审适配器，使循环不仅准备人工审查，还能判断候选是否值得发布。
+2. 增加自动来源发现适配器，例如 Parallel 深度研究、工程博客 RSS、arXiv 作者关注列表。
+3. 增加日志轮转和基准历史裁剪；当前日志会无限追加。
+4. 为循环脚本增加 pytest 单元和集成测试；当前冒烟检查无法覆盖所有重构回归。
+5. 随现实边界问题出现增加启用案例。
+6. 为剩余较弱主张补充来源记录。
+7. 在提供正确锁和每次运行预算后，支持多个运行并发；当前每步只处理一个运行。
+8. 为跨技能集成增加检查，确认集成章节引用真实技能且随语料变化保持准确。
+
+## 从过程得到的推论
+
+以下内容属于过程推论，分享前可按实际情况调整：
+
+- 高星仓库是重要的公开界面，相比新增内容，增加维护基础设施可能更有价值。
+- 让机制、主张、启用场景、运行状态和基准情景等知识单元机器可读，是积累知识最省成本的方式。散文用于发布，不应充当记忆层。
+- “改进所有技能”意味着改进语料基础设施，而不只是编辑 Markdown；机制注册表、主张索引、语料索引、启用样例、验证器和模板都应随正文一起变化。
+- “连续运行数日”是独立架构里程碑，不是一个开关；系统从一开始就要支持无人值守运行。
+- 独立代码审查是发现生产环境中类别错误的低成本方式。
+- 不可逆决策先规划，其他工作再执行；将两者混用容易造成范围漂移。
+- AI 合作者更适合作为承担技术工作的负责人，而不只是写作助手；明确指令、子任务、预算和确定性门槛可让工作持续积累。
+
+## 本实验的共同经验
+
+1. 共享文件默认采用原子写入和 `fcntl` 锁。
+2. 每个队列都要清理终止状态。
+3. 按待回答的问题拆分验证器，不要仅按产物类型拆分。
+4. 先做对抗基准，再做模型评审。
+5. 对编排代码，真实运行是最高信号的验证方式。
+
+## 文档用途
+
+本文是发布过程和项目故事；技术决策详见 `auto-research-experiment.md`，精确版本清单见 `CHANGELOG.md`。后续发布时应同步更新这三份材料。

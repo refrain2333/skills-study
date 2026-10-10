@@ -1,110 +1,110 @@
 ---
 name: network-module
-description: Relationship and contact management - people you know, interaction history, and networking notes. Use before meetings, when connecting people, or managing relationships.
+description: 联系人和关系管理，包含互动历史与人际网络笔记；用于会议准备、人际引荐和关系维护。
 ---
 
-# Network Module
+# 人际网络模块
 
-Your personal CRM for meaningful relationships.
+用于维护有意义关系的个人 CRM。
 
-## Files in This Module
+## 模块文件
 
-| File | Format | Purpose |
-|------|--------|---------|
-| `contacts.jsonl` | JSONL | People database |
-| `interactions.jsonl` | JSONL | Meeting/conversation log |
-| `circles.yaml` | YAML | Relationship tiers and groups |
-| `intros.md` | Markdown | Pending/made introductions |
+| 文件 | 格式 | 用途 |
+| --- | --- | --- |
+| `contacts.jsonl` | JSONL | 联系人数据库 |
+| `interactions.jsonl` | JSONL | 会议和沟通记录 |
+| `circles.yaml` | YAML | 关系层级和群组 |
+| `intros.md` | Markdown | 待完成和已完成的引荐 |
 
-## Data Schemas
+## 数据结构
 
-### Contact Entry
+### 联系人记录
+
 ```json
 {
   "id": "contact_[unique]",
   "created": "ISO8601",
   "updated": "ISO8601",
-  "name": "Full Name",
-  "handle": "@twitter_handle",
-  "email": "email@domain.com",
-  "company": "Company Name",
-  "role": "Their Role",
-  "location": "City, Country",
+  "name": "姓名",
+  "handle": "@social_handle",
+  "email": "email@example.com",
+  "company": "公司名称",
+  "role": "职位",
+  "location": "城市、国家",
   "circle": "inner|active|network|dormant",
-  "how_met": "How you met",
+  "how_met": "相识方式",
   "relationship": "friend|mentor|peer|collaborator|investor|customer",
-  "topics": ["topic1", "topic2"],
-  "can_help_with": ["what they can help you with"],
-  "you_can_help_with": ["how you can help them"],
-  "notes": "Personal notes",
+  "topics": ["主题一", "主题二"],
+  "can_help_with": ["对方能提供的帮助"],
+  "you_can_help_with": ["你能提供的帮助"],
+  "notes": "个人备注",
   "last_contact": "ISO8601",
-  "links": {
-    "twitter": "url",
-    "linkedin": "url",
-    "website": "url"
-  }
+  "links": {"twitter": "url", "linkedin": "url", "website": "url"}
 }
 ```
 
-### Interaction Entry
+### 互动记录
+
 ```json
 {
   "id": "int_YYYYMMDD_HHMMSS",
   "date": "ISO8601",
   "contact_id": "contact_[id]",
   "type": "call|coffee|dm|email|event|collab",
-  "context": "What you discussed",
-  "key_points": ["point1", "point2"],
-  "follow_ups": ["action1", "action2"],
+  "context": "讨论内容",
+  "key_points": ["要点一", "要点二"],
+  "follow_ups": ["行动一", "行动二"],
   "sentiment": "positive|neutral|needs_attention"
 }
 ```
 
-## Workflows
+## 工作流
 
-### Before a Meeting
-1. Look up contact in `contacts.jsonl`
-2. Review recent interactions in `interactions.jsonl`
-3. Check `circles.yaml` for relationship context
-4. Note any pending follow-ups or intros
+### 会前准备
 
-### After a Meeting
-1. Log interaction in `interactions.jsonl`
-2. Update `last_contact` in contacts.jsonl
-3. Add any follow-ups to operations/todos.md
-4. Update relationship notes if needed
+1. 在 `contacts.jsonl` 查找联系人。
+2. 在 `interactions.jsonl` 查看近期互动。
+3. 检查 `circles.yaml` 中的关系背景。
+4. 列出待跟进事项和待完成引荐。
 
-### Making Introductions
-1. Check both contacts in `contacts.jsonl`
-2. Ensure mutual value (check can_help_with fields)
-3. Log in `intros.md`
-4. Track follow-through
+### 会后处理
 
-## Agent Instructions
+1. 将互动追加到 `interactions.jsonl`。
+2. 更新 `contacts.jsonl` 中的 `last_contact`。
+3. 将跟进事项加入 `operations/todos.md`。
+4. 必要时更新关系备注。
+
+### 引荐他人
+
+1. 在 `contacts.jsonl` 中检查双方资料。
+2. 查看 `can_help_with` 字段，确认双方都能获益。
+3. 在 `intros.md` 记录引荐。
+4. 跟进引荐进展。
+
+## 智能体指引
 
 <instructions>
-When managing relationships:
+管理关系时：
+1. 按姓名、账号、公司或主题检索联系人。
+2. 会前准备时汇总联系人资料、近期互动和共同兴趣。
+3. 记录互动时至少包含日期、类型、背景和后续事项。
+4. 根据双方的 `can_help_with` 信息匹配引荐。
+5. 根据 `last_contact` 发现长期未联系的人。
 
-1. **Looking up contacts**: Search by name, handle, company, or topics
-2. **Pre-meeting prep**: Compile contact info + recent interactions + shared interests
-3. **Logging interactions**: Always include date, type, context, and follow-ups
-4. **Intro matching**: Cross-reference can_help_with fields
-5. **Relationship maintenance**: Flag contacts with stale last_contact dates
-
-Circle definitions:
-- inner: Close relationships, regular contact
-- active: Current collaborators, frequent interaction
-- network: Known contacts, periodic touchpoints
-- dormant: Historical connections, may reactivate
+关系层级：
+- `inner`：亲近关系，定期联系。
+- `active`：当前合作伙伴，互动频繁。
+- `network`：认识的人，周期性联系。
+- `dormant`：历史关系，可考虑重新联系。
 </instructions>
 
-## Relationship Principles
+## 关系原则
 
 ```yaml
 networking_philosophy:
-  - "Give before you ask"
-  - "Quality over quantity"
-  - "Follow up is everything"
-  - "Be genuinely helpful"
-  - "Make warm intros, not cold"
+  - "先提供帮助，再提出请求"
+  - "重质量，不重数量"
+  - "及时跟进至关重要"
+  - "提供真诚帮助"
+  - "先征求双方同意，再进行引荐"
 ```

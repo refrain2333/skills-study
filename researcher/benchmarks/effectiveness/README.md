@@ -1,21 +1,21 @@
-# Effectiveness Benchmark (Stage 3)
+# 有效性基准（第三阶段）
 
-Real agent tasks executed via the Cursor SDK. Each task is run under multiple skill-loading conditions; the difference in outcome quality, token cost, and wall time is the skill's measured effect size.
+使用 Cursor SDK 执行真实智能体任务。每项任务会在多种技能加载条件下运行；结果质量、令牌成本和运行时间的差异用于估算技能的实际效果。
 
-See `researcher/benchmarks/PLAN.md` for methodology and `researcher/benchmarks/effectiveness/tasks/001-filesystem-context-offload/` for the canonical task template.
+方法说明见 `researcher/benchmarks/PLAN.md`；标准任务模板见 `researcher/benchmarks/effectiveness/tasks/001-filesystem-context-offload/`。
 
-## Task layout
+## 任务目录结构
 
 ```
-researcher/benchmarks/effectiveness/tasks/<NNN>-<slug>/
-  README.md         # human-readable task description and grading criteria
-  task.md           # the exact prompt given to the agent
-  metadata.json     # machine-readable metadata (target_skill, difficulty, category)
-  starting/         # workspace seed copied into a temp directory before each run
-  verify.sh         # deterministic check returning exit 0 on success
+researcher/benchmarks/effectiveness/tasks/<编号>-<名称>/
+  README.md         # 任务说明和评分标准
+  task.md           # 提供给智能体的精确任务提示
+  metadata.json     # 机器可读元数据（目标技能、难度、类别）
+  starting/         # 每次运行前复制到临时目录的工作区种子
+  verify.sh         # 成功时返回退出码 0 的确定性检查
 ```
 
-`metadata.json` shape:
+`metadata.json` 格式：
 
 ```json
 {
@@ -25,43 +25,43 @@ researcher/benchmarks/effectiveness/tasks/<NNN>-<slug>/
   "irrelevant_skill": "bdi-mental-states",
   "category": "context-management",
   "difficulty": "easy",
-  "notes": "Optional rationale for picking this task."
+  "notes": "选择此任务的可选理由"
 }
 ```
 
-## Conditions
+## 评估条件
 
-For each task, six conditions are evaluated per model:
+每项任务在每个模型上评估以下六种条件：
 
-| Condition | settingSources | Skills present in `.cursor/skills/` |
+| 条件 | `settingSources` | `.cursor/skills/` 中的技能 |
 | --- | --- | --- |
-| `control` | `[]` | none (no skills loaded) |
-| `target` | `["project"]` | only `target_skill` |
-| `negative` | `["project"]` | only `irrelevant_skill` (negative control) |
-| `full` | `["project"]` | all currently published skills |
-| `target_plus_one` | `["project"]` | `target_skill` plus one related skill |
-| `target_plus_unrelated` | `["project"]` | `target_skill` plus one unrelated skill (interaction control) |
+| `control` | `[]` | 不加载技能 |
+| `target` | `["project"]` | 只加载 `target_skill` |
+| `negative` | `["project"]` | 只加载 `irrelevant_skill`，作为负向对照 |
+| `full` | `["project"]` | 加载所有当前发布的技能 |
+| `target_plus_one` | `["project"]` | 目标技能加一项相关技能 |
+| `target_plus_unrelated` | `["project"]` | 目标技能加一项无关技能，用于交互对照 |
 
-The runner builds a fresh task workspace per (task, condition, model, replication) by copying `starting/` to a temp dir and then placing only the in-scope skills into `.cursor/skills/`.
+运行器会为每组（任务、条件、模型、重复次数）新建工作区：将 `starting/` 复制到临时目录，再只把本条件允许的技能放入 `.cursor/skills/`。
 
-## Reporting
+## 结果记录
 
-After each run the runner calls `verify.sh`. Exit code 0 means the task succeeded. Tokens are read from `run.conversation()` and durationMs from the SDK result. The runner persists:
+每次运行后，运行器执行 `verify.sh`。退出码 0 表示任务成功。令牌数从 `run.conversation()` 读取，运行时长从 SDK 结果的 `durationMs` 读取。运行器保存：
 
-- per-condition raw result JSON
-- workspace diff before/after
-- verify.sh stdout/stderr
-- summary.json with per-task per-condition aggregates
+- 每个条件的原始结果 JSON。
+- 运行前后工作区差异。
+- `verify.sh` 的标准输出和标准错误。
+- `summary.json`，含每项任务与条件的汇总。
 
-Aggregated results land in `researcher/reports/effectiveness-history.jsonl` as a single line per benchmark sweep.
+汇总结果以每轮基准一行的形式追加到 `researcher/reports/effectiveness-history.jsonl`。
 
-## Adding a task
+## 新增任务
 
-1. Create a new directory under `tasks/` with a 3-digit ID and slug.
-2. Copy the structure from `001-filesystem-context-offload/`.
-3. Write `task.md` so the agent has a self-contained prompt referencing the workspace.
-4. Write `verify.sh` so it can be run inside any temp directory and exits 0 on success.
-5. Fill `metadata.json` honestly: pick a real `irrelevant_skill` that genuinely should not help.
-6. Validate by running `npm run effectiveness:dry-run`.
+1. 在 `tasks/` 下创建带三位编号和名称的目录。
+2. 复制 `001-filesystem-context-offload/` 的结构。
+3. 编写 `task.md`，让智能体能够在工作区中独立理解任务。
+4. 编写 `verify.sh`，确保它能在任意临时目录中运行，成功时返回 0。
+5. 如实填写 `metadata.json`，选择真正不应对任务有帮助的 `irrelevant_skill`。
+6. 按当前用户允许的范围进行验证；如需运行完整基准，先获得明确指示。
 
-Negative-control tasks (where no skill should help) live alongside positive tasks. Set `target_skill: "none"` and `irrelevant_skill: "none"` to mark them; the runner skips the `target` and `target_plus_*` conditions and runs only `control`, `full`, and a sanity check.
+负向对照任务（没有技能应当带来帮助）与正向任务放在一起。将 `target_skill` 和 `irrelevant_skill` 设为 `none`；运行器会跳过 `target` 及 `target_plus_*`，只执行 `control`、`full` 和合理性检查。

@@ -1,33 +1,33 @@
-# Bias Mitigation Techniques for LLM Evaluation
+# LLM评估中的偏差缓解技术
 
-This reference details specific techniques for mitigating known biases in LLM-as-a-Judge systems.
+本参考详细说明了在LLM作为判官系统中缓解已知偏差的具体技术。
 
-## Position Bias
+## 位置偏差
 
-### The Problem
+### 问题
 
-In pairwise comparison, LLMs systematically prefer responses in certain positions. Research shows:
-- GPT has mild first-position bias (~55% preference for first position in ties)
-- Claude shows similar patterns
-- Smaller models often show stronger bias
+在成对比较中，LLM系统性地偏好某些位置的响应。研究显示：
+- GPT有轻微的首位偏差（在平局中对首位的偏好约55%）
+- Claude显示类似的模式
+- 较小的模型通常显示更强的偏差
 
-### Mitigation: Position Swapping Protocol
+### 缓解：位置交换协议
 
 ```python
 async def position_swap_comparison(response_a, response_b, prompt, criteria):
-    # Pass 1: Original order
+    # 第一次：原始顺序
     result_ab = await compare(response_a, response_b, prompt, criteria)
-    
-    # Pass 2: Swapped order
+
+    # 第二次：交换顺序
     result_ba = await compare(response_b, response_a, prompt, criteria)
-    
-    # Map second result (A in second position → B in first)
+
+    # 映射第二个结果（A在第二位 → B在首位）
     result_ba_mapped = {
         'winner': {'A': 'B', 'B': 'A', 'TIE': 'TIE'}[result_ba['winner']],
         'confidence': result_ba['confidence']
     }
-    
-    # Consistency check
+
+    # 一致性检查
     if result_ab['winner'] == result_ba_mapped['winner']:
         return {
             'winner': result_ab['winner'],
@@ -35,7 +35,7 @@ async def position_swap_comparison(response_a, response_b, prompt, criteria):
             'position_consistent': True
         }
     else:
-        # Disagreement indicates position bias was a factor
+        # 分歧表明位置偏差是一个因素
         return {
             'winner': 'TIE',
             'confidence': 0.5,
@@ -44,9 +44,9 @@ async def position_swap_comparison(response_a, response_b, prompt, criteria):
         }
 ```
 
-### Alternative: Multiple Shuffles
+### 替代方案：多次随机排列
 
-For higher reliability, use multiple position orderings:
+为获得更高的可靠性，使用多个位置顺序：
 
 ```python
 async def multi_shuffle_comparison(response_a, response_b, prompt, criteria, n_shuffles=3):
@@ -58,12 +58,12 @@ async def multi_shuffle_comparison(response_a, response_b, prompt, criteria, n_s
             r = await compare(response_b, response_a, prompt, criteria)
             r['winner'] = {'A': 'B', 'B': 'A', 'TIE': 'TIE'}[r['winner']]
         results.append(r)
-    
-    # Majority vote
+
+    # 多数投票
     winners = [r['winner'] for r in results]
     final_winner = max(set(winners), key=winners.count)
     agreement = winners.count(final_winner) / len(winners)
-    
+
     return {
         'winner': final_winner,
         'confidence': agreement,
@@ -71,204 +71,203 @@ async def multi_shuffle_comparison(response_a, response_b, prompt, criteria, n_s
     }
 ```
 
-## Length Bias
+## 长度偏差
 
-### The Problem
+### 问题
 
-LLMs tend to rate longer responses higher, regardless of quality. This manifests as:
-- Verbose responses receiving inflated scores
-- Concise but complete responses penalized
-- Padding and repetition being rewarded
+LLM倾向于对更长的响应评分更高，无论质量如何。这表现为：
+- 冗长的响应获得膨胀的评分
+- 简洁但完整的响应被惩罚
+- 填充和重复被奖励
 
-### Mitigation: Explicit Prompting
+### 缓解：明确提示
 
-Include anti-length-bias instructions in the prompt:
+在提示中包含反长度偏差的说明：
 
 ```
-CRITICAL EVALUATION GUIDELINES:
-- Do NOT prefer responses because they are longer
-- Concise, complete answers are as valuable as detailed ones
-- Penalize unnecessary verbosity or repetition
-- Focus on information density, not word count
+关键评估指南：
+- 不要因为响应更长就偏好它
+- 简洁、完整的答案与详细的答案一样有价值
+- 惩罚不必要的冗长或重复
+- 关注信息密度，而不是字数
 ```
 
-### Mitigation: Length-Normalized Scoring
+### 缓解：长度归一化评分
 
 ```python
 def length_normalized_score(score, response_length, target_length=500):
-    """Adjust score based on response length."""
+    """根据响应长度调整评分。"""
     length_ratio = response_length / target_length
-    
+
     if length_ratio > 2.0:
-        # Penalize excessively long responses
+        # 惩罚过长的响应
         penalty = (length_ratio - 2.0) * 0.1
         return max(score - penalty, 1)
     elif length_ratio < 0.3:
-        # Penalize excessively short responses
+        # 惩罚过短的响应
         penalty = (0.3 - length_ratio) * 0.5
         return max(score - penalty, 1)
     else:
         return score
 ```
 
-### Mitigation: Separate Length Criterion
+### 缓解：单独的长度标准
 
-Make length a separate, explicit criterion so it's not implicitly rewarded:
+将长度作为一个单独的、明确的标准，这样它就不会被隐含地奖励：
 
 ```python
 criteria = [
-    {"name": "Accuracy", "description": "Factual correctness", "weight": 0.4},
-    {"name": "Completeness", "description": "Covers key points", "weight": 0.3},
-    {"name": "Conciseness", "description": "No unnecessary content", "weight": 0.3}  # Explicit
+    {"name": "准确性", "description": "事实正确性", "weight": 0.4},
+    {"name": "完整性", "description": "涵盖关键点", "weight": 0.3},
+    {"name": "简洁性", "description": "没有不必要的内容", "weight": 0.3}  # 明确
 ]
 ```
 
-## Self-Enhancement Bias
+## 自我提升偏差
 
-### The Problem
+### 问题
 
-Models rate outputs generated by themselves (or similar models) higher than outputs from different models.
+模型对自己生成的输出（或相似模型生成的输出）的评分高于不同模型生成的输出。
 
-### Mitigation: Cross-Model Evaluation
+### 缓解：跨模型评估
 
-Use a different model family for evaluation than generation:
+使用不同的模型族进行评估而不是生成：
 
 ```python
 def get_evaluator_model(generator_model):
-    """Select evaluator to avoid self-enhancement bias."""
+    """选择评估器以避免自我提升偏差。"""
     if 'gpt' in generator_model.lower():
         return 'claude-4-5-sonnet'
     elif 'claude' in generator_model.lower():
         return 'gpt-5.2'
     else:
-        return 'gpt-5.2'  # Default
+        return 'gpt-5.2'  # 默认
 ```
 
-### Mitigation: Blind Evaluation
+### 缓解：盲评估
 
-Remove model attribution from responses before evaluation:
+在评估前删除模型归属：
 
 ```python
 def anonymize_response(response, model_name):
-    """Remove model-identifying patterns."""
+    """删除模型识别模式。"""
     patterns = [
-        f"As {model_name}",
-        "I am an AI",
-        "I don't have personal opinions",
-        # Model-specific patterns
+        f"作为{model_name}",
+        "我是一个AI",
+        "我没有个人观点",
+        # 模型特定的模式
     ]
     anonymized = response
     for pattern in patterns:
-        anonymized = anonymized.replace(pattern, "[REDACTED]")
+        anonymized = anonymized.replace(pattern, "[已删除]")
     return anonymized
 ```
 
-## Verbosity Bias
+## 冗长偏差
 
-### The Problem
+### 问题
 
-Detailed explanations receive higher scores even when the extra detail is irrelevant or incorrect.
+详细的解释获得更高的评分，即使额外的细节无关或不正确。
 
-### Mitigation: Relevance-Weighted Scoring
+### 缓解：相关性加权评分
 
 ```python
 async def relevance_weighted_evaluation(response, prompt, criteria):
-    # First, assess relevance of each segment
+    # 首先，评估每个段落的相关性
     relevance_scores = await assess_relevance(response, prompt)
-    
-    # Weight evaluation by relevance
+
+    # 按相关性加权评估
     segments = split_into_segments(response)
     weighted_scores = []
     for segment, relevance in zip(segments, relevance_scores):
-        if relevance > 0.5:  # Only count relevant segments
+        if relevance > 0.5:  # 仅计算相关段落
             score = await evaluate_segment(segment, prompt, criteria)
             weighted_scores.append(score * relevance)
-    
+
     return sum(weighted_scores) / len(weighted_scores)
 ```
 
-### Mitigation: Rubric with Verbosity Penalty
+### 缓解：带冗长惩罚的评分标准
 
-Include explicit verbosity penalties in rubrics:
+在评分标准中包含明确的冗长惩罚：
 
 ```python
 rubric_levels = [
     {
         "score": 5,
-        "description": "Complete and concise. All necessary information, nothing extraneous.",
-        "characteristics": ["Every sentence adds value", "No repetition", "Appropriately scoped"]
+        "description": "完整且简洁。所有必要信息，没有无关内容。",
+        "characteristics": ["每句话都增加价值", "没有重复", "范围恰当"]
     },
     {
         "score": 3,
-        "description": "Complete but verbose. Contains unnecessary detail or repetition.",
-        "characteristics": ["Main points covered", "Some tangents", "Could be more concise"]
+        "description": "完整但冗长。包含不必要的细节或重复。",
+        "characteristics": ["要点已涵盖", "一些题外话", "可以更简洁"]
     },
-    # ... etc
+    # ... 等等
 ]
 ```
 
-## Authority Bias
+## 权威偏差
 
-### The Problem
+### 问题
 
-Confident, authoritative tone is rated higher regardless of accuracy.
+自信、权威的语气被评分更高，无论准确性如何。
 
-### Mitigation: Evidence Requirement
+### 缓解：证据要求
 
-Require explicit evidence for claims:
+要求对声明的明确证据：
 
 ```
-For each claim in the response:
-1. Identify whether it's a factual claim
-2. Note if evidence or sources are provided
-3. Score based on verifiability, not confidence
+对于响应中的每个声明：
+1. 识别它是否是事实性声明
+2. 注意是否提供了证据或来源
+3. 根据可验证性评分，而不是置信度
 
-IMPORTANT: Confident claims without evidence should NOT receive higher scores than 
-hedged claims with evidence.
+重要：没有证据的自信声明不应获得比有证据的审慎声明更高的评分。
 ```
 
-### Mitigation: Fact-Checking Layer
+### 缓解：事实检查层
 
-Add a fact-checking step before scoring:
+在评分前添加事实检查步骤：
 
 ```python
 async def fact_checked_evaluation(response, prompt, criteria):
-    # Extract claims
+    # 提取声明
     claims = await extract_claims(response)
-    
-    # Fact-check each claim
+
+    # 事实检查每个声明
     fact_check_results = await asyncio.gather(*[
         verify_claim(claim) for claim in claims
     ])
-    
-    # Adjust score based on fact-check results
+
+    # 根据事实检查结果调整评分
     accuracy_factor = sum(r['verified'] for r in fact_check_results) / len(fact_check_results)
-    
+
     base_score = await evaluate(response, prompt, criteria)
-    return base_score * (0.7 + 0.3 * accuracy_factor)  # At least 70% of score
+    return base_score * (0.7 + 0.3 * accuracy_factor)  # 至少70%的评分
 ```
 
-## Aggregate Bias Detection
+## 汇总偏差检测
 
-Monitor for systematic biases in production:
+在生产环境中监控系统性偏差：
 
 ```python
 class BiasMonitor:
     def __init__(self):
         self.evaluations = []
-    
+
     def record(self, evaluation):
         self.evaluations.append(evaluation)
-    
+
     def detect_position_bias(self):
-        """Detect if first position wins more often than expected."""
+        """检测首位是否比预期赢得更多。"""
         first_wins = sum(1 for e in self.evaluations if e['first_position_winner'])
         expected = len(self.evaluations) * 0.5
         z_score = (first_wins - expected) / (expected * 0.5) ** 0.5
         return {'bias_detected': abs(z_score) > 2, 'z_score': z_score}
-    
+
     def detect_length_bias(self):
-        """Detect if longer responses score higher."""
+        """检测较长响应是否评分更高。"""
         from scipy.stats import spearmanr
         lengths = [e['response_length'] for e in self.evaluations]
         scores = [e['score'] for e in self.evaluations]
@@ -276,13 +275,12 @@ class BiasMonitor:
         return {'bias_detected': corr > 0.3 and p_value < 0.05, 'correlation': corr}
 ```
 
-## Summary Table
+## 总结表
 
-| Bias | Primary Mitigation | Secondary Mitigation | Detection Method |
-|------|-------------------|---------------------|------------------|
-| Position | Position swapping | Multiple shuffles | Consistency check |
-| Length | Explicit prompting | Length normalization | Length-score correlation |
-| Self-enhancement | Cross-model evaluation | Anonymization | Model comparison study |
-| Verbosity | Relevance weighting | Rubric penalties | Relevance scoring |
-| Authority | Evidence requirement | Fact-checking layer | Confidence-accuracy correlation |
-
+| 偏差 | 主要缓解 | 次要缓解 | 检测方法 |
+|------|---------|---------|--------|
+| 位置 | 位置交换 | 多次随机排列 | 一致性检查 |
+| 长度 | 明确提示 | 长度归一化 | 长度-评分相关性 |
+| 自我提升 | 跨模型评估 | 匿名化 | 模型比较研究 |
+| 冗长 | 相关性加权 | 评分标准惩罚 | 相关性评分 |
+| 权威 | 证据要求 | 事实检查层 | 置信度-准确性相关性 |

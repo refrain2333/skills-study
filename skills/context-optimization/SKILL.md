@@ -1,140 +1,140 @@
 ---
 name: context-optimization
-description: "This skill should be used for improving context efficiency: context budgeting, observation masking, prefix or KV-cache strategy, partitioning, token-cost reduction, retrieval scoping, and extending effective context capacity without lowering answer quality."
+description: "用于优化智能体上下文效率，包括预算分配、输出遮蔽、缓存策略、分区与检索范围控制。"
 ---
 
-# Context Optimization Techniques
+# 上下文优化技术
 
-Context optimization extends the effective capacity of limited context windows through strategic compression, masking, caching, and partitioning. Effective optimization increases useful capacity without requiring larger models or longer windows — but only when applied with measurement discipline. The techniques below are ordered by impact and risk.
+上下文优化通过策略性压缩、屏蔽、缓存和分区，提高有限上下文窗口的有效容量。有效的优化无需更大的模型或更长的窗口，就能增加有用容量，但前提是采用严谨的测量方法。以下技术按影响和风险排序。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
-- Context budgets or token costs constrain task complexity
-- Observation masking can replace verbose tool outputs with retrievable references
-- Prefix or KV-cache hit rate needs improvement
-- Retrieval scoping can reduce irrelevant loaded context
-- Context partitioning can extend effective capacity across agents
-- Budget triggers are needed for masking, compaction, or partitioning
+遇到以下情况时启用本技能：
+- 上下文预算或 token 成本限制了任务复杂度。
+- 需要用可检索引用替代冗长工具输出，以实现观察屏蔽。
+- 需要提高前缀或 KV 缓存命中率。
+- 需要通过限定检索范围减少加载的无关上下文。
+- 需要通过上下文分区扩展多个智能体可处理的有效容量。
+- 需要为屏蔽、压缩或分区设置预算触发条件。
 
-Do not activate this skill for adjacent work owned by other skills:
-- Explaining why attention or context windows behave this way: `context-fundamentals`.
-- Diagnosing active lost-in-middle, poisoning, distraction, confusion, or clash: `context-degradation`.
-- Designing a structured handoff summary for a long conversation: `context-compression`.
-- Storing large outputs, plans, or logs as files: `filesystem-context`.
-- Model-initiated rewrites of its own context and their re-prefill cost: `self-managed-context`.
+以下相邻工作由其他技能负责，不要为此启用本技能：
+- 解释注意力机制或上下文窗口为何如此运作：`context-fundamentals`。
+- 诊断正在发生的信息中间位置丢失、污染、干扰、混淆或冲突：`context-degradation`。
+- 为长对话设计结构化交接摘要：`context-compression`。
+- 将大型输出、计划或日志存入文件：`filesystem-context`。
+- 由模型发起的自身上下文重写及其重新预填成本：`self-managed-context`。
 
-## Core Concepts
+## 核心概念
 
-Apply four primary strategies in this priority order:
+按以下优先顺序应用四种主要策略：
 
-1. **KV-cache optimization** — Reorder and stabilize prompt structure so the inference engine reuses cached Key/Value tensors. This is the cheapest optimization when the runtime supports prefix caching: low quality risk, immediate cost and latency savings. Apply it first when stable prefixes exist.
+1. **KV 缓存优化**——重新安排并稳定提示词结构，让推理引擎复用键值张量。在运行时支持前缀缓存的情况下，这是成本最低的优化：质量风险低，能立即节省费用和延迟。存在稳定前缀时，应先应用这项优化。
 
-2. **Observation masking** — Replace verbose tool outputs with compact references once their purpose has been served. Tool outputs can dominate agent trajectories (claim-context-optimization-tool-output-dominance), so masking often yields the largest capacity gains. The original content remains retrievable if needed downstream.
+2. **观察屏蔽**——工具输出完成用途后，用简明引用替代冗长内容。工具输出可能占据智能体执行轨迹的大部分（claim-context-optimization-tool-output-dominance），因此屏蔽通常能最大幅度地释放容量。后续仍可按需检索原始内容。
 
-3. **Compaction** — Summarize accumulated context when utilization exceeds 70%, then reinitialize with the summary. This distills the window's contents while preserving task-critical state. Compaction is lossy — apply it after masking has already removed the low-value bulk.
+3. **上下文压缩**——上下文利用率超过 70% 时，对累积内容进行摘要，然后使用摘要重新初始化。这样可以提炼窗口中的内容，同时保留任务关键状态。压缩会造成信息损失；应先屏蔽并移除低价值的大段内容，再进行压缩。
 
-4. **Context partitioning** — Split work across sub-agents with isolated contexts when a single window cannot hold the full problem. Each sub-agent operates in a clean context focused on its subtask. Reserve this for tasks where estimated context exceeds 60% of the window limit, because coordination overhead is real.
+4. **上下文分区**——单个窗口无法容纳完整问题时，将工作拆分给拥有独立上下文的子智能体。每个子智能体都在聚焦于其子任务的干净上下文中工作。预计任务内容会超过窗口上限的 60% 时，才考虑这种策略，因为协调开销确实存在。
 
-The governing principle: context quality matters more than quantity. Every optimization preserves signal while reducing noise. Measure before optimizing, then measure the optimization's effect.
+基本原则是：上下文质量比数量更重要。每种优化都应在减少噪声的同时保留信号。先测量，再优化，最后测量优化效果。
 
-## Detailed Topics
+## 详细主题
 
-### Compaction Strategies
+### 上下文压缩策略
 
-Trigger compaction when context utilization exceeds 70%: summarize the current context, then reinitialize with the summary. This distills the window's contents in a high-fidelity manner, enabling continuation with minimal performance degradation. Prioritize compressing tool outputs first (they consume 80%+ of tokens), then old conversation turns, then retrieved documents. Never compress the system prompt — it anchors model behavior and its removal causes unpredictable degradation.
+上下文利用率超过 70% 时触发压缩：摘要当前上下文，然后用摘要重新初始化。这样能以较高保真度提炼窗口内容，以尽量少的性能损失继续任务。优先压缩工具输出（占 token 的 80% 以上），然后是较早的对话轮次，最后是检索到的文档。绝不要压缩系统提示词；它是模型行为的锚点，移除会导致不可预测的退化。
 
-Preserve different elements by message type:
+根据消息类型保留不同内容：
 
-- **Tool outputs**: Extract key findings, metrics, error codes, and conclusions. Strip verbose raw output, stack traces (unless debugging is ongoing), and boilerplate headers.
-- **Conversational turns**: Retain decisions, commitments, user preferences, and context shifts. Remove filler, pleasantries, and exploratory back-and-forth that led to a conclusion already captured.
-- **Retrieved documents**: Keep claims, facts, and data points relevant to the active task. Remove supporting evidence and elaboration that served a one-time reasoning purpose.
+- **工具输出**：提取关键发现、指标、错误码和结论。删除冗长原始输出、堆栈跟踪（除非仍在调试）和模板化标题。
+- **对话轮次**：保留决策、承诺、用户偏好和上下文切换。删除填充内容、寒暄，以及已经得到结论并记入摘要的探索性讨论。
+- **检索文档**：保留与当前任务相关的主张、事实和数据。删除曾用于一次性推理、之后不再需要的佐证和展开说明。
 
-Target 50-70% token reduction with less than 5% quality degradation. If compaction exceeds 70% reduction, audit the summary for critical information loss — over-aggressive compaction is the most common failure mode.
+目标是减少 50% 到 70% 的 token，同时让质量下降低于 5%。若压缩比例超过 70%，应检查摘要是否丢失关键内容；过度压缩是最常见的失效模式。
 
-### Observation Masking
+### 观察屏蔽
 
-Mask observations selectively based on recency and ongoing relevance — not uniformly. Apply these rules:
+应根据时效和当前相关性选择性地屏蔽观察内容，不要一律采用相同规则：
 
-- **Never mask**: Observations critical to the current task, observations from the most recent turn, observations used in active reasoning chains, and error outputs when debugging is in progress.
-- **Mask after 3+ turns**: Verbose outputs whose key points have already been extracted into the conversation flow. Replace with a compact reference: `[Obs:{ref_id} elided. Key: {summary}. Full content retrievable.]`
-- **Always mask immediately**: Repeated/duplicate outputs, boilerplate headers and footers, outputs already summarized earlier in the conversation.
+- **绝不屏蔽**：当前任务的关键观察、最近一轮的观察、正在参与推理链的观察，以及调试过程中产生的错误输出。
+- **经过至少 3 轮后屏蔽**：已提取其关键点并纳入对话流程的冗长输出。用简短引用替代：`[Obs:{ref_id} elided. Key: {summary}. Full content retrievable.]`
+- **立即屏蔽**：重复或重复出现的输出、模板化页眉和页脚，以及之前已经摘要过的输出。
 
-Masking should achieve 60-80% reduction in masked observations with less than 2% quality impact. The key is maintaining retrievability — store the full content externally and keep the reference ID in context so the agent can request the original if needed.
+屏蔽后的观察内容应减少 60% 到 80%，质量影响低于 2%。关键是保持可检索性：将完整内容存到外部，并在上下文中保留引用 ID，以便智能体需要时重新请求原文。
 
-### KV-Cache Optimization
+### KV 缓存优化
 
-Maximize prefix cache hits by structuring prompts so that stable content occupies the prefix and dynamic content appears at the end. KV-cache stores Key and Value tensors computed during inference; when consecutive requests share an identical prefix, the cached tensors are reused, saving both cost and latency.
+提示词应采用稳定内容在前、动态内容在后的结构，以尽量提高前缀缓存命中率。KV 缓存会存储推理期间计算出的键和值张量；连续请求共享相同前缀时，可以复用这些缓存张量，从而节省费用和延迟。
 
-Apply this ordering in every prompt:
-1. System prompt (most stable — never changes within a session)
-2. Tool definitions (stable across requests)
-3. Frequently reused templates and few-shot examples
-4. Conversation history (grows but shares prefix with prior turns)
-5. Current query and dynamic content (least stable — always last)
+所有提示词均按以下顺序组织：
+1. 系统提示词（最稳定，在一次会话中不会改变）
+2. 工具定义（不同请求之间保持稳定）
+3. 经常复用的模板和少样本示例
+4. 对话历史（会增长，但与此前轮次共享前缀）
+5. 当前查询和动态内容（稳定性最低，始终放在最后）
 
-Design prompts for cache stability: remove timestamps, session counters, and request IDs from the system prompt. Move dynamic metadata into a separate user message or tool result where it does not break the prefix. Even a single whitespace change in the prefix invalidates the entire cached block downstream of that change. The same rule prices any compaction or masking edit applied to earlier history: its cost is the text that follows it, so batch such edits and prefer them near the end of the context.
+按缓存稳定性设计提示词：从系统提示词中移除时间戳、会话计数器和请求 ID。将动态元数据移到单独的用户消息或工具结果中，避免破坏前缀。即使只更改前缀中的一个空白字符，也会使该位置之后的整个缓存块失效。对较早历史所做的压缩或屏蔽编辑也是如此：其成本是编辑位置之后的全部文本。因此，应把这类编辑批量进行，并尽量放在上下文靠后的位置。
 
-Target 70%+ cache hit rate for stable workloads. At scale, this translates to 50%+ cost reduction and 40%+ latency reduction on cached tokens.
+对于稳定工作负载，目标是缓存命中率超过 70%。在大规模场景中，这相当于让缓存 token 的成本降低 50% 以上、延迟降低 40% 以上。
 
-### Context Partitioning
+### 上下文分区
 
-Partition work across sub-agents when a single context cannot hold the full problem without triggering aggressive compaction. Each sub-agent operates in a clean, focused context for its subtask, then returns a structured result to a coordinator agent.
+单个上下文无法容纳完整问题，且会因此触发激进压缩时，应把工作拆分给子智能体。每个子智能体都在干净、聚焦于其子任务的上下文中工作，然后向协调智能体返回结构化结果。
 
-Plan partitioning when estimated task context exceeds 60% of the window limit. Decompose the task into independent subtasks, assign each to a sub-agent, and aggregate results. Validate that all partitions completed before merging, merge compatible results, and apply summarization if the aggregated output still exceeds budget.
+估计任务上下文会超过窗口上限的 60% 时，开始规划分区。将任务拆成独立子任务，分别交给子智能体，再汇总结果。合并之前要确认每个分区都已完成；合并彼此兼容的结果；如果汇总后仍超过预算，则应用摘要。
 
-This approach achieves separation of concerns — detailed search context stays isolated within sub-agents while the coordinator focuses on synthesis. However, coordination has real token cost: the coordinator prompt, result aggregation, and error handling all consume tokens. Only partition when the savings exceed this overhead.
+这种方法能实现关注点分离：详细的搜索上下文留在子智能体中，协调智能体专注于综合结果。但协调确实需要 token：协调智能体的提示词、结果汇总和错误处理都会消耗 token。只有预期节省量高于这部分开销时才应分区。
 
-### Budget Management
+### 预算管理
 
-Allocate explicit token budgets across context categories before the session begins: system prompt, tool definitions, retrieved documents, message history, tool outputs, and a reserved buffer (5-10% of total). Monitor usage against budget continuously and trigger optimization when any category exceeds its allocation or total utilization crosses 70%.
+会话开始前，应为各类上下文分配明确 token 预算：系统提示词、工具定义、检索文档、消息历史、工具输出，以及预留缓冲区（总量的 5% 到 10%）。持续监控预算使用情况；任何一类内容超过分配额度，或整体利用率超过 70%，就触发优化。
 
-Use trigger-based optimization rather than periodic optimization. Monitor these signals:
-- Token utilization above 80% — trigger compaction
-- Attention degradation indicators (repetition, missed instructions) — trigger masking + compaction
-- Quality score drops below baseline — audit context composition before optimizing
+使用由信号触发的优化，不要按固定周期优化。监控以下信号：
+- token 利用率超过 80%——触发压缩。
+- 注意力退化迹象（重复、遗漏指令）——触发屏蔽和压缩。
+- 质量分数低于基线——先审查上下文构成，再进行优化。
 
-## Practical Guidance
+## 实践指南
 
-### Optimization Decision Framework
+### 优化决策框架
 
-Select the optimization technique based on what dominates the context:
+根据占用上下文最多的内容选择优化技术：
 
-| Context Composition | First Action | Second Action |
+| 上下文构成 | 首选操作 | 次选操作 |
 |---|---|---|
-| Tool outputs dominate (>50%) | Observation masking | Compaction of remaining turns |
-| Retrieved documents dominate | Summarization | Partitioning if docs are independent |
-| Message history dominates | Compaction with selective preservation | Partitioning for new subtasks |
-| Multiple components contribute | KV-cache optimization first, then layer masking + compaction |
-| Near-limit with active debugging | Mask resolved tool outputs only — preserve error details |
+| 工具输出占主导（超过 50%） | 观察屏蔽 | 压缩剩余轮次 |
+| 检索文档占主导 | 摘要 | 文档彼此独立时进行分区 |
+| 消息历史占主导 | 选择性保留内容后再压缩 | 为新子任务分区 |
+| 多类内容占比接近 | 先优化 KV 缓存，再逐步屏蔽和压缩 | |
+| 接近上限且仍在调试 | 只屏蔽已解决的工具输出，保留错误细节 | |
 
-### Performance Targets
+### 性能目标
 
-Track these metrics to validate optimization effectiveness:
+追踪以下指标，验证优化效果：
 
-- **Compaction**: 50-70% token reduction, <5% quality degradation, <10% latency overhead from the compaction step itself
-- **Masking**: 60-80% reduction in masked observations, <2% quality impact, near-zero latency overhead
-- **Cache optimization**: 70%+ hit rate for stable workloads, 50%+ cost reduction, 40%+ latency reduction
-- **Partitioning**: Net token savings after accounting for coordinator overhead; break-even typically requires 3+ subtasks
+- **压缩**：减少 50% 到 70% 的 token，质量下降低于 5%，压缩步骤本身增加的延迟低于 10%。
+- **屏蔽**：被屏蔽观察内容减少 60% 到 80%，质量影响低于 2%，延迟几乎不增加。
+- **缓存优化**：稳定工作负载的命中率超过 70%，成本降低 50% 以上，延迟降低 40% 以上。
+- **分区**：扣除协调开销后仍能节省 token；通常至少要有 3 个子任务才达到盈亏平衡。
 
-Iterate on strategies based on measured results. If an optimization technique does not measurably improve the target metric, remove it — optimization machinery itself consumes tokens and adds latency.
+根据测量结果迭代策略。如果某项优化不能带来可测量的目标指标改善，就应移除它；优化机制本身也会消耗 token 并增加延迟。
 
-## Examples
+## 示例
 
-**Example 1: Compaction Trigger**
+**示例 1：压缩触发条件**
 ```python
 if context_tokens / context_limit > 0.8:
     context = compact_context(context)
 ```
 
-**Example 2: Observation Masking**
+**示例 2：观察屏蔽**
 ```python
 if len(observation) > max_length:
     ref_id = store_observation(observation)
     return f"[Obs:{ref_id} elided. Key: {extract_key(observation)}]"
 ```
 
-**Example 3: Cache-Friendly Ordering**
+**示例 3：便于缓存的排列顺序**
 ```python
 # Stable content first
 context = [system_prompt, tool_definitions]  # Cacheable
@@ -142,7 +142,7 @@ context += [reused_templates]  # Reusable
 context += [unique_content]  # Unique
 ```
 
-**Example 4: Budget-triggered optimization policy**
+**示例 4：由预算触发的优化策略**
 ```yaml
 budgets:
   tool_outputs: 35%
@@ -155,67 +155,67 @@ triggers:
   repeated_irrelevant_retrievals: tighten retrieval scope
 ```
 
-## Guidelines
+## 指南
 
-1. Measure before optimizing—know your current state
-2. Apply masking before compaction — remove low-value bulk first, then summarize what remains
-3. Design for cache stability with consistent prompts
-4. Partition before context becomes problematic
-5. Monitor optimization effectiveness over time
-6. Balance token savings against quality preservation
-7. Test optimization at production scale
-8. Implement graceful degradation for edge cases
+1. 优化之前先测量，了解当前状态。
+2. 先屏蔽，再压缩——先移除低价值的大段内容，再摘要剩余部分。
+3. 使用一致的提示词设计，保持缓存稳定。
+4. 在上下文开始出问题之前完成分区。
+5. 持续监控优化效果。
+6. 在 token 节省量和质量保留之间取得平衡。
+7. 在生产规模下测试优化方法。
+8. 为边缘情况实现平稳退化机制。
 
-## Gotchas
+## 易错点
 
-1. **Whitespace breaks KV-cache**: Even a single whitespace or newline change in the prompt prefix invalidates the entire KV-cache block downstream of that point. Pin system prompts as immutable strings — do not interpolate timestamps, version numbers, or session IDs into them. Diff prompt templates byte-for-byte between deployments.
+1. **空白字符会破坏 KV 缓存**：即使提示词前缀中的一个空白字符或换行符发生变化，也会使该位置之后的整个 KV 缓存块失效。将系统提示词固定为不可变字符串，不要在其中插入时间戳、版本号或会话 ID。每次部署时都应逐字节比较提示词模板。
 
-2. **Timestamps in system prompts destroy cache hit rates**: Including `Current date: {today}` or similar dynamic content in the system prompt forces a full cache miss on every new day (or every request, if using time-of-day). Move dynamic metadata into a user message or a separate tool result appended after the stable prefix.
+2. **在系统提示词中放时间戳会破坏缓存命中率**：加入 `Current date: {today}` 等动态内容，会导致每天（如果包含一天中的时间，则每个请求）都完全无法命中缓存。应将动态元数据移到用户消息中，或作为单独的工具结果附加在稳定前缀之后。
 
-3. **Compaction under pressure loses critical state**: When the model performing compaction is itself under context pressure (>85% utilization), its summarization quality degrades — it omits task goals, drops user constraints, and flattens nuanced state. Trigger compaction at 70-80%, not 90%+. If compaction must happen late, use a separate model call with a clean context containing only the material to summarize.
+3. **在上下文压力下压缩会丢失关键状态**：执行压缩的模型自身上下文利用率超过 85% 时，摘要质量会下降：它可能漏掉任务目标、丢弃用户约束或抹平细微状态差异。应在 70% 到 80% 时触发压缩，不要等到 90% 以上。如果不得不晚压缩，应使用一次独立模型调用，并在干净上下文中只提供待摘要材料。
 
-4. **Masking error outputs breaks debugging loops**: Over-aggressive masking hides error messages, stack traces, and failure details that the agent needs in subsequent turns to diagnose and fix issues. During active debugging (error in the last 3 turns), suspend masking for all error-related observations until the issue is resolved.
+4. **屏蔽错误输出会破坏调试循环**：过度屏蔽会隐藏后续诊断和修复所需的错误消息、堆栈跟踪和故障细节。调试仍在进行中（错误出现在最近 3 轮对话中）时，应暂停屏蔽所有错误相关的观察内容，直到问题解决。
 
-5. **Partitioning overhead can exceed savings**: Each sub-agent requires its own system prompt, tool definitions, and coordination messages. For tasks with fewer than 3 independent subtasks, the coordination overhead often exceeds the context savings. Estimate total tokens (coordinator + all sub-agents) before committing to partitioning.
+5. **分区开销可能超过节省量**：每个子智能体都需要自己的系统提示词、工具定义和协调消息。独立子任务少于 3 个时，协调开销往往高于节省的上下文。确定分区之前，应估算 token 总量（协调者加所有子智能体）。
 
-6. **Cache miss cost spikes after deployment changes**: Reordering tools, rewording the system prompt, or changing few-shot examples between deployments invalidates the entire prefix cache, causing a temporary cost spike of 2-5x until the new cache warms up. Roll out prompt changes gradually and monitor cache hit rate during deployment windows.
+6. **部署更改后缓存未命中成本会激增**：重新排列工具、改写系统提示词或更改少样本示例，都会使整个前缀缓存失效；在新缓存预热前，成本会暂时增加 2 到 5 倍。逐步推出提示词更改，并在部署期间监控缓存命中率。
 
-7. **Compaction creates false confidence in stale summaries**: Once context is compacted, the summary looks authoritative but may reflect outdated state. If the task has evolved since compaction (new user requirements, corrected assumptions), the summary silently carries forward stale information. After compaction, re-validate the summary against the current task goal before proceeding.
+7. **压缩会让过时摘要看起来很可靠**：上下文压缩后，摘要看起来很权威，却可能反映过时状态。任务在压缩后发生变化时（用户提出新要求、原有假设得到纠正），摘要可能悄悄沿用过时信息。压缩后继续工作之前，应根据当前任务目标重新核实摘要。
 
-## Integration
+## 集成
 
-This skill owns token-efficiency tactics and budget policy. Adjacent skills own diagnosis, storage, and architecture:
+本技能负责 token 效率技巧和预算策略。相邻技能负责诊断、存储和架构：
 
-- `context-fundamentals`: mental models for why context quality and attention placement matter.
-- `context-degradation`: diagnosis when output quality has already dropped.
-- `context-compression`: lossy summarization and handoff strategy.
-- `filesystem-context`: file-backed offloading for full outputs and logs.
-- `multi-agent-patterns`: partitioning work across isolated agent contexts.
-- `latent-briefing`: selective KV retention across orchestrator-worker boundaries in compatible runtimes.
-- `self-managed-context`: the model, not the harness, decides when and what to edit in its live context.
-- `evaluation`: measuring whether the optimization improved quality, cost, or latency.
-- `memory-systems`: persistent retrieval layers that feed context just in time.
+- `context-fundamentals`：解释上下文质量和注意力位置为何重要的思维模型。
+- `context-degradation`：输出质量已经下降时进行诊断。
+- `context-compression`：有损摘要和交接策略。
+- `filesystem-context`：将完整输出和日志卸载到文件。
+- `multi-agent-patterns`：在彼此隔离的智能体上下文之间分配任务。
+- `latent-briefing`：在兼容运行时中，选择性地在协调者和执行者之间保留 KV 状态。
+- `self-managed-context`：由模型而非运行框架决定何时以及要如何编辑当前上下文。
+- `evaluation`：测量优化是否改善了质量、成本或延迟。
+- `memory-systems`：为即时上下文加载提供持久检索层。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Optimization Techniques Reference](./references/optimization_techniques.md) - Read when: implementing a specific optimization technique and needing detailed code patterns, threshold tables, or integration examples beyond what the skill body provides
+内部参考资料：
+- [Optimization Techniques Reference](./references/optimization_techniques.md) - 阅读时机：实现具体优化技术，需要技能正文之外的详细代码模式、阈值表或集成示例时
 
-Related skills in this collection:
-- context-fundamentals - Read when: unfamiliar with context window mechanics, token counting, or attention distribution basics
-- context-degradation - Read when: diagnosing why agent performance has dropped and needing to identify which degradation pattern is occurring before selecting an optimization
-- evaluation - Read when: setting up metrics and benchmarks to measure whether an optimization technique actually improved outcomes
+本系列的相关技能：
+- context-fundamentals - 阅读时机：不熟悉上下文窗口机制、token 计数或注意力分布基础知识时
+- context-degradation - 阅读时机：输出质量已经下降，需要在选择优化方法之前找出正在发生的退化模式时
+- evaluation - 阅读时机：建立衡量优化技术是否真正改善结果的指标和基准时
 
-External resources:
-- Research on context window limitations - Read when: evaluating model-specific context behavior (e.g., lost-in-the-middle effects, attention decay curves)
-- KV-cache optimization techniques - Read when: implementing prefix caching at the inference infrastructure level (vLLM, TGI, or cloud provider APIs)
-- Production engineering guides - Read when: deploying context optimization in a production pipeline and needing operability patterns (monitoring, alerting, rollback)
+外部资源：
+- 关于上下文窗口限制的研究——评估不同模型的上下文行为（例如信息在中间位置丢失、注意力衰减曲线）时阅读
+- KV 缓存优化技术——在推理基础设施层（vLLM、TGI 或云服务提供方 API）实现前缀缓存时阅读
+- 生产工程指南——在生产流水线中部署上下文优化，并需要运维模式（监控、告警、回滚）时阅读
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 2.1.0
+**创建时间**：2025-12-20
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering Contributors
+**版本**：2.1.0

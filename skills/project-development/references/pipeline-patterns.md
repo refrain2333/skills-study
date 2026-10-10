@@ -1,28 +1,28 @@
-# Pipeline Patterns for LLM Projects
+# 大语言模型项目的流程模式
 
-This reference provides detailed patterns for structuring LLM processing pipelines. These patterns apply to batch processing, data analysis, content generation, and similar workloads.
+本文介绍组织大语言模型处理流程的详细模式，适用于批处理、数据分析、内容生成及类似任务。
 
-## The Canonical Pipeline
+## 标准处理流程
 
 ```
 acquire → prepare → process → parse → render
 ```
 
-### Stage Characteristics
+### 各阶段的特点
 
-| Stage | Deterministic | Expensive | Parallelizable | Idempotent |
+| 阶段 | 是否确定 | 成本高低 | 是否可并行 | 是否幂等 |
 |-------|---------------|-----------|----------------|------------|
-| Acquire | Yes | Low | Yes | Yes |
-| Prepare | Yes | Low | Yes | Yes |
-| Process | No | High | Yes | Yes (with caching) |
-| Parse | Yes | Low | Yes | Yes |
-| Render | Yes | Low | Partially | Yes |
+| 获取 | 是 | 低 | 是 | 是 |
+| 准备 | 是 | 低 | 是 | 是 |
+| 处理 | 否 | 高 | 是 | 是（配合缓存） |
+| 解析 | 是 | 低 | 是 | 是 |
+| 渲染 | 是 | 低 | 部分可并行 | 是 |
 
-The key insight: only the Process stage involves LLM calls. All other stages are deterministic transformations that can be debugged, tested, and iterated independently.
+关键在于只有“处理”阶段需要调用大语言模型。其他阶段都是确定性转换，可以独立调试、检查和迭代。
 
-## File System State Management
+## 文件系统状态管理
 
-### Directory Structure Pattern
+### 目录结构模式
 
 ```
 project/
@@ -41,7 +41,7 @@ project/
         └── template.md          # Prompt templates
 ```
 
-### State Checking Pattern
+### 状态检查模式
 
 ```python
 def needs_processing(item_dir: Path, stage: str) -> bool:
@@ -52,14 +52,14 @@ def needs_processing(item_dir: Path, stage: str) -> bool:
         "process": ["response.md"],
         "parse": ["parsed.json"],
     }
-    
+
     for output_file in stage_outputs[stage]:
         if not (item_dir / output_file).exists():
             return True
     return False
 ```
 
-### Clean/Retry Pattern
+### 清理与重试模式
 
 ```python
 def clean_from_stage(item_dir: Path, stage: str):
@@ -71,7 +71,7 @@ def clean_from_stage(item_dir: Path, stage: str):
         "process": ["response.md"],
         "parse": ["parsed.json"],
     }
-    
+
     start_idx = stage_order.index(stage)
     for s in stage_order[start_idx:]:
         for output_file in stage_outputs.get(s, []):
@@ -80,9 +80,9 @@ def clean_from_stage(item_dir: Path, stage: str):
                 filepath.unlink()
 ```
 
-## Parallel Execution Patterns
+## 并行执行模式
 
-### ThreadPoolExecutor for LLM Calls
+### 使用 ThreadPoolExecutor 并行调用模型
 
 ```python
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -90,10 +90,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 def process_batch(items: list, max_workers: int = 10):
     """Process items in parallel with progress tracking."""
     results = []
-    
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(process_item, item): item for item in items}
-        
+
         for future in as_completed(futures):
             item = futures[future]
             try:
@@ -101,17 +101,17 @@ def process_batch(items: list, max_workers: int = 10):
                 results.append((item, result, None))
             except Exception as e:
                 results.append((item, None, str(e)))
-    
+
     return results
 ```
 
-### Batch Size Considerations
+### 批次大小的选择
 
-- **Small batches (1-10)**: Sequential processing is fine; overhead of parallelization not worth it
-- **Medium batches (10-100)**: Parallelize with 5-15 workers depending on API rate limits
-- **Large batches (100+)**: Consider chunking with checkpoints; implement resume capability
+- **小批次（1—10 项）**：顺序处理即可；并行开销得不偿失。
+- **中批次（10—100 项）**：根据 API 速率限制并行使用 5—15 个工作者。
+- **大批次（100 项以上）**：考虑分块并设置检查点；实现断点续跑能力。
 
-### Rate Limiting
+### 调用速率限制
 
 ```python
 import time
@@ -121,7 +121,7 @@ def rate_limited(calls_per_second: float):
     """Decorator to rate limit function calls."""
     min_interval = 1.0 / calls_per_second
     last_call = [0.0]
-    
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -135,24 +135,24 @@ def rate_limited(calls_per_second: float):
     return decorator
 ```
 
-## Structured Output Patterns
+## 结构化输出模式
 
-### Prompt Template Structure
+### 提示词模板结构
 
 ```markdown
 [INSTRUCTION BLOCK]
 Analyze the following content and provide your response in exactly this format.
 
 [FORMAT SPECIFICATION]
-## Section 1: Summary
+## 第 1 部分：摘要
 [Your summary here - 2-3 sentences]
 
-## Section 2: Analysis
+## 第 2 部分：分析
 - Point 1
 - Point 2
 - Point 3
 
-## Section 3: Score
+## 第 3 部分：评分
 Rating: [1-10]
 Confidence: [low/medium/high]
 
@@ -162,18 +162,18 @@ Follow this format exactly because I will be parsing it programmatically.
 ---
 
 [CONTENT BLOCK]
-# Title: {title}
+# 标题：{title}
 
-## Content
+## 正文
 {content}
 
-## Additional Context
+## 补充上下文
 {context}
 ```
 
-### Parsing Patterns
+### 解析模式
 
-**Section Extraction**
+**章节提取**
 
 ```python
 import re
@@ -186,7 +186,7 @@ def extract_section(text: str, section_name: str) -> str | None:
     return match.group(1).strip() if match else None
 ```
 
-**Structured Field Extraction**
+**结构化字段提取**
 
 ```python
 def extract_field(text: str, field_name: str) -> str | None:
@@ -197,7 +197,7 @@ def extract_field(text: str, field_name: str) -> str | None:
     return match.group(1).strip() if match else None
 ```
 
-**List Extraction**
+**列表提取**
 
 ```python
 def extract_list_items(text: str, section_name: str) -> list[str]:
@@ -205,13 +205,13 @@ def extract_list_items(text: str, section_name: str) -> list[str]:
     section = extract_section(text, section_name)
     if not section:
         return []
-    
+
     # Match lines starting with -, *, or numbered
     items = re.findall(r'^[\-\*\d\.]+\s*(.+)$', section, re.MULTILINE)
     return [item.strip() for item in items]
 ```
 
-**Score Extraction with Validation**
+**提取分数并验证**
 
 ```python
 def extract_score(text: str, field_name: str, min_val: int, max_val: int) -> int | None:
@@ -219,17 +219,17 @@ def extract_score(text: str, field_name: str, min_val: int, max_val: int) -> int
     raw = extract_field(text, field_name)
     if not raw:
         return None
-    
+
     # Extract first number from the value
     match = re.search(r'\d+', raw)
     if not match:
         return None
-    
+
     score = int(match.group())
     return max(min_val, min(max_val, score))  # Clamp to valid range
 ```
 
-### Graceful Degradation
+### 平稳降级
 
 ```python
 @dataclass
@@ -242,29 +242,29 @@ class ParseResult:
 def parse_response(text: str) -> ParseResult:
     """Parse LLM response with graceful error handling."""
     result = ParseResult()
-    
+
     # Try each field, log errors but continue
     try:
         result.summary = extract_section(text, "Summary") or ""
     except Exception as e:
         result.parse_errors.append(f"Summary extraction failed: {e}")
-    
+
     try:
         result.score = extract_score(text, "Rating", 1, 10)
     except Exception as e:
         result.parse_errors.append(f"Score extraction failed: {e}")
-    
+
     try:
         result.items = extract_list_items(text, "Analysis")
     except Exception as e:
         result.parse_errors.append(f"Items extraction failed: {e}")
-    
+
     return result
 ```
 
-## Error Handling Patterns
+## 错误处理模式
 
-### Retry with Exponential Backoff
+### 指数退避重试
 
 ```python
 import time
@@ -289,7 +289,7 @@ def retry_with_backoff(max_retries: int = 3, base_delay: float = 1.0):
     return decorator
 ```
 
-### Error Logging Pattern
+### 错误记录模式
 
 ```python
 import json
@@ -298,26 +298,26 @@ from datetime import datetime
 def log_error(item_dir: Path, stage: str, error: str, context: dict = None):
     """Log error to file for later analysis."""
     error_file = item_dir / "errors.jsonl"
-    
+
     error_record = {
         "timestamp": datetime.now().isoformat(),
         "stage": stage,
         "error": error,
         "context": context or {},
     }
-    
+
     with open(error_file, "a") as f:
         f.write(json.dumps(error_record) + "\n")
 ```
 
-### Partial Success Handling
+### 处理部分成功
 
 ```python
 def process_batch_with_partial_success(items: list) -> tuple[list, list]:
     """Process batch, separating successes from failures."""
     successes = []
     failures = []
-    
+
     for item in items:
         try:
             result = process_item(item)
@@ -325,16 +325,16 @@ def process_batch_with_partial_success(items: list) -> tuple[list, list]:
         except Exception as e:
             failures.append((item, str(e)))
             log_error(item.directory, "process", str(e))
-    
+
     # Report summary
     print(f"Processed {len(items)} items: {len(successes)} succeeded, {len(failures)} failed")
-    
+
     return successes, failures
 ```
 
-## Cost Estimation Patterns
+## 成本估算模式
 
-### Token Counting
+### 令牌计数
 
 ```python
 import tiktoken
@@ -345,7 +345,7 @@ def count_tokens(text: str, model: str = "gpt-4") -> int:
         encoding = tiktoken.encoding_for_model(model)
     except KeyError:
         encoding = tiktoken.get_encoding("cl100k_base")
-    
+
     return len(encoding.encode(text))
 
 def estimate_cost(
@@ -360,7 +360,7 @@ def estimate_cost(
     return input_cost + output_cost
 ```
 
-### Batch Cost Estimation
+### 批次成本估算
 
 ```python
 def estimate_batch_cost(
@@ -374,20 +374,20 @@ def estimate_batch_cost(
         "input_price_per_mtok": 3.00,   # Example: GPT-4 Turbo input
         "output_price_per_mtok": 15.00,  # Example: GPT-4 Turbo output
     }
-    
+
     total_input_tokens = 0
     for item in items:
         prompt = format_prompt(prompt_template, item)
         total_input_tokens += count_tokens(prompt)
-    
+
     total_output_tokens = len(items) * avg_output_tokens
-    
+
     estimated_cost = estimate_cost(
         total_input_tokens,
         total_output_tokens,
         **model_pricing,
     )
-    
+
     return {
         "item_count": len(items),
         "total_input_tokens": total_input_tokens,
@@ -398,9 +398,9 @@ def estimate_batch_cost(
     }
 ```
 
-## CLI Pattern
+## 命令行接口模式
 
-### Standard CLI Structure
+### 标准命令行结构
 
 ```python
 import argparse
@@ -408,7 +408,7 @@ from datetime import date
 
 def main():
     parser = argparse.ArgumentParser(description="LLM Processing Pipeline")
-    
+
     parser.add_argument(
         "stage",
         choices=["acquire", "prepare", "process", "parse", "render", "all", "clean"],
@@ -446,11 +446,11 @@ def main():
         choices=["acquire", "prepare", "process", "parse"],
         help="For clean: only clean this stage and downstream",
     )
-    
+
     args = parser.parse_args()
-    
+
     batch_id = args.batch_id or date.today().isoformat()
-    
+
     if args.stage == "clean":
         stage_clean(batch_id, args.clean_stage)
     elif args.dry_run:
@@ -462,9 +462,9 @@ if __name__ == "__main__":
     main()
 ```
 
-## Rendering Patterns
+## 渲染模式
 
-### Static HTML Output
+### 生成静态 HTML
 
 ```python
 import html
@@ -474,41 +474,41 @@ def render_html(data: list[dict], output_path: Path, template: str):
     """Render data to static HTML file."""
     # Escape data for JavaScript embedding
     data_json = json.dumps([
-        {k: html.escape(str(v)) if isinstance(v, str) else v 
+        {k: html.escape(str(v)) if isinstance(v, str) else v
          for k, v in item.items()}
         for item in data
     ])
-    
+
     html_content = template.replace("{{DATA_JSON}}", data_json)
-    
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:
         f.write(html_content)
 ```
 
-### Incremental Output
+### 增量输出
 
 ```python
 def render_incremental(items: list, output_dir: Path):
     """Render each item as it completes, plus index."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Render individual item pages
     for item in items:
         item_html = render_item(item)
         item_path = output_dir / f"{item.id}.html"
         with open(item_path, "w") as f:
             f.write(item_html)
-    
+
     # Render index linking to all items
     index_html = render_index(items)
     with open(output_dir / "index.html", "w") as f:
         f.write(index_html)
 ```
 
-## Checkpoint and Resume Pattern
+## 检查点与恢复模式
 
-For long-running pipelines:
+对于长期运行的处理流程：
 
 ```python
 import json
@@ -518,41 +518,41 @@ class PipelineCheckpoint:
     def __init__(self, checkpoint_file: Path):
         self.checkpoint_file = checkpoint_file
         self.state = self._load()
-    
+
     def _load(self) -> dict:
         if self.checkpoint_file.exists():
             with open(self.checkpoint_file) as f:
                 return json.load(f)
         return {"completed": [], "failed": [], "last_item": None}
-    
+
     def save(self):
         with open(self.checkpoint_file, "w") as f:
             json.dump(self.state, f, indent=2)
-    
+
     def mark_complete(self, item_id: str):
         self.state["completed"].append(item_id)
         self.state["last_item"] = item_id
         self.save()
-    
+
     def mark_failed(self, item_id: str, error: str):
         self.state["failed"].append({"id": item_id, "error": error})
         self.save()
-    
+
     def get_remaining(self, all_items: list[str]) -> list[str]:
         completed = set(self.state["completed"])
         return [item for item in all_items if item not in completed]
 ```
 
-## Testing Patterns
+## 测试模式
 
-### Stage Unit Tests
+### 分阶段单元测试
 
 ```python
 def test_prepare_stage():
     """Test prompt generation independently."""
     test_item = {"id": "test", "content": "Sample content"}
     prompt = prepare_prompt(test_item)
-    
+
     assert "Sample content" in prompt
     assert "## Section 1" in prompt  # Format markers present
 
@@ -561,11 +561,11 @@ def test_parse_stage():
     test_response = """
     ## Summary
     This is a test summary.
-    
+
     ## Score
     Rating: 7
     """
-    
+
     result = parse_response(test_response)
     assert result.summary == "This is a test summary."
     assert result.score == 7
@@ -573,38 +573,37 @@ def test_parse_stage():
 def test_parse_stage_malformed():
     """Test parsing handles malformed output."""
     test_response = "Some random text without sections"
-    
+
     result = parse_response(test_response)
     assert result.summary == ""
     assert result.score is None
     assert len(result.parse_errors) > 0
 ```
 
-### Integration Test Pattern
+### 集成测试模式
 
 ```python
 def test_pipeline_end_to_end():
     """Test full pipeline with single item."""
     test_dir = Path("test_data")
     test_item = create_test_item()
-    
+
     try:
         # Run each stage
         acquire_result = stage_acquire(test_dir, [test_item])
         assert (test_dir / test_item.id / "raw.json").exists()
-        
+
         prepare_result = stage_prepare(test_dir)
         assert (test_dir / test_item.id / "prompt.md").exists()
-        
+
         # Skip process stage in unit tests (costs money)
         # Create mock response instead
         mock_response(test_dir / test_item.id)
-        
+
         parse_result = stage_parse(test_dir)
         assert (test_dir / test_item.id / "parsed.json").exists()
-        
+
     finally:
         # Cleanup
         shutil.rmtree(test_dir, ignore_errors=True)
 ```
-

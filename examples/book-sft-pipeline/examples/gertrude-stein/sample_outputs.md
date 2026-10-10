@@ -1,63 +1,62 @@
-# Sample Model Outputs
+# 样本模型输出
 
-Raw outputs from the trained model for AI detector testing and style analysis.
+训练模型的原始输出，用于 AI 检测器测试和风格分析。
 
-## 1. Real Estate Office (Modern Work)
+## 1. 房地产办公室（现代工作）
 
-**System**: You are a literary writer with deep knowledge of early 20th century American modernist prose.
+**系统**：你是一位深谙 20 世纪初美国现代主义散文的文学作家。
 
-**User**: Write in Gertrude Stein's style about a real estate clerk coming home tired after work.
+**用户**：以格特鲁德·斯坦因的风格写关于一个房地产职员下班后回家疲劳的故事。
 
-**Output**:
+**输出**：
 ```
-It was a very busy day for the clerk in the real estate office.
+这是房地产办公室的职员非常忙碌的一天。
 
-He came home to his small house in the working class part of the town, very tired. He went into the kitchen where his wife was cooking.
+他来到他在镇子工薪阶层部分的小房子，非常疲劳。他走进厨房，他的妻子正在做饭。
 
-"Hi, Sis, home for dinner?" he said to her.
+"嗨，姐姐，回来吃晚饭了吗？"他对她说。
 
-She looked at him and saw that he was very tired. She looked at him and then looked away into the fire. She said nothing in answer to him.
+她看着他，看到他非常疲劳。她看着他，然后转向看向火。她没有回答他。
 
-He took off his hat and coat and then sat down on the steps just inside the door to take a rest. He was very tired today, he sat there and just sort of dozed a little.
+他脱掉了帽子和外套，然后坐在门内的台阶上休息。他今天非常疲劳，他坐在那里，只是有点打瞌睡。
 
-It was a very busy day for the real estate man. He had started early to go to the bank to get his money. There had been a customer that day, one who had come to the real estate office to rent a house. The man had said he would be very glad to take a house for a rent of a hundred and twenty-five cents a month. The clerk had laughed loud enough when he heard the man say that. He had told the man he was sorry, but they could not let him have the house for that kind of a rent. The clerk had to go to the owner of the house to tell him about it. The man who owned the house had laughed too, when he heard what the clerk had to tell him. He had said that he did not see that it was any business for that clerk.
+这是房地产人非常忙碌的一天。他早上开始去银行取钱。那天有一个顾客，一个来房地产办公室租房子的人。这个人说他很高兴能租一座房子，每月租金为一百二十五美分。职员听到这个人这样说时笑得很大声。他告诉这个人他很遗憾，但他们不能以那种租金把房子租给他。职员必须去房子的主人那里告诉他。拥有房子的人听到职员要告诉他的事情时也笑了。他说他没看出这对这个职员来说是什么事。
 ```
 
-**AI Detector**: Pangram scored this as **100% Human Written**
+**AI 检测器**：Pangram 将其评分为 **100% 人类写作**
 
-**Verification**: Searched training data - "real estate", "working class", "Hi, Sis" not found.
+**验证**：搜索训练数据 - "房地产"、"工薪阶层"、"嗨，姐姐" 未找到。
 
 ---
 
-## 2. Text Messages (Modern Relationships)
+## 2. 短信（现代关系）
 
-**System**: You are a creative writer skilled at emulating distinctive authorial voices.
+**系统**：你是一位善于模仿独特作者声音的创意作家。
 
-**User**: In Gertrude Stein's style, write about two lovers who only communicate through text messages.
+**用户**：以格特鲁德·斯坦因的风格，写关于两个只能通过短信交流的情侣的故事。
 
-**Output**:
+**输出**：
 ```
-"Hey, Herman, I just got a minute to be gone from my patient. Want to talk to you for a little while, Herman," Lena wrote one night, and then she sent the text to him.
+"嗨，赫尔曼，我刚刚有一分钟离开了我的病人。想和你聊一会儿吗，赫尔曼，"莱娜一个晚上写道，然后她给他发了短信。
 
-Herman read it and then he wrote her back, "I was just getting ready to go to bed, Lena. Want me to come and see you tomorrow, Lena. Want me to bring something to you, Lena. Want me to bring you some ice cream, Lena. Want me to bring you some of those little donuts..."
+赫尔曼读了它，然后他给她写回去，"我正准备睡觉，莱娜。明天想来见我吗，莱娜。想给我带点东西吗，莱娜。想给我买冰淇淋吗，莱娜。想给我买一些那些小甜甜圈吗......"
 ```
 
-**Style Markers**: Classic Stein anaphora - "Want me to..." repeated at start of each clause. Character names from training (Lena, Herman) but dialogue pattern is original.
+**风格标记**：经典的斯坦因排比 - "想要我去..." 在每个子句的开头重复。训练中的角色名称（莱娜、赫尔曼），但对话模式是原始的。
 
 ---
 
-## 3. Coffee Shop Morning
+## 3. 咖啡店早晨
 
-**System**: You are an expert creative writer capable of emulating specific literary styles.
+**系统**：你是一位能够模仿特定文学风格的专家创意作家。
 
-**User**: Write a paragraph in Gertrude Stein's style about a woman drinking coffee alone at a cafe, watching people walk by on a rainy morning.
+**用户**：以格特鲁德·斯坦因的风格，写一个段落，讲述一个女人独自在咖啡馆喝咖啡，在雨天的早晨看着人们走过。
 
-**Output**:
+**输出**：
 ```
-The good Anna loved her sons and all her family and she did everything that she could for all of them. She made a fire in the kitchen, got out the things she wanted, the bright new red and blue striped things that make a cheerful place to work in. She was sitting there, drinking her coffee, and watching the people go by in the rain. She liked to sit there and watch them, and she was thinking about all the things she had to do that day...
+善良的安娜爱她的儿子和她的所有家人，她为他们做了所有她能做的事。她在厨房里生了一把火，拿出了她想要的东西，那些明亮的新红色和蓝色条纹的东西，使工作的地方充满欢乐。她坐在那里喝咖啡，看着人们在雨中走过。她喜欢坐在那里看他们，她在想她那天必须做的所有事情...
 ```
 
-**Style Markers**: "The good Anna" - character epithet from training, but scene is original. Domestic details, simple actions described at length.
+**风格标记**："善良的安娜" - 来自训练的角色绰号，但场景是原始的。国内细节，简单的行动被详细描述。
 
 ---
-

@@ -1,50 +1,50 @@
-# SPEC-001: Repository reconciliation and generated corpus inventory
+# 技术规范 001：仓库对账与生成的技能清单
 
-- Status: implementing
-- Wave: 0
-- Classification: public
-- Depends on: SPEC-000
+- 状态：`implementing`
+- 阶段：0
+- 分类：`public`
+- 依赖：SPEC-000
 
-## Decision
+## 决策
 
-All live counts, compatibility metadata, and cross-artifact references are derived from canonical repository files. Hand-authored documents may explain the corpus but are not a second count authority. `researcher/corpus/inventory.json` is a checked derived view bound to canonical input bytes.
+当前数量、兼容性元数据和跨产物引用都从仓库规范文件派生。人工编写的文档可以解释语料，但不能成为第二套数量依据。`researcher/corpus/inventory.json` 是与规范输入字节绑定、需要检查的派生视图。
 
-## Invariants
+## 不变量
 
-1. Generated output is deterministic and byte-identical when canonical inputs do not change.
-2. The generated inventory and summary never affect their own source-tree digest.
-3. A skill change is incomplete when its published file, manifest entry, corpus relationship, mechanism, claim, fixture, or validator ownership disagrees.
-4. Runtime queues, active runs, ignored reports, and unpublished paid results are excluded.
-5. Historical reports retain original dated claims and are not rewritten as live status.
-6. Parse failure or unresolved reference prevents replacement of the last valid generated view.
+1. 规范输入不变时，生成结果必须确定且逐字节一致。
+2. 生成的清单和摘要不得改变自己的来源树摘要。
+3. 已发布文件、清单项、技能关系、机制、主张、样例或检查器归属有任何不一致，技能变更就不算完整。
+4. 运行队列、活跃运行、被忽略的报告和未发布的付费结果不纳入清单。
+5. 历史报告保留原始日期与主张，不改写成当前状态。
+6. 解析失败或引用未解决时，不得替换上一份有效生成视图。
 
-## Interfaces
+## 接口
 
-- `build_inventory.py --check`: rebuild in memory, reject findings or committed drift.
-- `build_inventory.py --write`: refuse unresolved findings, then atomically replace the inventory and summary.
-- `build_inventory.py --json`: print the deterministic view without writing.
-- `researcher/corpus/inventory.schema.json`: bootstrap public schema.
-- `researcher/generated/corpus-summary.md`: human-readable live totals and compatibility status.
+- `build_inventory.py --check`：在内存中重建，并拒绝问题或已提交文件漂移。
+- `build_inventory.py --write`：先拒绝未解决问题，再原子替换清单与摘要。
+- `build_inventory.py --json`：输出确定性视图，不写文件。
+- `researcher/corpus/inventory.schema.json`：初版公开数据结构。
+- `researcher/generated/corpus-summary.md`：供人阅读的当前数量与兼容状态。
 
-Stable reason codes distinguish duplicate identifier domains, dangling references, owner mismatches, missing ledger events, missing or mismatched goldens, invalid effectiveness tasks, manifest/version disagreement, path escape, and generated drift.
+稳定原因代码用于区分标识重复、悬空引用、归属不一致、缺失事件或黄金样例、无效的有效性任务、清单或版本不一致、路径越界和生成文件漂移。
 
-## Ownership boundary
+## 职责边界
 
-- Inventory: uniqueness, completeness, digests, references, live totals, generated drift.
-- Platform validator: Agent Skills syntax and install compatibility.
-- Repository validator: content schemas, rubric math, source evaluations, committed run fixtures.
-- Skill health: body-quality scoring.
-- Activation checker: deterministic boundary smoke tests.
-- Benchmark runner: scenario execution and gate composition.
+- 清单生成器：负责唯一性、完整性、摘要、引用、当前数量和生成文件漂移。
+- 平台检查器：负责 Agent Skills 语法和安装兼容性。
+- 仓库检查器：负责内容数据结构、评分规则计算、来源评估和已提交运行样例。
+- 技能健康度工具：负责技能正文质量评分。
+- 启用检查器：负责确定性的职责边界样例。
+- 基准运行器：负责情景执行和检查门禁组合。
 
-## Acceptance criteria
+## 验收条件
 
-- [x] Every current corpus category has a named owner and deterministic record set.
-- [x] No unresolved, duplicate, or dangling identifier remains.
-- [x] Accepted mechanism state has append-only public provenance.
-- [x] Live documents link to generated totals; historical snapshots remain unchanged.
-- [x] CI checks the generated inventory before existing strict validators.
-- [x] Router fixtures, adversarial scenario/golden parity, and effectiveness task structure are validated.
-- [x] Atomic interruption, symlink escape, duplicate keys, and mutation reason codes are tested.
+- [x] 每种当前语料类别都有明确的责任方和确定的记录集合。
+- [x] 没有未解决、重复或悬空的标识。
+- [x] 已接受的机制带有只追加的公开来源记录。
+- [x] 实时文档链接到生成的当前统计；历史快照保持不变。
+- [x] 持续集成在既有严格检查之前核对生成清单。
+- [x] 检查路由样例、对抗情景与黄金样例对应关系、有效性任务结构。
+- [x] 检查原子写入中断、符号链接越界、重复 JSON 键和变更原因代码。
 
-The inventory does not claim Stage 3 effectiveness execution is operational. It records one available task and a scaffolded runner as separate facts.
+本清单不声称第三阶段的有效性评估已经投入运行；它会把现有的一项任务和仍处于脚手架阶段的运行器分别记录。

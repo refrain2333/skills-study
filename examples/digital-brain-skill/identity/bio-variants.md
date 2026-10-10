@@ -1,101 +1,93 @@
-# Bio Variants
+# 不同平台的个人简介
 
-Pre-written bios for different platforms and contexts.
+为各个平台和使用场景预先准备的简介。
 
----
-
-## Twitter/X Bio (160 chars)
-```
-[PLACEHOLDER: Your Twitter bio]
+## Twitter/X 简介（160 字符）
+```text
+[填写 Twitter 简介]
 ```
 
-## LinkedIn Headline (120 chars)
-```
-[PLACEHOLDER: Your LinkedIn headline]
-```
-
-## LinkedIn About Section
-```
-[PLACEHOLDER: Your LinkedIn about section - can be longer]
+## LinkedIn 标题（120 字符）
+```text
+[填写 LinkedIn 标题]
 ```
 
-## Newsletter/Substack Bio
-```
-[PLACEHOLDER: 2-3 sentences for newsletter]
-```
-
-## Speaker Bio (Short - 50 words)
-```
-[PLACEHOLDER: For conference programs, short intros]
+## LinkedIn 关于
+```text
+[填写较长的个人介绍]
 ```
 
-## Speaker Bio (Long - 150 words)
-```
-[PLACEHOLDER: For detailed speaker pages]
-```
-
-## Podcast Guest Bio
-```
-[PLACEHOLDER: What hosts should read when introducing you]
+## 简报/Substack 简介
+```text
+[用 2—3 句话介绍自己]
 ```
 
-## Press/Media Bio
-```
-[PLACEHOLDER: Formal bio for press releases]
-```
-
-## Casual Intro
-```
-[PLACEHOLDER: How you introduce yourself at casual events]
-"Hey, I'm [Name]. I [one sentence about what you do]."
+## 演讲者简介（短版，50 词）
+```text
+[适用于会议日程和简短介绍]
 ```
 
-## Professional Intro
-```
-[PLACEHOLDER: For formal settings]
-```
-
----
-
-## Bio Components
-
-### Credentials Block
-```
-[PLACEHOLDER: Your key credentials/achievements to mix and match]
-- [Credential 1]
-- [Credential 2]
-- [Credential 3]
+## 演讲者简介（长版，150 词）
+```text
+[适用于详细的演讲者页面]
 ```
 
-### Personal Touch Block
-```
-[PLACEHOLDER: Human elements - hobbies, location, fun facts]
-- [Personal detail 1]
-- [Personal detail 2]
+## 播客嘉宾简介
+```text
+[供主持人介绍嘉宾时使用]
 ```
 
-### CTA Block
-```
-[PLACEHOLDER: Calls to action for different contexts]
-- Newsletter: "Subscribe at [link]"
-- DMs: "DMs open for [topic]"
-- Booking: "Book a call at [link]"
+## 媒体简介
+```text
+[适用于新闻稿的正式简介]
 ```
 
----
+## 轻松场合的自我介绍
+```text
+[填写轻松场合的介绍方式]
+“你好，我是[姓名]。我用一句话介绍自己和工作。”
+```
 
-## Platform Links
+## 正式场合的自我介绍
+```text
+[填写正式场合的介绍方式]
+```
+
+## 简介组件
+
+### 资历
+```text
+[列出可灵活组合的关键资历和成就]
+- [资历一]
+- [资历二]
+- [资历三]
+```
+
+### 个人特点
+```text
+[补充爱好、所在地和趣事等个人信息]
+- [个人信息一]
+- [个人信息二]
+```
+
+### 行动号召
+```text
+[填写不同场景的行动号召]
+- 简报：在[链接]订阅
+- 私信：欢迎就[主题]联系
+- 预约：在[链接]预约通话
+```
+
+## 平台链接
 
 ```yaml
-website: "[PLACEHOLDER]"
-twitter: "[PLACEHOLDER]"
-linkedin: "[PLACEHOLDER]"
-newsletter: "[PLACEHOLDER]"
-github: "[PLACEHOLDER]"
-youtube: "[PLACEHOLDER]"
-calendar: "[PLACEHOLDER: Booking link]"
+website: "[填写]"
+twitter: "[填写]"
+linkedin: "[填写]"
+newsletter: "[填写]"
+github: "[填写]"
+youtube: "[填写]"
+calendar: "[预约链接]"
 ```
 
----
-
-*Last updated: [DATE]*
+最后更新：[日期]

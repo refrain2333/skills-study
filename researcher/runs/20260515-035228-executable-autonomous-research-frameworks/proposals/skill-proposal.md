@@ -1,44 +1,44 @@
-# Skill Proposal: Executable autonomous research frameworks
+# 技能提案：可执行的自主研究运行框架
 
-## Source
+## 来源
 
-- URL: https://platform.parallel.ai/play/deep-research/trun_64f5be03055a4b52adf17481e4b865bc
-- Title: Executable autonomous research frameworks
-- Author or organization:
-- Source type:
-- Retrieval status: partial
-- Evaluation file:
-- Decision: HUMAN_REVIEW
+- 网址：https://platform.parallel.ai/play/deep-research/trun_64f5be03055a4b52adf17481e4b865bc
+- 标题：可执行的自主研究运行框架
+- 作者或组织：
+- 来源类别：
+- 检索状态：partial
+- 评估文件：
+- 决策：HUMAN_REVIEW
 
-## Mechanism
+## 机制
 
-Describe the implementable mechanism in 3-6 sentences. Include what changes in an agent's behavior, what context or harness surface is affected, and what evidence supports it.
+用 3—6 句话说明可实施机制，包括智能体行为变化、受影响的上下文或运行框架区域，以及支持该机制的证据。
 
-## Skill Target
+## 技能目标
 
-- Target type: new skill / existing skill / reference only
-- Target path:
-- Activation scenario:
-- Related skills:
-- Proposed location: SKILL.md / references / scripts / researcher-only
+- 目标类型：new skill / existing skill / reference only
+- 目标路径：
+- 启用场景：
+- 相关技能：
+- 建议放置位置：SKILL.md / references / scripts / 仅研究目录
 
-## Novelty Check
+## 新颖性检查
 
-- Command: `python researcher/scripts/novelty_check.py --file researcher/runs/20260515-035228-executable-autonomous-research-frameworks/proposals/skill-proposal.md --json`
-- Verdict: pending
-- Max mechanism overlap:
-- Top mechanism overlaps:
-- Human-review rationale:
+- 命令：`python researcher/scripts/novelty_check.py --file researcher/runs/20260515-035228-executable-autonomous-research-frameworks/proposals/skill-proposal.md --json`
+- 结论：pending
+- 最大机制重叠度：
+- 主要重叠机制：
+- 人工审查理由：
 
-## Evidence
+## 证据
 
-| Claim | Evidence | Source |
+| 主张 | 证据 | 来源 |
 | --- | --- | --- |
 |  |  |  |
 
-Only include evidence from retrieved sources. If a source was discovered but not fetched, record it under gaps instead of citing it.
+只包含来自已检索来源的证据。若来源已发现但未获取，应列为证据缺口，不要引用。
 
-## Proposed Delta
+## 拟议变更
 
 ```yaml
 changes:
@@ -48,27 +48,27 @@ changes:
     summary: ""
 ```
 
-## Quality Checks
+## 质量检查
 
-- [ ] Fits an existing activation scenario or justifies a new one.
-- [ ] Adds an operating rule, workflow, artifact, gotcha, or reference.
-- [ ] Records novelty-check verdict and top mechanism overlaps.
-- [ ] Avoids duplicating existing skill guidance or accepted mechanisms.
-- [ ] Keeps `SKILL.md` under 500 lines.
-- [ ] Uses progressive disclosure for detailed or volatile evidence.
-- [ ] Uses platform-agnostic wording.
-- [ ] Updates README, root `SKILL.md`, and manifests if publishing a new skill.
+- [ ] 符合现有启用场景，或说明新增场景的理由。
+- [ ] 增加操作规则、工作流、产物、易错点或参考资料。
+- [ ] 记录新颖性检查结论和主要机制重叠。
+- [ ] 避免重复现有技能指导或已接受机制。
+- [ ] `SKILL.md` 少于 500 行。
+- [ ] 对详细或易变证据采用渐进披露。
+- [ ] 用语不绑定特定平台。
+- [ ] 发布新技能时更新 README、根目录 `SKILL.md` 和插件清单。
 
-## Risks And Gaps
+## 风险与缺口
 
-- Evidence limitations:
-- Possible duplication:
-- Volatile claims:
-- Required human review:
+- 证据限制：
+- 可能重复之处：
+- 易变主张：
+- 需要人工审查的事项：
 
-## Recommendation
+## 建议
 
-State one of:
+选择以下一项：
 
 - `publish-new-skill`
 - `update-existing-skill`
@@ -76,4 +76,4 @@ State one of:
 - `human-review`
 - `reject`
 
-Then provide a short rationale focused on why this change should or should not enter the published corpus.
+再简要说明该变更是否应进入正式语料以及理由。

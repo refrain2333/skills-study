@@ -1,198 +1,67 @@
-# Agent Tool Design Skill
+# 智能体工具设计
 
-## Overview
+## 概述
 
-Tools are the foundation of an agent's capabilities. An agent's ability to take meaningful actions depends entirely on how reliably it can generate valid tool inputs, how well those inputs align with user intent, and how effectively tool outputs inform next steps.
+工具是智能体能力的基础。智能体能否采取有效行动，取决于它能否稳定生成有效输入、使输入符合用户意图，以及能否利用工具输出决定下一步。
 
-## Design Principles
+## 设计原则
 
-### 1. Single Responsibility
+### 1. 单一职责
 
-Each tool should do one thing well. Complex operations should be composed from multiple tools.
+每个工具应把一件事做好。复杂操作由多个工具组合完成。
 
 ```typescript
-// Bad: Tool does too much
+// 不推荐：一个工具承担太多职责
 const analyzeAndSummarizeAndSend = { ... }
 
-// Good: Separate concerns
+// 推荐：拆分职责
 const analyzeDocument = { ... }
 const summarizeContent = { ... }
 const sendEmail = { ... }
 ```
 
-### 2. Clear Input Schemas
+### 2. 输入数据结构清楚
 
-Use explicit, validated schemas with descriptive field names and constraints.
+使用明确、可验证的数据结构，并为字段说明含义和限制。
 
-```typescript
-const searchTool = tool({
-  description: "Search for documents by semantic similarity",
-  parameters: z.object({
-    query: z.string().describe("Natural language search query"),
-    limit: z.number().min(1).max(100).default(10)
-      .describe("Maximum number of results to return"),
-    filters: z.object({
-      dateAfter: z.string().optional()
-        .describe("ISO date string, only return docs after this date"),
-      source: z.enum(["internal", "external", "all"]).default("all")
-    }).optional()
-  }),
-  execute: async (input) => { ... }
-});
-```
+### 3. 输出结构可预测
 
-### 3. Predictable Output Structure
+返回一致且带类型的结果，让模型能够稳定解析，例如包含 `success`、`data`、结构化 `error` 和执行时间等元数据。
 
-Return consistent, typed output that the model can reliably parse.
+### 4. 错误处理平稳
 
-```typescript
-interface ToolResult<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    retryable: boolean;
-  };
-  metadata: {
-    executionTimeMs: number;
-    source?: string;
-  };
-}
-```
+不要抛出未处理异常；始终返回结构化错误，其中包含代码、说明和是否可重试。
 
-### 4. Graceful Error Handling
+## 工具类别
 
-Tools should never throw unhandled exceptions. Always return structured errors.
+- **只读工具**：数据库查询、API 获取、文件读取、搜索。通常无需审批，不修改状态。
+- **修改状态工具**：数据库写入、文件修改、API POST/PUT/DELETE、系统配置变更。可能需要人工审批，可配置 `needsApproval`。
+- **危险工具**：文件删除、付款、生产部署、向外部发送通信。必须设置审批和审计日志。
 
-```typescript
-execute: async (input) => {
-  try {
-    const result = await performAction(input);
-    return { success: true, data: result };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        code: error.code ?? "UNKNOWN_ERROR",
-        message: error.message,
-        retryable: isRetryable(error)
-      }
-    };
-  }
-}
-```
+## AI SDK 6 工具能力
 
-## Tool Categories
+### 执行前审批
 
-### Read-Only Tools
-- Database queries
-- API fetches
-- File reads
-- Search operations
+可以将 `needsApproval` 设为 `true`，或根据输入动态判断，例如命令含 `rm` 或 `delete` 时要求审批。
 
-Safe to execute without approval. Return data but don't mutate state.
+### 严格模式
 
-### State-Modifying Tools
-- Database writes
-- File modifications
-- API POST/PUT/DELETE
-- System configuration changes
+将 `strict: true` 用于确保工具参数符合数据结构。
 
-May require human approval. Consider `needsApproval` flag.
+### 输入示例
 
-### Dangerous Tools
-- File deletion
-- Payment processing
-- Production deployments
-- Sending external communications
+为复杂工具提供 `inputExamples`，帮助模型理解预期格式。
 
-Should always require approval and audit logging.
+### 控制返回模型的内容
 
-## AI SDK 6 Tool Features
+使用 `toModelOutput` 截断过长结果，只把模型后续决策需要的字段返回，避免上下文膨胀。
 
-### Tool Execution Approval
-```typescript
-const deleteTool = tool({
-  description: "Delete a file from the system",
-  parameters: z.object({
-    path: z.string()
-  }),
-  needsApproval: true, // Requires human approval
-  execute: async ({ path }) => { ... }
-});
+## 最佳实践
 
-// Dynamic approval based on input
-const commandTool = tool({
-  description: "Execute a shell command",
-  parameters: z.object({
-    command: z.string()
-  }),
-  needsApproval: ({ command }) => {
-    return command.includes("rm") || command.includes("delete");
-  },
-  execute: async ({ command }) => { ... }
-});
-```
-
-### Strict Mode
-Enable native strict mode for guaranteed schema compliance:
-```typescript
-const strictTool = tool({
-  description: "...",
-  parameters: schema,
-  strict: true, // Enable strict mode
-  execute: async (input) => { ... }
-});
-```
-
-### Input Examples
-Help the model understand expected input format:
-```typescript
-const complexTool = tool({
-  description: "Create a calendar event",
-  parameters: eventSchema,
-  inputExamples: [
-    {
-      title: "Team Standup",
-      date: "2024-01-15",
-      time: "09:00",
-      duration: 30,
-      attendees: ["alice@example.com", "bob@example.com"]
-    }
-  ],
-  execute: async (input) => { ... }
-});
-```
-
-### toModelOutput
-Control what gets sent back to the model:
-```typescript
-const readFileTool = tool({
-  description: "Read file contents",
-  parameters: z.object({ path: z.string() }),
-  execute: async ({ path }) => {
-    const content = await fs.readFile(path, 'utf-8');
-    return { path, content, size: content.length };
-  },
-  toModelOutput: (result) => {
-    // Only send truncated content to model
-    return {
-      path: result.path,
-      content: result.content.slice(0, 5000),
-      truncated: result.content.length > 5000
-    };
-  }
-});
-```
-
-## Best Practices
-
-1. **Descriptive Names**: Tool names should clearly indicate their function
-2. **Comprehensive Descriptions**: Include usage examples in tool descriptions
-3. **Reasonable Defaults**: Provide sensible defaults for optional parameters
-4. **Idempotency**: Design tools to be safely re-executable when possible
-5. **Timeout Handling**: Implement timeouts for external operations
-6. **Rate Limiting**: Protect against runaway tool execution
-7. **Logging**: Log all tool invocations for debugging and audit
-
+1. 工具名称应清楚表明功能。
+2. 描述应包含使用方式和示例。
+3. 可选参数设置合理默认值。
+4. 尽量设计成可安全重复执行的幂等操作。
+5. 为外部操作设置超时。
+6. 设置速率限制，防止工具失控调用。
+7. 记录工具调用，便于调试和审计。

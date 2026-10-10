@@ -1,167 +1,169 @@
 ---
 name: latent-briefing
-description: "This skill should be used when the user asks to \"share memory between agents\", \"KV cache compaction for multi-agent\", \"orchestrator worker context\", \"latent briefing\", \"reduce worker tokens\", \"cross-agent memory without summarization\", or discusses Attention Matching compaction, recursive language models with workers, or token explosion in hierarchical agents."
+description: "用于在兼容的运行环境中，通过注意力匹配压缩并共享协调者状态与工作智能体之间的 KV 缓存。"
 ---
 
-# Latent Briefing and KV Cache Memory Sharing
+# 潜在简报与 KV 缓存记忆共享
 
-Hierarchical multi-agent systems often pay for the same context twice. The orchestrator accumulates a long reasoning trajectory, but each worker usually receives only a narrow text handoff such as a subtask prompt plus raw document slices. Passing the full trajectory fixes coverage but drives token cost up on every worker call. Summarization introduces latency and information loss. Retrieval helps with document access but does not preserve the orchestrator's evolving reasoning state.
+分层多智能体系统往往要为相同上下文付出两次成本。编排者会累积很长的推理轨迹，而每个工作智能体通常只收到一段精简的文本交接，例如子任务提示词和原始文档片段。传递完整轨迹可以补足信息，却会在每次调用工作智能体时增加 Token 成本。摘要会带来延迟和信息损失。检索有助于访问文档，却不能保留编排者不断演进的推理状态。
 
-Latent Briefing addresses this by sharing memory at the **representation level** rather than the text level. The core idea is to compact the orchestrator trajectory in the worker model's KV cache, keeping positions that are most relevant to the **current worker task**. The method builds on **Attention Matching (AM)** KV cache compaction and adapts it for inference-time multi-agent handoff with task-guided queries, a shared token mask across heads, and robust thresholding.
+潜在简报（Latent Briefing）在**表示层**而不是文本层共享记忆。核心思路是在工作模型的 KV 缓存中压缩编排者的推理轨迹，保留与**当前工作任务**最相关的位置。该方法建立在注意力匹配（Attention Matching，AM）KV 缓存压缩的基础上，并通过任务引导查询、跨注意力头共享 Token 掩码和稳健阈值，适配推理时的多智能体交接。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
+在以下情况下启用此技能：
 
-- Designing orchestrator-worker or supervisor-specialist systems where workers need access to prior orchestrator state without replaying the full trajectory as text
-- Evaluating alternatives to LLM summarization or RAG for cross-agent state transfer
-- Implementing or studying **KV cache compaction** as a first-class inference primitive, not only prefix caching of identical prompts
-- Debugging token explosion in recursive, hierarchical, or tool-heavy agent graphs
-- Interpreting benchmarks that report worker-token savings, total-token savings, compaction overhead, and accuracy together
+- 设计编排者—工作者或监督者—专家系统；工作者需要访问编排者先前状态，但不应以文本形式重放完整轨迹。
+- 评估 LLM 摘要或 RAG 之外的跨智能体状态传递方案。
+- 将 **KV 缓存压缩**作为一等推理能力来实现或研究，而不只是缓存完全相同提示词的前缀。
+- 排查递归、分层或大量使用工具的智能体图中的 Token 膨胀。
+- 解读同时报告工作者 Token 节省、总 Token 节省、压缩开销和准确率的基准。
 
-Do not activate this skill for adjacent work owned by other skills:
-- API-only stacks where internal KV tensors are inaccessible: use `context-compression`, `memory-systems`, or `multi-agent-patterns`.
-- Ordinary persistent memory, entity tracking, or graph retrieval: `memory-systems`.
-- General multi-agent topology without representation-level state sharing: `multi-agent-patterns`.
-- Prefix caching, masking, or budget policy that does not transform KV state: `context-optimization`.
+相邻任务由其他技能负责，不要为这些任务启用本技能：
 
-## Core Concepts
+- 无法访问内部 KV 张量的纯 API 技术栈：使用 `context-compression`、`memory-systems` 或 `multi-agent-patterns`。
+- 普通的持久记忆、实体追踪或图检索：`memory-systems`。
+- 没有表示层状态共享的一般多智能体拓扑设计：`multi-agent-patterns`。
+- 不转换 KV 状态的前缀缓存、遮罩或预算策略：`context-optimization`。
 
-**The token explosion pattern.** In recursive or REPL-style systems, the orchestrator repeatedly calls a worker to inspect evidence, verify hypotheses, or answer subquestions. The orchestrator's trajectory grows with partial conclusions, dead ends, tool output, and prior worker responses. If that trajectory is passed in full on every worker call, cost compounds quickly.
+## 核心概念
 
-**Representation-level sharing.** Instead of summarizing the trajectory into natural language, the system operates on the worker model's **KV cache**. It retains the positions that the worker would attend to for the current task and drops the rest. This is more specific than ordinary prefix caching: prefix caching reuses identical prefixes, while Latent Briefing also performs **task-conditioned selective retention** inside the reused trajectory.
+**Token 膨胀模式。** 在递归式或 REPL 风格的系统中，编排者会反复调用工作者来检查证据、验证假设或回答子问题。编排者的轨迹会随着阶段性结论、走不通的路径、工具输出和先前工作者的回复不断增长。若每次调用工作者都传入完整轨迹，成本会迅速累积。
 
-**Attention Matching as the compaction engine.** AM seeks a smaller cache whose attention outputs approximate the full cache. Latent Briefing adapts AM for multi-agent inference by changing the scoring signal and batching strategy:
+**表示层共享。** 系统不把轨迹总结为自然语言，而是直接处理工作模型的 **KV 缓存**。保留工作者针对当前任务会关注的位置，并丢弃其余部分。这比普通前缀缓存更进一步：前缀缓存重用完全相同的前缀；潜在简报还会在重用的轨迹内部，按任务选择性保留内容。
 
-1. Use **task-guided query vectors** derived from the current worker prompt.
-2. Aggregate scores into a **shared global mask** instead of per-head independent subsets.
-3. Use a robust threshold such as `median + tau * MAD` rather than fixed top-k per head.
+**以注意力匹配作为压缩引擎。** AM 的目标是生成一个更小的缓存，使其中的注意力输出近似完整缓存。潜在简报通过改变评分信号和批处理策略来适配多智能体推理：
 
-**Reference result shape.** The public write-up reports substantial worker-token reduction, material total-token savings, and low-single-digit-second compaction overhead on long-document QA workloads (claim-latent-briefing-public-results). Treat these numbers as workload-specific evidence, not a general guarantee.
+1. 使用从当前工作者提示词得到的**任务引导查询向量**。
+2. 汇总分数并生成**共享全局掩码**，而不是为每个注意力头单独选择子集。
+3. 使用 `median + tau * MAD` 等稳健阈值，而不是对每个注意力头固定取 top-k。
 
-## Detailed Topics
+**结果的典型范围。** 公开说明报告了长文档问答任务中工作者 Token 大幅减少、总 Token 明显节省，且压缩开销为数秒级（claim-latent-briefing-public-results）。这些数字属于特定工作负载的证据，不是普遍保证。
 
-### Why Text-Only Mitigations Fall Short
+## 详细主题
 
-| Approach | Primary weakness |
+### 仅靠文本的缓解方式为何不足
+
+| 方法 | 主要弱点 |
 |----------|------------------|
-| LLM summarization | High latency, lossy abstraction, and no guarantee the summary preserves what the next subtask needs |
-| Retrieval / RAG | Depends on chunking and embeddings; can miss cross-chunk or cross-step dependencies |
-| Pass full trajectory | Cost scales with every worker call and irrelevant context can degrade worker quality |
+| LLM 摘要 | 延迟较高、抽象过程中会丢失信息，也无法保证摘要保留了下一子任务需要的内容 |
+| 检索 / RAG | 依赖分块和嵌入，可能漏掉跨块或跨步骤的依赖关系 |
+| 传递完整轨迹 | 每次调用工作者都会增加成本，无关上下文还可能降低工作者表现 |
 
-Latent Briefing is useful when the bottleneck is not document retrieval itself, but **how to transfer orchestrator state into a worker efficiently and precisely**.
+当瓶颈不是文档检索本身，而是**如何高效、准确地把编排者状态传给工作者**时，潜在简报才有用。
 
-### Recursive Orchestrator-Worker Shape
+### 递归式编排者—工作者结构
 
-Frameworks such as **Recursive Language Models** treat long context as an environment and recurse over it: an orchestrator decomposes work and delegates to workers. Latent Briefing fits the gap where the orchestrator has already built task-specific state that should inform the worker, but re-serializing that state as text is too expensive or noisy.
+**递归语言模型（Recursive Language Models）**等框架把长上下文视为环境，并通过递归调用工作者来分解任务。潜在简报适用于这样的缺口：编排者已经建立了应当影响工作者的任务相关状态，但把这些状态重新序列化为文本，成本太高或噪声太大。
 
-In the ideal setup, the worker maintains a persistent KV state for the orchestrator trajectory. New trajectory tokens extend that state, then compaction runs just before generation for the current subtask.
+理想情况下，工作者会持续保留编排者轨迹对应的 KV 状态。新轨迹 Token 会扩展该状态，而在针对当前子任务生成内容前执行压缩。
 
-### Three Inference-Time Modifications
+### 推理时的三项改动
 
-1. **Task-guided query vectors.** Use queries from the current worker task prompt, not generic samples from the context. Forward-pass the trajectory plus current task through the worker model, then score trajectory positions by how strongly the task attends to them.
+1. **任务引导查询向量。** 使用当前工作任务提示词中的查询，而不是上下文中的通用采样。把轨迹和当前任务一起输入工作者模型进行前向计算，再根据任务对轨迹位置的关注程度评分。
+2. **共享 Token 选择。** 将不同层和注意力头的分数汇总为每个位置的单一分数。共享掩码便于批处理，也避免数百个互不兼容的逐头选择过程。
+3. **MAD 阈值。** 保留分数高于 `median + tau * MAD` 等稳健离群阈值的位置。`tau` 越大，压缩越激进。最佳设置取决于任务类型、轨迹质量和文档长度。
 
-2. **Shared token selection.** Aggregate scores across layers and heads into one per-position score. One shared mask enables batched operations and avoids hundreds of incompatible per-head solves.
+### 基础设施前提
 
-3. **MAD thresholding.** Keep positions above a robust outlier threshold such as `median + tau * MAD`. Higher `tau` is more aggressive. Optimal settings depend on task regime, trajectory quality, and document length.
+只有在系统能够充分控制工作者推理运行时、检查或转换 KV 状态时，潜在简报才切实可行。对于无法访问内部 KV 张量的纯 API 技术栈，它不是合适的默认方案。它还假定编排者轨迹可以用工作者模型的表示空间来表示。如果编排者和工作者在分词器、架构或注意力布局上差异很大，直接共享表示可能不可行。
 
-### Infrastructure Preconditions
+### 决策框架
 
-Latent Briefing is only practical when the system **controls the worker inference runtime** closely enough to inspect or transform KV state. It is a poor default for API-only stacks where internal KV tensors are inaccessible. It also assumes the orchestrator trajectory can be represented in the worker's model space. If orchestrator and worker differ materially in tokenizer, architecture, or attention layout, direct representation sharing may not be viable.
+选择与瓶颈相符的机制：
 
-### Decision Framework
-
-Choose the mechanism that matches the bottleneck:
-
-| Need | Prefer | Why |
+| 需求 | 优先选择 | 原因 |
 |------|--------|-----|
-| Stable repeated prefix with minimal logic changes | Prefix caching | Cheapest optimization; no information loss |
-| Human-readable and auditable cross-step state | Structured notes or summarization | Easy to inspect and store |
-| Sparse lookup across a large external corpus | Retrieval / RAG | Finds documents efficiently |
-| Worker needs task-specific slices of orchestrator state and runtime access exists | Latent Briefing | Transfers relevant latent state without replaying all text |
+| 稳定重复的前缀，且希望改动尽可能少 | 前缀缓存 | 成本最低的优化，不会丢失信息 |
+| 可供人阅读和审计的跨步骤状态 | 结构化笔记或摘要 | 易于检查和保存 |
+| 在大型外部语料中进行稀疏查找 | 检索 / RAG | 能高效找到文档 |
+| 工作者需要编排者状态中与任务相关的片段，且运行时可访问 | 潜在简报 | 传递相关潜在状态，无须重放全部文本 |
 
-Latent Briefing is not a universal replacement for summarization or retrieval. It is a specialized optimization for systems that already run a controllable orchestrator-worker stack.
+潜在简报不是摘要或检索的通用替代品。它是面向已有可控编排者—工作者技术栈的专门优化。
 
-### Threshold Regimes
+### 阈值适用范围
 
-Reported long-document QA results suggest:
+已报告的长文档问答结果提示：
 
-- **Longer documents:** lighter compaction can preserve broader evidence coverage while still saving tokens.
-- **Harder questions:** more aggressive compaction can help when the orchestrator trajectory contains speculative or low-value branches.
-- **Shorter, easier contexts:** moderate compaction may remove redundancy without dropping needed evidence.
+- **文档较长时**：较轻的压缩可能保留更广的证据覆盖，同时节省 Token。
+- **问题较难时**：如果编排者轨迹包含推测性或价值较低的分支，更激进的压缩可能有帮助。
+- **上下文较短、问题较简单时**：适度压缩或许可以去掉冗余，同时保留必要证据。
 
-These are tuning hypotheses, not portable laws. Re-measure on the target workload.
+这些是调参假设，不是可直接套用的规律。应在目标工作负载上重新测量。
 
-## Practical Guidance
+## 实践指南
 
-- **Define the shared memory boundary first.** Decide exactly what enters the trajectory cache: prior worker replies, tool output, chain-of-thought, or only selected artifacts. Compaction quality depends on what is allowed into the cache in the first place.
-- **Tune on validation data, not anecdotes.** Track task accuracy, worker tokens, total tokens, retention rate, and compaction overhead together.
-- **Measure end-to-end latency.** Compaction only pays off if compaction plus generation beats the best text-layer alternative for the same quality target.
-- **Use strong baselines.** Compare against prefix caching, structured notes, retrieval, and selective text handoff, not only "send everything."
-- **Expect orchestrator variance.** If decomposition strategy changes run to run, average over enough trials to separate compaction effects from orchestrator noise.
+- **先明确共享记忆的边界。** 确定哪些内容会进入轨迹缓存：先前工作者的回复、工具输出、思维链，还是仅选定的产物。压缩质量取决于最初允许哪些信息进入缓存。
+- **用验证数据调参，不要只凭个例。** 同时追踪任务准确率、工作者 Token、总 Token、保留率和压缩开销。
+- **测量端到端延迟。** 只有当“压缩 + 生成”的总成本优于质量目标相同的最佳文本方案时，压缩才有收益。
+- **采用有竞争力的基线。** 应与前缀缓存、结构化笔记、检索和选择性文本交接比较，而不是只与“全部发送”比较。
+- **考虑编排者的运行差异。** 如果任务分解方式每次都会变，应进行足够多次试验，以区分压缩效果和编排者本身的波动。
 
-## Examples
+## 示例
 
-**Scenario: orchestrator trajectory grows across worker calls**
+**场景：编排者轨迹在多次调用工作者后逐渐增长**
 
 ```text
-Call 1: trajectory T1 -> worker answers subquestion A
-Call 2: trajectory T2 = T1 + new reasoning + reply A
-        compact KV(T2) using the task prompt for B
-        worker answers subquestion B
+调用 1：轨迹 T1 -> 工作者回答子问题 A
+调用 2：轨迹 T2 = T1 + 新推理 + 回复 A
+        使用子问题 B 的提示词压缩 KV(T2)
+        工作者回答子问题 B
 ```
 
-The task prompt for B decides which parts of `T2` survive into the compacted worker state.
+子问题 B 的提示词决定 `T2` 中哪些部分会留在压缩后的工作者状态里。
 
-**Negative example: API-only worker**
+**反例：仅 API 方式提供工作者**
 
-If the worker runs behind a hosted text-generation API that does not expose KV tensors, Latent Briefing cannot be implemented directly. Use a structured text handoff from `context-compression` or retrieve state from `memory-systems` instead.
+如果工作者运行在不公开 KV 张量的托管文本生成 API 后面，就无法直接实现潜在简报。此时应使用 `context-compression` 的结构化文本交接，或从 `memory-systems` 检索状态。
 
-## Guidelines
+## 指南
 
-1. Prefer Latent Briefing when the main waste comes from replaying orchestrator state into workers, not from retrieving source documents.
-2. Prefer plain text handoff when auditability, portability, or closed-model APIs matter more than token efficiency.
-3. Co-design compaction with **evaluation**. A small quality drop can erase large token savings.
-4. Expose compaction aggressiveness as a controlled parameter, not a hidden constant.
+1. 当主要浪费来自向工作者重放编排者状态，而不是检索源文档时，优先考虑潜在简报。
+2. 当可审计性、可移植性或闭源模型 API 更重要时，优先使用纯文本交接。
+3. 将压缩与 **evaluation** 协同设计。准确率的小幅下降也可能抵消大量 Token 节省。
+4. 将压缩强度暴露为可控参数，不要将其设为隐藏常量。
 
-## Gotchas
+## 常见问题
 
-1. **Infrastructure access is the first gate.** If the runtime cannot inspect and rewrite worker KV state, Latent Briefing is a research idea, not a deployable technique.
-2. **Shared model space matters.** KV compaction is defined in a specific model's attention space. Do not assume latent handoff works cleanly across unrelated model families.
-3. **Threshold is workload-dependent.** One global `tau` rarely works across long vs short context and easy vs hard tasks. Expect accuracy cliffs when compaction becomes too aggressive.
-4. **Benchmark scope is narrow.** Public results focus on long-document QA. Code generation, math, and multi-document synthesis may behave differently.
-5. **Orchestrator variance can hide the signal.** A stochastic orchestrator can change the trajectory enough to swamp small compaction gains or losses.
-6. **Weak baselines inflate the apparent win.** Compare against strong text-level alternatives before claiming a system-level advantage.
+1. **基础设施访问是第一道门槛。** 如果运行时无法读取和改写工作者 KV 状态，潜在简报就只是研究想法，不能部署。
+2. **共享模型空间很重要。** KV 压缩是在特定模型的注意力空间中定义的。不要假设不同模型系列之间可以顺畅进行潜在状态交接。
+3. **阈值依赖工作负载。** 一个全局 `tau` 通常无法同时适用于长、短上下文以及简单、困难问题。压缩过强可能导致准确率骤降。
+4. **基准范围有限。** 公开结果聚焦于长文档问答。代码生成、数学和多文档综合可能有不同表现。
+5. **编排者的运行差异会掩盖信号。** 随机性较强的编排者可能改变轨迹，其影响足以盖过较小的压缩收益或损失。
+6. **基线较弱会夸大收益。** 在声称系统整体占优前，应与强文本方案比较。
 
-## Integration
+## 集成
 
-- context-optimization - Prefix caching and observation masking remain the default first moves; Latent Briefing is a more specialized optimization for compatible orchestrator-worker stacks.
-- multi-agent-patterns - Applies when multi-agent token cost is driven by supervisor trajectory replay, not only by coordination overhead.
-- context-compression - Text-layer summaries remain preferable when human-readable state, portability, or audit logs matter.
-- memory-systems - Helps decide when to keep cross-step state in external memory versus in the worker's latent state.
-- tool-design - Worker call shapes and task prompts determine which tokens score highly during compaction.
+- `context-optimization`——前缀缓存和观察结果遮罩仍是优先尝试的基础方案；潜在简报是面向兼容编排者—工作者技术栈的专门优化。
+- `multi-agent-patterns`——适用于多智能体 Token 成本主要来自重放监督者轨迹，而不只是协调开销的情况。
+- `context-compression`——如果需要可供人阅读的状态、可移植性或审计日志，文本摘要仍然更合适。
+- `memory-systems`——帮助判断跨步骤状态应保存在外部记忆还是工作者的潜在状态中。
+- `tool-design`——工作者调用方式和任务提示词会影响压缩时哪些 Token 得分较高。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Attention Matching formulation and task-guided scoring](./references/attention-matching-formulation.md) - Read when: needing the AM objective, how task-guided scoring changes the query source, or why a shared global mask matters for batching
+内部参考：
 
-Related skills in this collection:
-- context-optimization - Read when: the main need is prefix caching, observation masking, or text-layer compaction rather than worker KV manipulation
-- multi-agent-patterns - Read when: deciding whether the architecture should be orchestrator-worker at all
-- context-compression - Read when: human-readable summaries may be a better fit than latent transfer
-- memory-systems - Read when: comparing in-model latent state with external persistent memory
+- [注意力匹配的形式化定义与任务引导评分](./references/attention-matching-formulation.md)——需要了解 AM 的目标、任务引导评分如何改变查询来源，或共享全局掩码为何便于批处理时阅读。
 
-External resources:
-- Ramp Labs announcement: [Latent Briefing: Efficient Memory Sharing for Multi-Agent Systems via KV Cache Compaction](https://x.com/RampLabs/status/2042660310851449223)
-- Attention Matching (AM): [Fast KV Compaction via Attention Matching](https://arxiv.org/abs/2602.16284)
-- Recursive Language Models: [Recursive Language Models](https://arxiv.org/abs/2512.24601)
+本资料集中的相关技能：
+
+- `context-optimization`——主要需求是前缀缓存、观察结果遮罩或文本层压缩，而不是操作工作者 KV 时阅读。
+- `multi-agent-patterns`——决定是否应采用编排者—工作者架构时阅读。
+- `context-compression`——需要判断可读摘要是否更合适时阅读。
+- `memory-systems`——比较模型内部潜在状态与外部持久记忆时阅读。
+
+外部资源：
+
+- Ramp Labs 公告：[Latent Briefing: Efficient Memory Sharing for Multi-Agent Systems via KV Cache Compaction](https://x.com/RampLabs/status/2042660310851449223)
+- 注意力匹配（AM）：[Fast KV Compaction via Attention Matching](https://arxiv.org/abs/2602.16284)
+- 递归语言模型：[Recursive Language Models](https://arxiv.org/abs/2512.24601)
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2026-04-14
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors; primary technical source Ramp Labs (public post)
-**Version**: 1.2.0
+**创建时间**：2026-04-14
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering 贡献者；主要技术来源为 Ramp Labs 的公开文章
+**版本**：1.2.0

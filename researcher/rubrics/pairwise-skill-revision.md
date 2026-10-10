@@ -1,37 +1,37 @@
-# Pairwise Skill Revision Rubric
+# 技能修订成对比较评分规则
 
-Use this rubric when comparing two candidate revisions of the same skill or two competing new-skill drafts.
+比较同一技能的两个候选修订，或比较两个相互竞争的新技能草案时，使用本规则。
 
-## Preconditions
+## 前置条件
 
-- Both candidates use the same source evidence.
-- Both candidates target the same activation scenario.
-- Both candidates pass deterministic structure checks.
-- Neither candidate changes the rubric used to compare it.
+- 两个候选使用相同来源证据。
+- 两个候选针对相同启用场景。
+- 两个候选均通过确定性结构检查。
+- 两个候选都没有修改用于比较它们的评分规则。
 
-## Dimensions
+## 评分维度
 
-Score each candidate independently from 0 to 2, then compare.
+每个候选分别按 0—2 分评分，再进行比较。
 
-| Dimension | Weight | Score 2 |
+| 维度 | 权重 | 2 分标准 |
 | --- | --- | --- |
-| Behavioral Improvement | 35% | The candidate gives future agents clearer actions, decisions, or recovery paths |
-| Evidence Fidelity | 20% | Claims are grounded in retrieved sources and do not overstate evidence |
-| Activation Clarity | 15% | The description and When to Activate section route the skill cleanly |
-| Corpus Fit | 15% | The candidate avoids duplication and respects related skill boundaries |
-| Simplicity | 15% | The candidate achieves the improvement with fewer concepts, fewer lines, and less maintenance burden |
+| 行为改进 | 35% | 能为未来智能体提供更明确的行动、决策或恢复途径 |
+| 证据忠实度 | 20% | 主张有已获取的来源支持，且没有夸大证据 |
+| 启用清晰度 | 15% | 描述和“何时启用”章节能准确限定技能范围 |
+| 语料适配度 | 15% | 避免重复，并尊重相关技能边界 |
+| 简洁度 | 15% | 用更少概念、更少篇幅和更低维护负担实现改进 |
 
-## Tie Breakers
+## 打破平局
 
-If totals are within 0.1:
+若总分差距不超过 0.1：
 
-1. Prefer the simpler candidate.
-2. Prefer the candidate with fewer volatile claims in `SKILL.md`.
-3. Prefer the candidate that updates an existing skill over adding a new one.
-4. Prefer the candidate with clearer gotchas.
-5. Route to human review if the tie remains.
+1. 优先选择更简单的候选。
+2. 优先选择 `SKILL.md` 中易变主张更少的候选。
+3. 优先更新现有技能，而非新增技能。
+4. 优先选择易错点更明确的候选。
+5. 若仍平局，交由人工审查。
 
-## Required Output
+## 必需输出
 
 ```yaml
 candidate_a:
@@ -49,9 +49,9 @@ tie_breaker_used: ""
 decision_rationale: ""
 ```
 
-## Failure Modes
+## 失败模式
 
-1. **Verbose candidate wins by judge bias**: Penalize irrelevant detail under Simplicity.
-2. **Evidence drift**: Reject claims that do not map back to retrieved sources.
-3. **False novelty**: Compare against existing skills before scoring either candidate.
-4. **Prompt-only comparison**: Run deterministic structure checks before rubric scoring.
+1. **评审偏向冗长候选**：在“简洁度”维度扣除无关细节。
+2. **证据漂移**：拒绝无法追溯到已获取来源的主张。
+3. **虚假新颖性**：评分前先与现有技能比较。
+4. **只比较提示词**：评分前先执行确定性结构检查。

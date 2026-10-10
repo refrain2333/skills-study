@@ -1,92 +1,78 @@
-# Introductions Tracker
+# 人际引荐追踪
 
-Managing introductions - made and received.
+记录你发起和收到的引荐。
 
----
+## 待处理引荐
 
-## Pending Introductions
+### 计划发起
 
-### To Make
-<!-- Introductions you've committed to making -->
+| 联系人 A | 联系人 B | 引荐原因 | 状态 | 备注 |
+| --- | --- | --- | --- | --- |
+| [填写] | [填写] | [填写] | `to_reach_out|reached_out|connected` | [填写] |
 
-| Person A | Person B | Why | Status | Notes |
-|----------|----------|-----|--------|-------|
-| [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER: Why this intro] | `to_reach_out|reached_out|connected` | [PLACEHOLDER] |
+### 希望请求
 
-### To Request
-<!-- Introductions you want to ask for -->
+| 目标联系人 | 通过谁引荐 | 希望认识的原因 | 状态 |
+| --- | --- | --- | --- |
+| [填写] | [填写] | [填写] | `to_ask|asked|intro_made` |
 
-| Target Person | Through Whom | Why You Want to Meet | Status |
-|---------------|--------------|----------------------|--------|
-| [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] | `to_ask|asked|intro_made` |
+## 已完成引荐
 
----
+### 已发起
 
-## Completed Introductions
+| 日期 | 联系人 A | 联系人 B | 结果 |
+| --- | --- | --- | --- |
+| [日期] | [填写] | [填写] | [结果] |
 
-### Made
-<!-- Successful intros you facilitated -->
+### 收到的引荐
 
-| Date | Person A | Person B | Outcome |
-|------|----------|----------|---------|
-| [DATE] | [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER: What happened] |
+| 日期 | 引荐人 | 被引荐对象 | 结果 |
+| --- | --- | --- | --- |
+| [日期] | [填写] | [填写] | [填写] |
 
-### Received
-<!-- Intros made for you -->
+## 引荐模板
 
-| Date | From | Connected To | Outcome |
-|------|------|--------------|---------|
-| [DATE] | [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] |
+### 邮件或私信：双方确认
 
----
+```text
+主题：引荐：[联系人 A] <> [联系人 B]
 
-## Introduction Template
+你好，[联系人 B]：
 
-### Email/DM Double Opt-In
+[说明联系原因和背景]
 
-```
-Subject: Introduction: [Person A] <> [Person B]
+我想把你介绍给[联系人 A]。[用一两句话介绍对方和工作]
 
-Hey [Person B],
+我觉得你们值得认识，因为[具体引荐理由]。
 
-[Brief context on why I'm reaching out]
+你愿意接受这次引荐吗？[联系人 A] 已同意。
 
-I'd love to introduce you to [Person A]. [1-2 sentences on who they are and what they do]
+期待你的回复！
 
-I thought you two should connect because [specific reason for the intro].
-
-Would you be open to an intro? [Person A] is already opted in.
-
-Let me know!
-
-[Your name]
+[你的名字]
 ```
 
-### Making the Introduction
+### 正式引荐
 
+```text
+主题：引荐：[联系人 A] <> [联系人 B]
+
+[联系人 A]，请认识[联系人 B]。[一两句话介绍联系人 B]
+[联系人 B]，请认识[联系人 A]。[一两句话介绍联系人 A]
+
+我觉得你们值得认识，因为[具体原因]。
+
+接下来就交给你们啦！
+
+[你的名字]
 ```
-Subject: Introduction: [Person A] <> [Person B]
 
-[Person A], meet [Person B]. [1-2 sentences about Person B]
-[Person B], meet [Person A]. [1-2 sentences about Person A]
+## 引荐原则
 
-I thought you two should connect because [specific reason].
+- **双方都先同意**：先分别征求双方许可。
+- **理由具体**：解释清楚为什么双方值得认识。
+- **降低沟通成本**：提供足够背景，方便双方展开交流。
+- **及时跟进**：确认引荐是否有帮助。
+- **记录结果**：总结哪些引荐方式效果好。
 
-I'll let you take it from here!
-
-[Your name]
-```
-
----
-
-## Introduction Principles
-
-- **Always double opt-in**: Get permission from both sides first
-- **Be specific**: Explain WHY they should meet
-- **Make it easy**: Provide context so they can start the conversation
-- **Follow up**: Check in to see if the intro was valuable
-- **Track outcomes**: Learn what makes good intros
-
----
-
-*Last updated: [DATE]*
+最后更新：[日期]

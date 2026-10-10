@@ -1,26 +1,26 @@
-# Example: Gertrude Stein Style Transfer
+# 示例：格特鲁德·斯坦因风格迁移
 
-A complete case study of training Qwen3-8B-Base to write in Gertrude Stein's style using her 1909 novel "Three Lives."
+一个完整的案例研究，使用她 1909 年的小说《三个女人》训练 Qwen3-8B-Base 以格特鲁德·斯坦因的风格写作。
 
-## Project Summary
+## 项目总结
 
-| Metric | Value |
+| 指标 | 数值 |
 |--------|-------|
-| Source Book | Three Lives (1909) |
-| Book Word Count | ~86,000 |
-| Training Examples | 592 |
-| Test Examples | 50 |
-| Model | Qwen/Qwen3-8B-Base |
-| LoRA Rank | 32 |
-| Adapter Size | 352 MB |
-| Training Time | ~15 minutes |
-| Total Cost | ~$2 |
+| 源书 | 三个女人（1909） |
+| 书籍字数 | 约 86,000 |
+| 训练示例 | 592 |
+| 测试示例 | 50 |
+| 模型 | Qwen/Qwen3-8B-Base |
+| LoRA 秩 | 32 |
+| 适配器大小 | 352 MB |
+| 训练时间 | 约 15 分钟 |
+| 总成本 | 约 $2 |
 
-## Training Metrics
+## 训练指标
 
-### Loss Trajectory
+### 损失轨迹
 
-| Step | Train Loss | Test Loss |
+| 步骤 | 训练损失 | 测试损失 |
 |------|-----------|-----------|
 | 5 | 7579.67 | - |
 | 40 | 4032.35 | 7584.85 |
@@ -28,105 +28,105 @@ A complete case study of training Qwen3-8B-Base to write in Gertrude Stein's sty
 | 140 | 2863.17 | 752.95 |
 | 180 | 1327.41 | 229.88 |
 | 200 | 1044.49 | 213.36 |
-| Final | ~800 | ~200 |
+| 最终 | 约 800 | 约 200 |
 
-Loss reduction: 97% (7584 to 213 test loss)
+损失降低：97%（测试损失从 7584 到 213）
 
-## Style Markers Learned
+## 学到的风格标记
 
-The model successfully learned these Gertrude Stein characteristics:
+模型成功学到了这些格特鲁德·斯坦因的特征：
 
-1. **Repetitive sentence structures**: "She was a good woman. She was always a good woman."
-2. **Simple vocabulary**: Common words, no ornate language
-3. **Comma-separated adjectives**: "a dark, sweet, little, pretty girl"
-4. **Present continuous tense**: "She was always doing", "He was thinking"
-5. **Character focus**: Deep psychological observation over plot
-6. **Rhythmic, hypnotic quality**: Almost musical prose
+1. **重复的句子结构**："她是个好女人。她总是个好女人。"
+2. **简单词汇**：常用词，没有华丽的语言
+3. **逗号分隔的形容词**："一个黑色的、甜蜜的、小的、漂亮的女孩"
+4. **现在进行时**："她总是在做"、"他在思考"
+5. **人物专注**：深入的心理观察而不是情节
+6. **有节奏、迷幻的质量**：几乎是音乐般的散文
 
-## Sample Outputs
+## 示例输出
 
-### Modern Scenario: Real Estate Office
+### 现代场景：房地产办公室
 
-**Prompt**: Write in Gertrude Stein's style about a real estate clerk coming home tired.
+**提示**：以格特鲁德·斯坦因的风格写关于一个房地产职员下班回家疲劳的故事。
 
-**Output**:
-> It was a very busy day for the clerk in the real estate office. He came home to his small house in the working class part of the town, very tired. He went into the kitchen where his wife was cooking.
+**输出**：
+> 这是房地产办公室职员很忙碌的一天。他来到他在镇子工薪阶层部分的小房子，非常疲劳。他走进厨房，他的妻子正在做饭。
 >
-> "Hi, Sis, home for dinner?" he said to her.
+> "嗨，姐姐，回来吃晚饭了吗？"他对她说。
 >
-> She looked at him and saw that he was very tired. She looked at him and then looked away into the fire. She said nothing in answer to him.
+> 她看着他，看到他非常疲劳。她看着他，然后转向看向火。她没有回答他。
 >
-> He took off his hat and coat and then sat down on the steps just inside the door to take a rest. He was very tired today, he sat there and just sort of dozed a little.
+> 他脱掉了帽子和外套，然后坐在门内的台阶上休息。他今天非常疲劳，他坐在那里，只是有点打瞌睡。
 
-**Analysis**: Original content verified - "real estate office", "working class", "Hi, Sis" do not appear in training data.
+**分析**：验证的原始内容 - "房地产办公室"、"工薪阶层"、"嗨，姐姐" 不出现在训练数据中。
 
-### Modern Scenario: Text Messages
+### 现代场景：短信
 
-**Prompt**: Write about two lovers communicating through text messages.
+**提示**：写关于两个情侣通过短信交流的故事。
 
-**Output**:
-> "Hey, Herman, I just got a minute to be gone from my patient. Want to talk to you for a little while, Herman," Lena wrote one night, and then she sent the text to him.
+**输出**：
+> "嗨，赫尔曼，我刚刚有一分钟离开了我的病人。想和你聊一会儿吗，赫尔曼，"莱娜一个晚上写道，然后她给他发了短信。
 >
-> Herman read it and then he wrote her back, "I was just getting ready to go to bed, Lena. Want me to come and see you tomorrow, Lena. Want me to bring something to you, Lena. Want me to bring you some ice cream, Lena. Want me to bring you some of those little donuts..."
+> 赫尔曼读了它，然后他给她写回去，"我正准备睡觉，莱娜。明天想来见我吗，莱娜。想给我带点东西吗，莱娜。想给我买冰淇淋吗，莱娜。想给我买一些那些小甜甜圈吗，莱娜......"
 
-**Analysis**: Classic Stein anaphora (repetition at sentence starts) applied to modern SMS format.
+**分析**：经典的斯坦因排比（句子开头的重复）应用于现代短信格式。
 
-## AI Detector Results
+## AI 检测器结果
 
-Tested with Pangram AI detector: **100% Human Written**
+使用 Pangram AI 检测器测试：**100% 人类写作**
 
-Multiple samples tested, all scored as human-written prose.
+测试了多个样本，全部被评分为人类写作散文。
 
-## Validation Method
+## 验证方法
 
-### Modern Scenario Testing
+### 现代场景测试
 
-We tested the model on scenarios that couldn't exist in 1909:
-- Barista making lattes
-- Social media scrolling
-- Video calls
-- Food delivery drivers
-- Climate change anxiety
+我们在 1909 年不可能存在的场景上测试了模型：
+- 咖啡师制作拿铁
+- 社交媒体滚动
+- 视频通话
+- 食品配送司机
+- 气候变化焦虑
 
-When style markers appeared in modern contexts, it proved the model learned **style** rather than **content**.
+当风格标记出现在现代背景中时，它证明了模型学到了**风格**而不是**内容**。
 
-### Originality Verification
+### 原创性验证
 
-Searched training data for output phrases:
+在训练数据中搜索了输出短语：
 
 ```bash
-grep "real estate office" dataset.jsonl    # No matches
-grep "working class" dataset.jsonl          # No matches
-grep "Hi, Sis" dataset.jsonl                # No matches
-grep "text messages" dataset.jsonl          # No matches
+grep "房地产办公室" dataset.jsonl    # 无匹配
+grep "工薪阶层" dataset.jsonl          # 无匹配
+grep "嗨，姐姐" dataset.jsonl          # 无匹配
+grep "短信" dataset.jsonl          # 无匹配
 ```
 
-## Known Limitations
+## 已知限制
 
-### Character Name Leakage (~30% of outputs)
+### 角色名称泄露（约 30% 的输出）
 
-The model sometimes uses original character names (Melanctha, Mrs. Lehntman, Anna) even in modern scenarios. This is because 592 examples from one book means these names appear hundreds of times.
+模型有时在现代场景中使用原始角色名称（Melanctha、Mrs. Lehntman、Anna）。这是因为来自一本书的 592 个例子意味着这些名称出现了数百次。
 
-**Mitigation**: Train on multiple books by the same author, or add synthetic examples with different names.
+**缓解**：训练同一作者的多本书，或添加具有不同名称的合成示例。
 
-### Success Rate Distribution
+### 成功率分布
 
-- Perfect style transfer: ~50%
-- Style with name leakage: ~30%
-- Partial style: ~15%
-- Failed: ~5%
+- 完美风格迁移：约 50%
+- 带名称泄露的风格：约 30%
+- 部分风格：约 15%
+- 失败：约 5%
 
-The 50% perfect rate is realistic for an 8B model trained on one book.
+50% 的完美率对于在一本书上训练的 8B 模型是现实的。
 
-## Configuration Used
+## 使用的配置
 
-### Dataset Generation
+### 数据集生成
 
 ```python
 CONFIG = {
     "min_words": 150,
     "max_words": 400,
-    "overlap": True,  # Last paragraph carried to next chunk
+    "overlap": True,  # 最后一个段落进入下一个块
     "variants_per_chunk": 2,
     "prompt_templates": 15,
     "system_prompts": 5,
@@ -134,7 +134,7 @@ CONFIG = {
 }
 ```
 
-### Training
+### 训练
 
 ```python
 CONFIG = {
@@ -148,21 +148,20 @@ CONFIG = {
 }
 ```
 
-## Key Learnings
+## 关键学习
 
-1. **Smaller chunks work better**: 150-400 words produced more examples and better style transfer than 250-650
+1. **更小的块效果更好**：150-400 字产生了比 250-650 更多的示例和更好的风格迁移
 
-2. **Prompt diversity is critical**: 15 templates × 5 system prompts = 75 variations prevented memorization
+2. **提示多样性至关重要**：15 个模板 × 5 个系统提示 = 75 种变化防止了记忆化
 
-3. **Base models over instruct**: Qwen3-8B-Base was more malleable than instruct versions
+3. **基础模型优于指令调优**：Qwen3-8B-Base 比指令调优版本更具可塑性
 
-4. **Modern scenario testing proves transfer**: If style applies to modern contexts, the model learned patterns, not content
+4. **现代场景测试证明了迁移**：如果风格应用于现代背景，模型学到了模式，而不是内容
 
-5. **~$2 is enough**: LLM calls for instruction generation (~$0.50) plus Tinker training (~$1.50)
+5. **约 $2 就足够了**：指令生成的 LLM 调用（约 $0.50）加上 Tinker 训练（约 $1.50）
 
-## Files
+## 文件
 
-- `sample_outputs.md` - Full model outputs with analysis
-- `training_config.json` - Exact configuration used
-- `dataset_sample.jsonl` - Sample training examples
-
+- `sample_outputs.md` - 完整的模型输出和分析
+- `training_config.json` - 使用的确切配置
+- `dataset_sample.jsonl` - 样本训练示例

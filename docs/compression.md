@@ -1,298 +1,314 @@
 ---
 name: context-compression-evaluation
-description: Evaluation framework for measuring how much context different compression strategies preserve in AI agents, comparing structured summarization with alternatives from OpenAI and Anthropic.
+description: 评估框架，用于衡量不同压缩策略在AI代理中保留的上下文量，比较结构化摘要与OpenAI和Anthropic的替代方案。
 doc_type: research
 source_url: No
 ---
 
-Evaluating Context Compression for AI Agents
-By Factory Research - December 16, 2025 - 10 minute read -
+# 评估AI代理的上下文压缩
 
-Share
+Factory Research - 2025年12月16日 - 10分钟阅读
 
+**分享**
 
+**工程 | 研究 | 新**
 
+我们建立了一个评估框架来衡量不同压缩策略保留的上下文量。在对跨越调试、代码审查和功能实现的真实长期代理会话进行测试后，我们发现结构化摘要保留的有用信息比OpenAI和Anthropic的替代方案更多。
 
+## 目录
 
-Engineering
+- 01 问题
+- 02 衡量上下文质量
+- 03 三种压缩方法
+- 04 具体示例
+- 05 LLM评委如何工作
+- 06 结果
+- 07 我们学到了什么
+- 08 方法论详情
+- 09 附录：LLM评委提示词和评分标准
 
-Research
+---
 
-New
+## 问题
 
-We built an evaluation framework to measure how much context different compression strategies preserve. After testing three approaches on real-world, long-running agent sessions spanning debugging, code review, and feature implementation, we found that structured summarization retains more useful information than alternatives from OpenAI and Anthropic.
+当AI代理在数百条消息中帮助你完成复杂任务时，会发生什么？如果超过了内存限制，答案决定了你的代理是否能继续高效工作，还是开始问"等等，我们想做什么来着？"
 
-Table of Contents
+我们建立了一个评估框架来衡量不同压缩策略保留的上下文量。在对真实长期代理会话（调试、PR审查、功能实现、CI故障排查、数据科学、ML研究）进行测试后，我们发现结构化摘要保留的有用信息比来自OpenAI和Anthropic的替代方法更多，且不牺牲压缩效率。
 
+本文介绍了问题、我们的方法论、不同方法如何执行的具体示例，以及结果对构建可靠AI代理的意义。
 
+## 衡量上下文质量
 
+长期代理会话可能产生数百万令牌的对话历史。这远超任何模型的工作记忆容量。
 
+朴素的解决方案是激进压缩：将所有内容压缩成最小的可能摘要。但这增加了代理忘记它修改了哪些文件或已经尝试过什么方法的风险。它可能浪费令牌重新读取文件和重新探索死胡同。
 
+正确的优化目标不是每个请求的令牌数。而是完成任务的令牌数。
 
+### 传统方法的限制
 
+ROUGE或嵌入相似度等传统指标不能告诉你代理在压缩后是否能继续有效工作。一个摘要可能在词汇重叠上得分很高，同时遗漏代理继续工作所需的一个文件路径。
 
+我们设计了一个基于探针的评估，直接衡量功能质量。想法很简单：压缩后，询问代理需要记住截断历史中特定细节的问题。如果压缩保留了正确的信息，代理会正确回答。如果没有，它会猜测或幻觉。
 
+### 四种探针类型
 
+| 探针类型 | 测试内容 | 示例问题 |
+|---------|--------|--------|
+| 回忆 | 事实保留 | "原始错误消息是什么?" |
+| 文件 | 文件追踪 | "我们修改了哪些文件?描述每个文件的变化。" |
+| 延续 | 任务规划 | "接下来我们应该做什么?" |
+| 决策 | 推理链 | "我们讨论了Redis问题的选项。我们决定了什么?" |
 
-01 The problem
+- **回忆探针** 测试特定事实是否在压缩中保存
+- **文件探针** 测试代理是否知道它触及过的文件
+- **延续探针** 测试代理是否可以从中断处继续
+- **决策探针** 测试过去选择背后的推理是否保留
 
+### 评分标准
 
-02 Measuring context quality
+我们使用GPT-5.2作为LLM评委，在六个维度进行评分：
 
+| 维度 | 衡量内容 |
+|-----|--------|
+| 准确性 | 技术细节是否正确？文件路径、函数名、错误 |
+| 上下文感知 | 响应是否反映了当前对话状态? |
+| 文件追踪 | 代理是否知道读取或修改了哪些文件? |
+| 完整性 | 响应是否解决了问题的所有部分? |
+| 连贯性 | 是否可以继续工作而不需要重新获取信息? |
+| 指令遵循 | 响应是否遵循探针格式? |
 
-03 Three approaches to compression
+每个维度使用详细的评分标准评分0-5。评分标准指定了什么构成0分("完全失败")、3分("充分满足，有轻微问题")和5分("完美满足，没有问题")。
 
+### 这些维度为什么对软件开发重要
 
-04 A concrete example
+这些维度是专门选择的，因为它们捕捉了编码代理失去上下文时会出错的地方：
 
+**文件追踪** 至关重要，因为编码代理需要知道它触及过的文件。没有这个，代理可能会重新读取已经检查过的文件、进行冲突的编辑或丢失测试结果。ChatGPT对话可以忽略早期话题；但一个忘记它修改了auth.controller.ts的编码代理会产生不一致的工作。
 
-05 How the LLM judge works
+**连贯性** 直接影响令牌效率。当代理无法从中断处继续时，它会重新获取文件并重新探索已经尝试过的方法。这浪费令牌和时间，将单次任务变成了昂贵的多次任务。
 
+**上下文感知** 很重要，因为编码会话有状态。代理不仅需要了解过去的事实，还需要了解任务的当前状态：已尝试的、失败的、剩余的。通用摘要通常捕捉"发生了什么"同时丢失"我们现在在哪里"。
 
-06 Results
+**准确性** 对代码来说是非协商的。错误的文件路径或错误记忆的函数名导致失败的编辑或幻觉的解决方案。不同于对话AI，其中近似回忆是可接受的，编码代理需要精确的技术细节。
 
+**完整性** 确保代理处理多部分请求的所有部分。当用户要求"修复bug并添加测试"时，完整的响应处理两者。不完整的响应会强制后续提示并浪费令牌重新建立上下文。
 
-07 What we learned
+**指令遵循** 验证代理尊重约束和格式。当被要求"仅修改auth模块"或"输出为JSON"时，代理必须遵守。这个维度捕捉压缩保留事实但丢失用户要求的情况。
 
+## 三种压缩方法
 
-08 Methodology details
+我们比较了三种生产就绪的压缩策略。
 
+### Factory方法：锚定迭代摘要
 
-09 Appendix: LLM Judge Prompts and Rubrics
+Factory维护一个结构化、持久的摘要，具有不同信息类型的显式部分：会话意图、文件修改、做出的决策和下一步。当触发压缩时，仅新截断的跨度被摘要并与现有摘要合并。我们称之为锚定迭代摘要。
 
-Tasteful abstract illustration evocative of memory and blurriness
-When an AI agent helps you work through a complex task across hundreds of messages, what happens when it runs out of memory? The answer determines whether your agent continues productively or starts asking "wait, what were we trying to do again?"
+关键见解是结构强制保留。通过为特定信息类型专门分配部分，摘要不能悄悄丢弃文件路径或跳过决策。每个部分作为清单：摘要器必须填充它或明确地将其留空。这防止了发生在自由形式摘要中的逐渐信息丧失。
 
-We built an evaluation framework to measure how much context different compression strategies preserve. After testing three approaches on real-world, long-running agent sessions (debugging, PR review, feature implementation, CI troubleshooting, data science, ML research), we found that structured summarization retains more useful information than alternative methods from OpenAI and Anthropic, without sacrificing compression efficiency.
+### OpenAI方法：紧凑端点
 
-Bar chart comparing quality scores by dimension across Factory, OpenAI, and Anthropic
-This post walks through the problem, our methodology, concrete examples of how different approaches perform, and what the results mean for building reliable AI agents.
+OpenAI提供了/responses/compact端点，产生针对重构保真度优化的不透明、压缩表示。它达到了最高的压缩比(99.3%)但牺牲了可解释性。你无法读取压缩输出来验证保留了什么。
 
-The problem
-Long-running agent sessions can generate millions of tokens of conversation history. That far exceeds what any model can hold in working memory.
+### Anthropic方法：Claude SDK
 
-The naive solution is aggressive compression: squeeze everything into the smallest possible summary. But this increases the chance your agent forgets which files it modified or what approach it already tried. It is likely to waste tokens re-reading files and re-exploring dead ends.
+Anthropic通过Claude SDK提供内置上下文压缩。它生成详细的结构化摘要(通常7-12k字符)，包含分析、文件、待处理任务和当前状态部分。与Factory的关键区别是更新机制：Anthropic在每次压缩时重新生成完整摘要，而Factory的锚定方法逐步将新信息合并到持久摘要中。这影响跨压缩的一致性和哪些细节在重复压缩周期中存活。
 
-The right optimization target is not tokens per request. It is tokens per task.
+## 具体示例
 
-Measuring context quality
-Traditional metrics like ROUGE or embedding similarity do not tell you whether an agent can continue working effectively after compression. A summary might score high on lexical overlap while missing the one file path the agent needs to continue.
+考虑一个调试会话，用户报告尽管提供了有效凭证，/api/auth/login端点上仍出现401错误。在178条消息和89,000个令牌中，助手：
 
-We designed a probe-based evaluation that directly measures functional quality. The idea is simple: after compression, ask the agent questions that require remembering specific details from the truncated history. If the compression preserved the right information, the agent answers correctly. If not, it guesses or hallucinates.
+- 阅读认证控制器并识别JWT令牌生成
+- 检查中间件链并发现配置不当的CORS策略
+- 发现会话存储使用了过期的Redis连接
+- 修复了Redis连接池配置
+- 为瞬时连接失败添加了重试逻辑
+- 运行测试套件(14个测试通过，2个失败)
+- 修复了与模拟设置相关的剩余测试失败
+- 检查的文件：auth.controller.ts, middleware/cors.ts, config/redis.ts, services/session.service.ts, tests/auth.test.ts
 
-We use four probe types:
+压缩后，我们提出问题："在我们继续之前，你能提醒我这次调试会话开始时的原始错误是什么吗？请具体说明错误代码和端点。"
 
-Probe type	What it tests	Example question
-Recall	Factual retention	"What was the original error message?"
-Artifact	File tracking	"Which files have we modified? Describe what changed in each."
-Continuation	Task planning	"What should we do next?"
-Decision	Reasoning chain	"We discussed options for the Redis issue. What did we decide?"
-Recall probes test whether specific facts survive compression. Artifact probes test whether the agent knows what files it touched. Continuation probes test whether the agent can pick up where it left off. Decision probes test whether the reasoning behind past choices is preserved.
+以下是每种方法的响应：
 
-We grade responses using an LLM judge (GPT-5.2) across six dimensions:
+### Factory响应(评分4.8/5)：
 
-Dimension	What it measures
-Accuracy	Are technical details correct? File paths, function names, errors
-Context awareness	Does the response reflect current conversation state?
-Artifact trail	Does the agent know which files were read or modified?
-Completeness	Does the response address all parts of the question?
-Continuity	Can work continue without re-fetching information?
-Instruction following	Does the response follow the probe format?
-Each dimension is scored 0-5 using detailed rubrics. The rubrics specify what constitutes a 0 ("Completely fails"), 3 ("Adequately meets with minor issues"), and 5 ("Excellently meets with no issues") for each criterion.
+"原始错误是来自/api/auth/login端点的401未授权响应。用户即使在提供有效用户名/密码组合时也收到此错误。根本原因最终是会话存储中的过期Redis连接——JWT生成正确，但会话无法持久化，导致后续的已认证请求失败。"
 
-Why these dimensions matter for software development
-These dimensions were chosen specifically because they capture what goes wrong when coding agents lose context:
+### Anthropic响应(评分3.9/5)：
 
-Artifact trail is critical because coding agents need to know which files they have touched. Without this, an agent might re-read files it already examined, make conflicting edits, or lose track of test results. A ChatGPT conversation can afford to forget earlier topics; a coding agent that forgets it modified auth.controller.ts will produce inconsistent work.
+"会话以调试登录失败开始——特别是认证端点上的401错误。我们追踪了认证流程中的问题，发现它与会话存储相关，而不是凭证验证本身。"
 
-Continuity directly impacts token efficiency. When an agent cannot continue from where it left off, it re-fetches files and re-explores approaches it already tried. This wastes tokens and time, turning a single-pass task into an expensive multi-pass one.
+### OpenAI响应(评分3.2/5)：
 
-Context awareness matters because coding sessions have state. The agent needs to know not just facts from the past, but the current state of the task: what has been tried, what failed, what is left to do. Generic summarization often captures "what happened" while losing "where we are."
+"我们在调试一个认证问题。登录对用户失败了。我们查看了几个文件，发现需要修复一些配置问题。"
 
-Accuracy is non-negotiable for code. A wrong file path or misremembered function name leads to failed edits or hallucinated solutions. Unlike conversational AI where approximate recall is acceptable, coding agents need precise technical details.
+Factory响应命名了确切的端点(/api/auth/login)、错误代码(401)和根本原因(Redis会话存储)。Anthropic响应获得了错误代码和一般原因但丢失了端点路径。OpenAI响应丢失了几乎所有技术细节。
 
-Completeness ensures the agent addresses all parts of a multi-part request. When a user asks to "fix the bug and add tests," a complete response handles both. Incomplete responses force follow-up prompts and waste tokens on re-establishing context.
+这个模式在探针类型中重复。在文件探针("我们修改了哪些文件?")上，Factory评分为3.6，而OpenAI评分为2.8。Factory的摘要在专门的部分中明确列出文件。OpenAI的压缩将文件路径视为低熵内容并丢弃。
 
-Instruction following verifies the agent respects constraints and formats. When asked to "only modify the auth module" or "output as JSON," the agent must comply. This dimension catches cases where compression preserved facts but lost the user's requirements.
+## LLM评委如何工作
 
-Three approaches to compression
-We compared three production-ready compression strategies.
+我们使用GPT-5.2作为LLM评委，遵循Zheng等人(2023)在其MT-Bench论文中建立的方法论。他们的工作表明GPT-4与人类偏好的一致性达到80%以上，与人类之间的一致性水平相匹配。
 
-Factory maintains a structured, persistent summary with explicit sections for different information types: session intent, file modifications, decisions made, and next steps. When compression triggers, only the newly-truncated span is summarized and merged with the existing summary. We call this anchored iterative summarization.
+评委接收探针问题、模型的响应、紧凑的对话上下文和(当可用时)基本真实。然后它跨六个维度对每个评分标准进行评分，有明确的推理。
 
-The key insight is that structure forces preservation. By dedicating sections to specific information types, the summary cannot silently drop file paths or skip over decisions. Each section acts as a checklist: the summarizer must populate it or explicitly leave it empty. This prevents the gradual information loss that occurs with freeform summarization.
+这是上面Factory响应的评委输出的简化示例：
 
-OpenAI offers the /responses/compact endpoint, which produces opaque, compressed representations optimized for reconstruction fidelity. It achieves the highest compression ratios (99.3%) but sacrifices interpretability. You cannot read the compressed output to verify what was preserved.
-
-Anthropic provides built-in context compression through the Claude SDK. It produces detailed, structured summaries (typically 7-12k characters) with sections for analysis, files, pending tasks, and current state. The key difference from Factory is the update mechanism: Anthropic regenerates the full summary on each compression, while Factory's anchored approach incrementally merges new information into a persistent summary. This affects both consistency across compressions and which details survive repeated compression cycles.
-
-A concrete example
-Consider a debugging session where a user reported a 401 error on the /api/auth/login endpoint despite valid credentials. Over 178 messages and 89,000 tokens, the assistant:
-
-Read the authentication controller and identified JWT token generation
-Examined the middleware chain and found a misconfigured CORS policy
-Discovered the session store was using an expired Redis connection
-Fixed the Redis connection pooling configuration
-Added retry logic for transient connection failures
-Ran the test suite (14 tests passing, 2 failing)
-Fixed the remaining test failures related to mock setup
-Files examined: auth.controller.ts, middleware/cors.ts, config/redis.ts, services/session.service.ts, tests/auth.test.ts
-
-After compression, we ask: "Before we continue, can you remind me what the original error was that started this debugging session? Please be specific about the error code and endpoint."
-
-Here is how each method responded:
-
-Factory response (scored 4.8/5):
-
-"The original error was a 401 Unauthorized response from the /api/auth/login endpoint. Users were receiving this error even when providing valid username/password combinations. The root cause turned out to be a stale Redis connection in the session store - the JWT was being generated correctly, but the session could not be persisted, causing subsequent authenticated requests to fail."
-
-Anthropic response (scored 3.9/5):
-
-"The session started with debugging a login failure - specifically a 401 error on the authentication endpoint. We traced the issue through the auth flow and found it was related to session storage rather than the credential validation itself."
-
-OpenAI response (scored 3.2/5):
-
-"We were debugging an authentication issue. The login was failing for users. We looked at several files and found some configuration problems that needed to be fixed."
-
-The Factory response names the exact endpoint (/api/auth/login), the error code (401), and the root cause (Redis session store). The Anthropic response gets the error code and general cause but loses the endpoint path. The OpenAI response loses almost all technical detail.
-
-This pattern repeated across probe types. On artifact probes ("Which files have we modified?"), Factory scored 3.6 while OpenAI scored 2.8. Factory's summary explicitly lists files in a dedicated section. OpenAI's compression discards file paths as low-entropy content.
-
-How the LLM judge works
-We use GPT-5.2 as an LLM judge, following the methodology established by Zheng et al. (2023) in their MT-Bench paper. Their work showed that GPT-4 achieves over 80% agreement with human preferences, matching the agreement level among humans themselves.
-
-The judge receives the probe question, the model's response, the compacted conversation context, and (when available) ground truth. It then scores each rubric criterion with explicit reasoning.
-
-Here is an abbreviated example of judge output for the Factory response above:
-
+```json
 {
   "criterionResults": [
     {
       "criterionId": "accuracy_factual",
       "score": 5,
-      "reasoning": "Response correctly identifies the 401 error, the specific endpoint (/api/auth/login), and the root cause (Redis connection issue)."
+      "reasoning": "响应正确识别了401错误、特定端点(/api/auth/login)和根本原因(Redis连接问题)。"
     },
     {
       "criterionId": "accuracy_technical",
       "score": 5,
-      "reasoning": "Technical details are accurate - JWT generation, session persistence, and the causal chain are correctly described."
+      "reasoning": "技术细节准确——JWT生成、会话持久化和因果链被正确描述。"
     },
     {
       "criterionId": "context_artifact_state",
       "score": 4,
-      "reasoning": "Response demonstrates awareness of the debugging journey but does not enumerate all files examined."
+      "reasoning": "响应展示了对调试过程的认识，但没有枚举所有检查过的文件。"
     },
     {
       "criterionId": "completeness_coverage",
       "score": 5,
-      "reasoning": "Fully addresses the probe question with the error code, endpoint, symptom, and root cause."
+      "reasoning": "充分解决了探针问题，包含错误代码、端点、症状和根本原因。"
     }
   ],
   "aggregateScore": 4.8
 }
+```
 
-The judge does not know which compression method produced the response. It evaluates purely on response quality against the rubric.
+评委不知道哪个压缩方法生成了被评估的响应。它纯粹根据评分标准评估响应质量。
 
-Results
-We evaluated all three methods on over 36,000 messages from production sessions spanning PR review, testing, bug fixes, feature implementation, and refactoring. For each compression point, we generated four probe responses per method and graded them across six dimensions.
+## 结果
 
-Method	Overall	Accuracy	Context	Artifact	Complete	Continuity	Instruction
-Factory	3.70	4.04	4.01	2.45	4.44	3.80	4.99
-Anthropic	3.44	3.74	3.56	2.33	4.37	3.67	4.95
-OpenAI	3.35	3.43	3.64	2.19	4.37	3.77	4.92
-Factory scores 0.35 points higher than OpenAI and 0.26 higher than Anthropic overall.
+我们在来自生产会话的超过36,000条消息上评估了所有三种方法，跨越PR审查、测试、bug修复、功能实现和重构。对于每个压缩点，我们为每种方法生成了四个探针响应，并在六个维度上对其进行了评分。
 
-Radar chart showing quality profile comparison across all three methods
-Breaking down by dimension:
+| 方法 | 总体 | 准确性 | 上下文 | 文件 | 完整 | 连贯 | 指令 |
+|-----|-----|-------|-------|-----|-----|------|-----|
+| Factory | 3.70 | 4.04 | 4.01 | 2.45 | 4.44 | 3.80 | 4.99 |
+| Anthropic | 3.44 | 3.74 | 3.56 | 2.33 | 4.37 | 3.67 | 4.95 |
+| OpenAI | 3.35 | 3.43 | 3.64 | 2.19 | 4.37 | 3.77 | 4.92 |
 
-Accuracy shows the largest gap. Factory scores 4.04, Anthropic 3.74, OpenAI 3.43. The 0.61 point difference between Factory and OpenAI reflects how often technical details like file paths and error messages survive compression.
+Factory总体上比OpenAI高0.35分，比Anthropic高0.26分。
 
-Context awareness favors Factory (4.01) over Anthropic (3.56), a 0.45 point gap. Both approaches include structured sections for current state. Factory's advantage comes from the anchored iterative approach: by merging new summaries into a persistent state rather than regenerating from scratch, key details are less likely to drift or disappear across multiple compression cycles.
+### 按维度分解
 
-Artifact trail is the weakest dimension for all methods, ranging from 2.19 to 2.45. Even Factory's structured approach struggles to maintain complete file tracking across long sessions. This suggests artifact preservation needs specialized handling beyond general summarization.
+**准确性** 显示最大的差距。Factory评分4.04，Anthropic 3.74，OpenAI 3.43。Factory和OpenAI之间的0.61分差异反映了文件路径和错误消息等技术细节在压缩中幸存的频率。
 
-Completeness and instruction following show small differences. All methods produce responses that address the question and follow the format. The differentiation happens in the quality of the content, not its structure.
+**上下文感知** 有利于Factory(4.01)相对于Anthropic(3.56)，差距为0.45分。两种方法都包括当前状态的结构化部分。Factory的优势来自锚定迭代方法：通过将新摘要合并到持久状态而不是从头重新生成，关键细节在多个压缩周期中不太可能漂移或消失。
 
-Horizontal bar chart showing Factory quality advantage by dimensionSide-by-side comparison of token reduction efficiency and summary quality
-Compression ratios tell an interesting story. OpenAI compresses to 99.3% (removing 99.3% of tokens), Anthropic to 98.7%, Factory to 98.6%. Factory retains about 0.7% more tokens than OpenAI, but gains 0.35 quality points. That tradeoff favors Factory for any task where re-fetching costs matter.
+**文件追踪** 是所有方法中最薄弱的维度，范围从2.19到2.45。甚至Factory的结构化方法在长会话中也难以维护完整的文件追踪。这表明文件保留需要超越一般摘要的专门处理。
 
-What we learned
-The biggest surprise was how much structure matters. Generic summarization treats all content as equally compressible. A file path might be "low entropy" from an information-theoretic perspective, but it is exactly what the agent needs to continue working. By forcing the summarizer to fill explicit sections for files, decisions, and next steps, Factory's format prevents the silent drift that happens when you regenerate summaries from scratch.
+**完整性和指令遵循** 显示小的差异。所有方法都生成解决问题和遵循格式的响应。差异发生在内容的质量，而不是其结构。
 
-Compression ratio turned out to be the wrong metric entirely. OpenAI achieves 99.3% compression but scores 0.35 points lower on quality. Those lost details eventually require re-fetching, which can exceed the token savings. What matters is total tokens to complete a task, not tokens per request.
+### 压缩比
 
-Artifact tracking remains an unsolved problem. All methods scored between 2.19 and 2.45 out of 5.0 on knowing which files were created, modified, or examined. Even with explicit file sections, Factory only reaches 2.45. This probably requires specialized handling beyond summarization: a separate artifact index, or explicit file-state tracking in the agent scaffolding.
+压缩比讲述了一个有趣的故事。OpenAI压缩到99.3%(移除99.3%的令牌)，Anthropic到98.7%，Factory到98.6%。Factory保留的令牌比OpenAI多约0.7%，但获得0.35质量分。该权衡对于任何重新获取成本重要的任务都有利于Factory。
 
-Finally, probe-based evaluation captures something that traditional metrics miss. ROUGE measures lexical similarity between summaries. Our approach measures whether the summary actually enables task continuation. For agentic workflows, that distinction matters.
+## 我们学到了什么
 
-Methodology details
-Dataset: Hundreds of compression points over 36,611 messages. Sessions were collected from production software engineering sessions across real codebases from users who opted into a special research program.
+最大的惊喜是结构有多重要。通用摘要将所有内容视为同样可压缩。从信息论的角度，文件路径可能是"低熵"，但它正是代理继续工作所需的。通过强制摘要器填充文件、决策和下一步的显式部分，Factory的格式防止了在从头重新生成摘要时发生的沉默漂移。
 
-Probe generation: For each compression point, we generated four probes (recall, artifact, continuation, decision) based on the truncated conversation history. Probes reference specific facts, files, and decisions from the pre-compression context.
+压缩比最终证明是错误的指标。OpenAI达到99.3%压缩但质量评分低0.35分。这些丢失的细节最终需要重新获取，可能超过令牌节省。重要的是完成任务的总令牌数，而不是每个请求的令牌数。
 
-Compression: We applied all three methods to identical conversation prefixes at each compression point. Factory summaries came from production. OpenAI and Anthropic summaries were generated by feeding the same prefix to their respective APIs.
+文件追踪仍然是一个未解决的问题。所有方法在知道哪些文件被创建、修改或检查方面的评分都在2.19到2.45之间。即使有明确的文件部分，Factory也仅达到2.45。这可能需要超越摘要的专门处理：单独的文件索引，或代理脚手架中的显式文件状态追踪。
 
-Grading: GPT-5.2 scored each probe response against six rubric dimensions. Each dimension has 2-3 criteria with explicit scoring guides. We computed dimension scores as weighted averages of criteria, and overall scores as unweighted averages of dimensions.
+最后，基于探针的评估捕捉了传统指标遗漏的东西。ROUGE测量摘要之间的词汇相似性。我们的方法测量摘要是否实际启用任务继续。对于代理工作流，这个区别很重要。
 
-Statistical note: The differences we report (0.26-0.35 points) are consistent across task types and session lengths. The pattern holds whether we look at short sessions or long ones, debugging tasks or feature implementation.
+## 方法论详情
 
-Appendix: LLM Judge Prompts and Rubrics
-Since the LLM judge is core to this evaluation, we provide the full prompts and rubrics here.
+**数据集**：数百个压缩点超过36,611条消息。会话从选入特殊研究计划的用户的真实代码库的生产软件工程会话中收集。
 
-System Prompt
-The judge receives this system prompt:
+**探针生成**：对于每个压缩点，我们基于截断的对话历史生成了四个探针(回忆、文件、延续、决策)。探针引用了压缩前上下文中的特定事实、文件和决策。
 
-You are an expert evaluator assessing AI assistant responses in software development conversations.
+**压缩**：我们在每个压缩点将所有三种方法应用于相同的对话前缀。Factory摘要来自生产。OpenAI和Anthropic摘要是通过将相同前缀提供给各自的API生成的。
 
-Your task is to grade responses against specific rubric criteria. For each criterion:
-1. Read the criterion question carefully
-2. Examine the response for evidence
-3. Assign a score from 0-5 based on the scoring guide
-4. Provide brief reasoning for your score
+**评分**：GPT-5.2根据六个评分标准维度对每个探针响应进行评分。每个维度有2-3个标准，具有明确的评分指南。我们计算维度评分作为标准的加权平均值，总体评分作为维度的未加权平均值。
 
-Be objective and consistent. Focus on what is present in the response, not what could have been included.
+**统计说明**：我们报告的差异(0.26-0.35分)在任务类型和会话长度间是一致的。无论我们查看短会话还是长会话，调试任务或功能实现，该模式都成立。
 
-Rubric Criteria
-Each dimension contains 2-3 criteria. Here are the key criteria with their scoring guides:
+## 附录：LLM评委提示词和评分标准
 
-Accuracy
+由于LLM评委是这个评估的核心，我们在这里提供完整的提示词和评分标准。
 
-Criterion	Question	0	3	5
-accuracy_factual	Are facts, file paths, and technical details correct?	Completely incorrect or fabricated	Mostly accurate with minor errors	Perfectly accurate
-accuracy_technical	Are code references and technical concepts correct?	Major technical errors	Generally correct with minor issues	Technically precise
-Context Awareness
+### 系统提示词
 
-Criterion	Question	0	3	5
-context_conversation_state	Does the response reflect current conversation state?	No awareness of prior context	General awareness with gaps	Full awareness of conversation history
-context_artifact_state	Does the response reflect which files/artifacts were accessed?	No awareness of artifacts	Partial artifact awareness	Complete artifact state awareness
-Artifact Trail Integrity
+评委接收这个系统提示词：
 
-Criterion	Question	0	3	5
-artifact_files_created	Does the agent know which files were created?	No knowledge	Knows most files	Perfect knowledge
-artifact_files_modified	Does the agent know which files were modified and what changed?	No knowledge	Good knowledge of most modifications	Perfect knowledge of all modifications
-artifact_key_details	Does the agent remember function names, variable names, error messages?	No recall	Recalls most key details	Perfect recall
-Continuity Preservation
+```
+你是一位专家评估者，在软件开发对话中评估AI助手响应。
 
-Criterion	Question	0	3	5
-continuity_work_state	Can the agent continue without re-fetching previously accessed information?	Cannot continue without re-fetching all context	Can continue with minimal re-fetching	Can continue seamlessly
-continuity_todo_state	Does the agent maintain awareness of pending tasks?	Lost track of all TODOs	Good awareness with some gaps	Perfect task awareness
-continuity_reasoning	Does the agent retain rationale behind previous decisions?	No memory of reasoning	Generally remembers reasoning	Excellent retention
-Completeness
+你的任务是根据特定评分标准对响应进行评分。对于每个标准：
+1. 仔细阅读标准问题
+2. 检查响应中的证据
+3. 根据评分指南从0-5分配评分
+4. 为你的评分提供简要推理
 
-Criterion	Question	0	3	5
-completeness_coverage	Does the response address all parts of the question?	Ignores most parts	Addresses most parts	Addresses all parts thoroughly
-completeness_depth	Is sufficient detail provided?	Superficial or missing detail	Adequate detail	Comprehensive detail
-Instruction Following
+要客观和一致。关注响应中存在的东西，而不是可能包含的东西。
+```
 
-Criterion	Question	0	3	5
-instruction_format	Does the response follow the requested format?	Ignores format	Generally follows format	Perfectly follows format
-instruction_constraints	Does the response respect stated constraints?	Ignores constraints	Mostly respects constraints	Fully respects all constraints
-Grading Process
-For each probe response, the judge:
+### 评分标准
 
-Receives the probe question, the model's response, and the compacted context
-Evaluates against each criterion in the rubric for that probe type
-Outputs structured JSON with scores and reasoning per criterion
-Computes dimension scores as weighted averages of criteria
-Computes overall score as unweighted average of dimensions
-The judge does not know which compression method produced the response being evaluated.
+每个维度包含2-3个标准。这是主要标准及其评分指南：
+
+#### 准确性
+
+| 标准 | 问题 | 0分 | 3分 | 5分 |
+|-----|------|-----|-----|-----|
+| accuracy_factual | 事实、文件路径和技术细节是否正确? | 完全错误或捏造 | 大多数准确，有轻微错误 | 完全准确 |
+| accuracy_technical | 代码引用和技术概念是否正确? | 重大技术错误 | 通常正确，有轻微问题 | 技术精确 |
+
+#### 上下文感知
+
+| 标准 | 问题 | 0分 | 3分 | 5分 |
+|-----|------|-----|-----|-----|
+| context_conversation_state | 响应是否反映当前对话状态? | 没有先前上下文的意识 | 一般意识，有间隙 | 完全意识对话历史 |
+| context_artifact_state | 响应是否反映了哪些文件/工件被访问? | 没有工件意识 | 部分工件意识 | 完全工件状态意识 |
+
+#### 文件追踪完整性
+
+| 标准 | 问题 | 0分 | 3分 | 5分 |
+|-----|------|-----|-----|-----|
+| artifact_files_created | 代理是否知道创建了哪些文件? | 没有知识 | 知道大多数文件 | 完全知识 |
+| artifact_files_modified | 代理是否知道修改了哪些文件和如何修改? | 没有知识 | 对大多数修改有良好知识 | 对所有修改完全了解 |
+| artifact_key_details | 代理是否记得函数名、变量名、错误消息? | 没有回忆 | 回忆大多数关键细节 | 完美回忆 |
+
+#### 连贯性保留
+
+| 标准 | 问题 | 0分 | 3分 | 5分 |
+|-----|------|-----|-----|-----|
+| continuity_work_state | 代理是否可以继续而不需要重新获取以前访问的信息? | 无法继续而不重新获取所有上下文 | 可以继续，最少重新获取 | 可以无缝继续 |
+| continuity_todo_state | 代理是否维持对待处理任务的意识? | 丢失了所有待办项 | 良好意识，有些间隙 | 完美的任务意识 |
+| continuity_reasoning | 代理是否保留了先前决策背后的理由? | 没有推理记忆 | 通常记得推理 | 优秀的保留 |
+
+#### 完整性
+
+| 标准 | 问题 | 0分 | 3分 | 5分 |
+|-----|------|-----|-----|-----|
+| completeness_coverage | 响应是否解决了问题的所有部分? | 忽略大多数部分 | 解决大多数部分 | 彻底解决所有部分 |
+| completeness_depth | 是否提供了充分的细节? | 肤浅或缺少细节 | 充分的细节 | 全面的细节 |
+
+#### 指令遵循
+
+| 标准 | 问题 | 0分 | 3分 | 5分 |
+|-----|------|-----|-----|-----|
+| instruction_format | 响应是否遵循请求的格式? | 忽略格式 | 通常遵循格式 | 完美遵循格式 |
+| instruction_constraints | 响应是否尊重规定的约束? | 忽略约束 | 大多数尊重约束 | 充分尊重所有约束 |
+
+### 评分过程
+
+对于每个探针响应，评委：
+
+1. 接收探针问题、模型的响应和紧凑的上下文
+2. 根据该探针类型的评分标准中的每个标准进行评估
+3. 输出结构化JSON，每个标准有评分和推理
+4. 计算维度评分作为标准的加权平均值
+5. 计算总体评分作为维度的未加权平均值
+
+评委不知道哪个压缩方法生成了被评估的响应。

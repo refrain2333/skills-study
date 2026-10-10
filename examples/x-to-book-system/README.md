@@ -1,141 +1,141 @@
-# Example: X-to-Book Multi-Agent System
+# 示例：X-to-Book 多代理系统
 
-This example demonstrates how the Agent Skills for Context Engineering can be applied to design a production multi-agent system. The system monitors X (Twitter) accounts and generates daily synthesized books from their content.
+这个示例演示了如何应用"代理上下文工程技能"来设计生产级多代理系统。该系统监控 X（Twitter）账户并从其内容生成每日综合书籍。
 
-## The Problem
+## 问题陈述
 
-A user requested a multi-agent system that:
-- Monitors target X accounts daily
-- Extracts insights and patterns from tweets
-- Produces structured book output
+一个用户请求了一个多代理系统，该系统需要：
+- 每天监控目标 X 账户
+- 从推文中提取见解和模式
+- 生成结构化的书籍输出
 
-This is a non-trivial agent system because:
-- High-volume data (hundreds of tweets per day)
-- Long-form output requiring coherence
-- Temporal awareness (tracking how narratives evolve)
-- Quality requirements (accurate attribution, no hallucination)
+这是一个非平凡的代理系统，因为：
+- 大数据量（每天数百条推文）
+- 长篇幅输出需要连贯性
+- 时间意识（追踪叙述如何演变）
+- 质量要求（准确的属性归属，无幻觉）
 
-## Skills Applied
+## 应用的技能
 
-### 1. multi-agent-patterns
+### 1. 多代理模式
 
-**Decision**: Selected Supervisor/Orchestrator pattern over peer-to-peer swarm.
+**决策**：选择监督者/协调器模式而不是点对点群集。
 
-**Reasoning from skill**:
-> "The supervisor pattern places a central agent in control, delegating to specialists and synthesizing results. The supervisor maintains global state and trajectory, decomposes user objectives into subtasks, and routes to appropriate workers."
+**技能推理**：
+> "监督者模式将中央代理置于控制中，委托给专家并综合结果。监督者保持全局状态和轨迹，将用户目标分解为子任务，并路由到适当的工人。"
 
-**Application**: Book production has clear sequential phases (scrape → analyze → synthesize → write → edit) that benefit from central coordination. Quality gates between phases require explicit checkpoints.
+**应用**：书籍生产有明确的顺序阶段（爬虫 → 分析 → 合成 → 写作 → 编辑），受益于中央协调。阶段之间的质量门控需要明确的检查点。
 
-**Failure mode addressed**:
-> "Supervisor Bottleneck: The supervisor accumulates context from all workers, becoming susceptible to saturation and degradation."
+**处理的失败模式**：
+> "监督者瓶颈：监督者从所有工人那里积累上下文，容易饱和和降解。"
 
-**Mitigation applied**: Raw tweet data never passes through Orchestrator context. Scraper writes to file system, other agents read from file system. Orchestrator receives only phase summaries.
+**应用的缓解**：原始推文数据永远不会通过协调器上下文。爬虫写入文件系统，其他代理从文件系统读取。协调器只接收阶段摘要。
 
-### 2. context-fundamentals
+### 2. 上下文基础知识
 
-**Decision**: Strict context budgets per agent with progressive disclosure.
+**决策**：每个代理的严格上下文预算和渐进式信息披露。
 
-**Reasoning from skill**:
-> "Context must be treated as a finite resource with diminishing marginal returns. Like humans with limited working memory, language models have an attention budget drawn on when parsing large volumes of context."
+**技能推理**：
+> "上下文必须视为有限资源，边际收益递减。就像人类工作记忆有限一样，语言模型有一个在解析大量上下文时被消耗的注意力预算。"
 
-**Application**: Each agent has an explicit token budget:
-- Orchestrator: 50k (routing only)
-- Scraper: 20k (one account at a time)
-- Writer: 80k (one chapter at a time)
+**应用**：每个代理都有明确的 token 预算：
+- 协调器：50k（仅路由）
+- 爬虫：20k（一次一个账户）
+- 写手：80k（一次一章）
 
-**Principle applied**:
-> "Progressive disclosure manages context efficiently by loading information only as needed."
+**应用的原则**：
+> "渐进式信息披露通过根据需要加载信息来有效管理上下文。"
 
-**Application**: Book outline loads first (lightweight). Full chapter content loads only when Writer is working on that specific chapter.
+**应用**：书籍大纲首先加载（轻量级）。完整的章节内容仅在写手处理该特定章节时加载。
 
-### 3. memory-systems
+### 3. 记忆系统
 
-**Decision**: Temporal Knowledge Graph over simple vector store.
+**决策**：时间知识图谱优于简单的向量存储。
 
-**Reasoning from skill**:
-> "Vector stores lose relationship information... Vector stores also struggle with temporal validity. Facts change over time, but vector stores provide no mechanism to distinguish 'current fact' from 'outdated fact'."
+**技能推理**：
+> "向量存储丢失关系信息...向量存储也难以处理时间有效性。事实随时间变化，但向量存储无法区分'当前事实'和'过时事实'。"
 
-**Application**: The system needs to answer queries like:
-- "What was @account's position on AI regulation in January?"
-- "Which accounts agree/disagree on crypto?"
+**应用**：系统需要回答以下查询：
+- "@账户在一月份对 AI 监管的立场是什么？"
+- "哪些账户在加密货币上一致/不一致？"
 
-These require relationship traversal and temporal validity that vector stores cannot provide.
+这些需要向量存储无法提供的关系遍历和时间有效性。
 
-**Architecture from skill**:
-> "Temporal knowledge graphs add validity periods to facts. Each fact has a 'valid from' and optionally 'valid until' timestamp."
+**技能中的架构**：
+> "时间知识图谱向事实添加有效期。每个事实都有一个'有效期起始'，可选地还有'有效期结束'时间戳。"
 
-**Application**: All relationships (DISCUSSES, AGREES_WITH, DISAGREES_WITH) have temporal validity periods.
+**应用**：所有关系（DISCUSSES、AGREES_WITH、DISAGREES_WITH）都有时间有效期。
 
-### 4. context-optimization
+### 4. 上下文优化
 
-**Decision**: Observation masking for tweet data.
+**决策**：推文数据的观察掩蔽。
 
-**Reasoning from skill**:
-> "Tool outputs can comprise 80%+ of token usage in agent trajectories. Much of this is verbose output that has already served its purpose."
+**技能推理**：
+> "工具输出可占代理轨迹中 token 使用量的 80% 以上。其中大部分是已完成其目的的冗长输出。"
 
-**Application**: Daily tweet volume could reach 100k+ tokens. This data is:
-1. Processed by Scraper
-2. Written to file system (not passed through context)
-3. Read by Analyzer in chunks
-4. Summarized before reaching Synthesizer
+**应用**：日常推文量可能达到 100k+ tokens。此数据是：
+1. 由爬虫处理
+2. 写入文件系统（不通过上下文传递）
+3. 由分析器分块读取
+4. 在到达合成器前汇总
 
-**Compaction trigger from skill**:
-> "Compaction is the practice of summarizing context contents when approaching limits."
+**来自技能的压缩触发器**：
+> "压缩是当接近限制时汇总上下文内容的做法。"
 
-**Application**: Phase outputs are compacted at 70% context utilization before passing to next phase.
+**应用**：在传递到下一个阶段前，阶段输出在 70% 上下文使用率时压缩。
 
-### 5. tool-design
+### 5. 工具设计
 
-**Decision**: Three consolidated tools instead of 15+ narrow tools.
+**决策**：三个合并的工具而不是 15+ 个狭窄的工具。
 
-**Reasoning from skill**:
-> "The consolidation principle states that if a human engineer cannot definitively say which tool should be used in a given situation, an agent cannot be expected to do better."
+**技能推理**：
+> "整合原则指出，如果人类工程师无法明确说出在给定情况下应该使用哪个工具，则不能期望代理做得更好。"
 
-**Application**: Instead of separate tools for `fetch_timeline`, `fetch_thread`, `fetch_engagement`, `search_tweets`, we implement one `x_data_tool` with an action parameter.
+**应用**：我们实现一个带有操作参数的 `x_data_tool`，而不是单独的 `fetch_timeline`、`fetch_thread`、`fetch_engagement`、`search_tweets` 工具。
 
-**Tool description pattern from skill**:
-> "Effective tool descriptions answer four questions: What does the tool do? When should it be used? What inputs does it accept? What does it return?"
+**来自技能的工具描述模式**：
+> "有效的工具描述回答四个问题：工具做什么？何时应该使用？它接受什么输入？它返回什么？"
 
-**Application**: Each tool has explicit usage triggers, parameter documentation, and error recovery guidance.
+**应用**：每个工具都有明确的使用触发器、参数文档和错误恢复指导。
 
-### 6. evaluation
+### 6. 评估
 
-**Decision**: Multi-dimensional rubric with automated pipeline.
+**决策**：多维度的评分标准和自动化流程。
 
-**Reasoning from skill**:
-> "Agent quality is not a single dimension. It includes factual accuracy, completeness, coherence, tool efficiency, and process quality."
+**技能推理**：
+> "代理质量不是单一维度。它包括事实准确性、完整性、连贯性、工具效率和过程质量。"
 
-**Application**: Five evaluation dimensions weighted by importance:
-- Source Accuracy (30%) - quotes verified against original tweets
-- Thematic Coherence (25%) - narrative flow
-- Completeness (20%) - theme coverage
-- Insight Quality (15%) - synthesis beyond restating
-- Readability (10%) - prose quality
+**应用**：五个按重要性加权的评估维度：
+- 源准确性（30%）- 针对原始推文验证引用
+- 主题连贯性（25%）- 叙述流
+- 完整性（20%）- 主题覆盖
+- 见解质量（15%）- 超越重述的综合
+- 可读性（10%）- 散文质量
 
-**Human review trigger from skill**:
-> "Human evaluation catches what automation misses."
+**来自技能的人工审查触发器**：
+> "人工评估捕捉自动化遗漏的内容。"
 
-**Application**: Books scoring below 0.7 or with source accuracy below 0.8 are flagged for human review.
+**应用**：评分低于 0.7 或源准确性低于 0.8 的书籍被标记为人工审查。
 
-## Architecture Diagram
+## 架构图
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     ORCHESTRATOR AGENT                          │
-│  Context: 50k tokens (routing, checkpoints, no raw data)        │
-│  Pattern: Supervisor with file-system coordination              │
+│                     协调器代理                                   │
+│  上下文：50k token（路由、检查点、无原始数据）                  │
+│  模式：监督者与文件系统协调                                     │
 └─────────────────────────────────────────────────────────────────┘
          │              │              │              │
          ▼              ▼              ▼              ▼
 ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│   SCRAPER   │ │  ANALYZER   │ │   WRITER    │ │   EDITOR    │
+│   爬虫      │ │   分析器    │ │   写手      │ │   编辑      │
 │   20k ctx   │ │   80k ctx   │ │   80k ctx   │ │   60k ctx   │
-│ Per-account │ │ Per-account │ │ Per-chapter │ │ Per-chapter │
+│ 按账户      │ │ 按账户      │ │ 按章节      │ │ 按章节      │
 └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
          │              │              │              │
          ▼              ▼              ▼              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     FILE SYSTEM STORAGE                          │
+│                     文件系统存储                                 │
 │  raw_data/{account}/{date}.json                                  │
 │  analysis/{account}/{date}.json                                  │
 │  drafts/{book_id}/chapter_{n}.md                                 │
@@ -143,39 +143,38 @@ These require relationship traversal and temporal validity that vector stores ca
          │
          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                 TEMPORAL KNOWLEDGE GRAPH                         │
-│  Entities: Account, Tweet, Theme, Book, Chapter                  │
-│  Relationships: POSTED, DISCUSSES, AGREES_WITH, SOURCES          │
-│  All relationships have temporal validity periods                │
+│                 时间知识图谱                                     │
+│  实体：账户、推文、主题、书籍、章节                             │
+│  关系：发布、讨论、同意、来源                                   │
+│  所有关系都有时间有效期                                         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Key Patterns Demonstrated
+## 关键模式演示
 
-| Pattern | Skill Source | Application |
-|---------|--------------|-------------|
-| Context isolation via sub-agents | multi-agent-patterns | Each agent has clean context for its phase |
-| File system as coordination mechanism | multi-agent-patterns | Avoids context bloat from shared state passing |
-| Progressive disclosure | context-fundamentals | Chapter content loads only when needed |
-| Temporal knowledge graph | memory-systems | Tracks evolving positions over time |
-| Observation masking | context-optimization | Raw tweets never enter orchestrator context |
-| Tool consolidation | tool-design | 3 tools instead of 15+ |
-| Multi-dimensional evaluation | evaluation | 5 weighted quality dimensions |
+| 模式 | 技能来源 | 应用 |
+|------|---------|------|
+| 通过子代理的上下文隔离 | multi-agent-patterns | 每个代理为其阶段有清晰的上下文 |
+| 文件系统作为协调机制 | multi-agent-patterns | 避免共享状态传递导致的上下文膨胀 |
+| 渐进式信息披露 | context-fundamentals | 仅在需要时加载章节内容 |
+| 时间知识图谱 | memory-systems | 追踪随时间演变的立场 |
+| 观察掩蔽 | context-optimization | 原始推文永远不进入协调器上下文 |
+| 工具整合 | tool-design | 3 个工具而不是 15+ 个 |
+| 多维度评估 | evaluation | 5 个加权的质量维度 |
 
-## Files
+## 文件
 
-- [PRD.md](./PRD.md) - Complete Product Requirements Document
-- [SKILLS-MAPPING.md](./SKILLS-MAPPING.md) - Detailed mapping of skills to design decisions
+- [PRD.md](./PRD.md) - 完整的产品需求文档
+- [SKILLS-MAPPING.md](./SKILLS-MAPPING.md) - 技能到设计决策的详细映射
 
-## Using This Example
+## 使用此示例
 
-This example serves as a template for applying context engineering skills to new projects:
+此示例作为将上下文工程技能应用于新项目的模板：
 
-1. **Identify context challenges**: What are the volume constraints? What causes context saturation?
-2. **Select architecture pattern**: Based on coordination needs, choose supervisor, swarm, or hierarchical
-3. **Design memory system**: Based on query patterns, choose vector store, knowledge graph, or temporal graph
-4. **Apply optimization techniques**: Observation masking, compaction, progressive disclosure as needed
-5. **Build evaluation framework**: Define dimensions relevant to your use case
+1. **识别上下文挑战**：体积约束是什么？什么导致上下文饱和？
+2. **选择架构模式**：根据协调需求，选择监督者、群集或分层
+3. **设计记忆系统**：根据查询模式，选择向量存储、知识图谱或时间图
+4. **应用优化技术**：根据需要应用观察掩蔽、压缩、渐进式信息披露
+5. **构建评估框架**：定义与您的用例相关的维度
 
-The skills provide the vocabulary and patterns; the application requires understanding your specific constraints.
-
+技能提供词汇和模式；应用需要理解您的具体约束。

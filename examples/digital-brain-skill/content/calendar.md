@@ -1,108 +1,83 @@
-# Content Calendar
+# 内容日历
 
-## Publishing Schedule
+## 发布节奏
 
-### Weekly Cadence
+### 每周安排
+
 ```yaml
 monday:
-  platform: "[PLACEHOLDER: e.g., Twitter]"
-  type: "[PLACEHOLDER: e.g., Educational thread]"
-  time: "[PLACEHOLDER: e.g., 9am EST]"
+  platform: "[例如：Twitter]"
+  type: "[例如：知识串文]"
+  time: "[例如：美东时间上午 9 点]"
 
 tuesday:
-  platform: "[PLACEHOLDER]"
-  type: "[PLACEHOLDER]"
-  time: "[PLACEHOLDER]"
+  platform: "[填写平台]"
+  type: "[填写内容类型]"
+  time: "[填写时间]"
 
 wednesday:
-  platform: "[PLACEHOLDER]"
-  type: "[PLACEHOLDER]"
-  time: "[PLACEHOLDER]"
+  platform: "[填写平台]"
+  type: "[填写内容类型]"
+  time: "[填写时间]"
 
 thursday:
-  platform: "[PLACEHOLDER]"
-  type: "[PLACEHOLDER]"
-  time: "[PLACEHOLDER]"
+  platform: "[填写平台]"
+  type: "[填写内容类型]"
+  time: "[填写时间]"
 
 friday:
-  platform: "[PLACEHOLDER]"
-  type: "[PLACEHOLDER]"
-  time: "[PLACEHOLDER]"
+  platform: "[填写平台]"
+  type: "[填写内容类型]"
+  time: "[填写时间]"
 
 weekend:
-  approach: "[PLACEHOLDER: e.g., Light engagement only, personal posts]"
+  approach: "[例如：只进行轻量互动，或发布个人内容]"
 ```
 
----
+## 本周安排
 
-## This Week
+### [日期] 当周
 
-### Week of [DATE]
+| 星期 | 平台 | 内容 | 状态 |
+| --- | --- | --- | --- |
+| 周一 |  |  | `planned|drafted|scheduled|published` |
+| 周二 |  |  |  |
+| 周三 |  |  |  |
+| 周四 |  |  |  |
+| 周五 |  |  |  |
 
-| Day | Platform | Content | Status |
-|-----|----------|---------|--------|
-| Mon | | | `planned|drafted|scheduled|published` |
-| Tue | | | |
-| Wed | | | |
-| Thu | | | |
-| Fri | | | |
+**主题/重点**：[填写本周要关注的方向]
 
-**Theme/Focus**: [PLACEHOLDER: What's the focus for this week]
+## 后续内容
 
----
+### 已准备发布
+- [ ] [内容标题] — 平台 — 计划日期
 
-## Upcoming Content
+### 正在完善
+- [ ] [内容标题] — 当前状态 — 备注
 
-### Queued & Ready
-<!-- Content ready to publish -->
-- [ ] [PLACEHOLDER: Content title] - Platform - Target date
-- [ ] [PLACEHOLDER]
+### 系列或活动
+- [ ] [系列名称] — 共 X 部分 — 当前状态
 
-### In Development
-<!-- Content being worked on -->
-- [ ] [PLACEHOLDER: Content title] - Status - Notes
-- [ ] [PLACEHOLDER]
+## 批量创作
 
-### Planned Series/Campaigns
-<!-- Multi-part content or campaigns -->
-- [ ] [PLACEHOLDER: Series name] - Parts: X - Status
-- [ ] [PLACEHOLDER]
-
----
-
-## Content Batching
-
-### Batch Sessions
 ```yaml
-batch_day: "[PLACEHOLDER: e.g., Sunday]"
-batch_duration: "[PLACEHOLDER: e.g., 2 hours]"
-target_output: "[PLACEHOLDER: e.g., 5 posts for the week]"
+batch_day: "[例如：周日]"
+batch_duration: "[例如：2 小时]"
+target_output: "[例如：本周准备 5 条帖子]"
 ```
 
-### Current Batch Status
-- Posts ready: [X/Y]
-- Threads ready: [X/Y]
-- Newsletter ready: [Yes/No]
+当前批次进度：帖子 [X/Y]；串文 [X/Y]；简报 [是/否]。
 
----
+## 重要日期
 
-## Important Dates
+- [日期]：[需要创作内容的活动、节日或发布]
+- 每月：[例如：月度学习总结串文]
+- 每季度：[例如：目标回顾]
+- 每年：[例如：年度回顾]
 
-### Upcoming Events to Create Content For
-- [DATE]: [PLACEHOLDER: Event/holiday/launch]
-- [DATE]: [PLACEHOLDER]
+## 备注
 
-### Recurring Content
-- Monthly: [PLACEHOLDER: e.g., Monthly learnings thread]
-- Quarterly: [PLACEHOLDER: e.g., Goal review]
-- Annually: [PLACEHOLDER: e.g., Year in review]
+[填写内容策略、待尝试实验等]
 
----
-
-## Notes
-
-[PLACEHOLDER: Any notes about content strategy, experiments to try, etc.]
-
----
-
-*Last updated: [DATE]*
+最后更新：[日期]

@@ -1,24 +1,24 @@
-# File Format Reference
+# 文件格式参考
 
-Detailed specifications for each file format used in Digital Brain.
+本文详细说明数字大脑使用的各类文件格式。
 
 ---
 
-## JSONL Files
+## JSONL 文件
 
-### Schema Convention
+### 数据结构约定
 
-Every JSONL file starts with a schema definition line:
+每个 JSONL 文件都以一行数据结构说明开头：
 
 ```json
 {"_schema": "schema_name", "_version": "1.0", "_description": "Purpose of this file"}
 ```
 
-This line is skipped during data processing but documents the expected structure.
+处理数据时会跳过这一行；它用于说明文件预期结构。
 
-### Common Fields
+### 通用字段
 
-All data entries should include:
+所有数据项都应包含：
 
 ```json
 {
@@ -28,7 +28,7 @@ All data entries should include:
 }
 ```
 
-### ideas.jsonl
+### ideas.jsonl：内容创意
 
 ```json
 {
@@ -44,7 +44,7 @@ All data entries should include:
 }
 ```
 
-### posts.jsonl
+### posts.jsonl：已发布内容
 
 ```json
 {
@@ -68,7 +68,7 @@ All data entries should include:
 }
 ```
 
-### contacts.jsonl
+### contacts.jsonl：联系人
 
 ```json
 {
@@ -97,7 +97,7 @@ All data entries should include:
 }
 ```
 
-### interactions.jsonl
+### interactions.jsonl：互动记录
 
 ```json
 {
@@ -112,7 +112,7 @@ All data entries should include:
 }
 ```
 
-### bookmarks.jsonl
+### bookmarks.jsonl：收藏资料
 
 ```json
 {
@@ -130,7 +130,7 @@ All data entries should include:
 }
 ```
 
-### meetings.jsonl
+### meetings.jsonl：会议记录
 
 ```json
 {
@@ -150,7 +150,7 @@ All data entries should include:
 }
 ```
 
-### metrics.jsonl
+### metrics.jsonl：指标快照
 
 ```json
 {
@@ -190,9 +190,9 @@ All data entries should include:
 
 ---
 
-## YAML Files
+## YAML 文件
 
-### values.yaml
+### values.yaml：价值观
 
 ```yaml
 core_values:
@@ -217,7 +217,7 @@ principles:
     - "Principle"
 ```
 
-### goals.yaml
+### goals.yaml：目标
 
 ```yaml
 current_period:
@@ -241,7 +241,7 @@ north_star:
   why: "Why this matters most"
 ```
 
-### learning.yaml
+### learning.yaml：学习记录
 
 ```yaml
 current_focus:
@@ -266,7 +266,7 @@ skills:
     last_practiced: "2024-12-29"
 ```
 
-### circles.yaml
+### circles.yaml：关系层级
 
 ```yaml
 circles:
@@ -295,11 +295,11 @@ goals:
 
 ---
 
-## Markdown Files
+## Markdown 文件
 
-### Structure Convention
+### 结构约定
 
-All markdown files follow this structure:
+所有 Markdown 文件遵循以下结构：
 
 ```markdown
 # Title
@@ -323,9 +323,9 @@ Content...
 *Last updated: [DATE]*
 ```
 
-### Placeholder Convention
+### 占位符约定
 
-Use `[PLACEHOLDER: description]` for user-fillable fields:
+用户需要填写的字段使用 `[PLACEHOLDER: description]` 标记：
 
 ```markdown
 ### Your Story
@@ -336,9 +336,9 @@ Use `[PLACEHOLDER: description]` for user-fillable fields:
 
 ---
 
-## XML Files
+## XML 文件
 
-### Prompt Template Structure
+### 提示词模板结构
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -369,18 +369,18 @@ Use `[PLACEHOLDER: description]` for user-fillable fields:
 
 ---
 
-## ID Generation
+## ID 生成
 
-### Convention
+### 命名约定
 
 `{type}_{YYYYMMDD}_{HHMMSS}` or `{type}_{unique_slug}`
 
-Examples:
+示例：
 - `idea_20241229_143022`
 - `contact_johndoe`
 - `post_20241229_160000`
 - `bm_20241229_120000`
 
-### Uniqueness
+### 唯一性
 
-IDs must be unique within their file. Timestamp-based IDs ensure uniqueness for time-series data.
+每个文件内的 ID 必须唯一。时间戳形式的 ID 可保证时序数据的唯一性。

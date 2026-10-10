@@ -1,118 +1,87 @@
 ---
 name: skill-template
-description: "Template for creating new Agent Skills for context engineering. Use this template when adding new skills to the collection."
+description: "用于为本集合创建和维护新的智能体技能。"
 ---
 
-# Skill Name
+# 技能名称
 
-Provide a clear, concise description of what this skill covers and when to use it. This description appears in skill discovery and should help agents (and humans) determine when this skill is relevant.
+用简洁的文字说明本技能的主题和适用场景。这段说明会用于技能发现，帮助智能体和读者判断什么时候应该选择它。
 
-**Important**: Keep the total SKILL.md body under 500 lines for optimal performance. Move detailed reference material to separate files in the `references/` directory.
+技能正文建议控制在 500 行以内。更详细的内容可放入 references/ 子目录，并从正文链接过去。
 
-Every skill body must make its ownership boundary explicit. The description and `When to Activate` section should say what the skill owns and which adjacent skills own nearby work. This prevents broad skills from stealing activation from narrower skills.
+技能必须写清楚自己的职责边界。在技能说明和“何时启用”一节中，指出本技能适合处理什么，也指出邻近工作由哪个技能负责。
 
-## When to Activate
+## 何时启用
 
-Describe specific situations, tasks, or contexts where this skill should be activated. Include both direct triggers (specific keywords or task types) and indirect signals (broader patterns that indicate skill relevance).
+写出具体的任务、情形或上下文。可以说明哪些请求适合使用该技能，并列出容易混淆的相邻技能。
 
-Write in third person. The description is injected into the system prompt, and inconsistent point-of-view can cause discovery problems.
+描述应使用第三人称，因为它会被加入技能发现信息。
 
-- Good: "Processes Excel files and generates reports"
-- Avoid: "I can help you process Excel files"
+- 推荐：“处理表格文件并生成报告。”
+- 避免：“我可以帮你处理表格文件。”
 
-Include a short "Do not activate" block for adjacent skills. Example:
+清楚说明何时不要启用本技能。例如：
 
-- Do not activate for project-level pipeline shape: `project-development`.
-- Do not activate for individual tool schema design: `tool-design`.
+- 项目级流程设计由 project-development 负责。
+- 单个工具的接口设计由 tool-design 负责。
 
-## Core Concepts
+## 核心概念
 
-Explain the fundamental concepts covered by this skill. These are the mental models, principles, or frameworks that the skill teaches.
+解释本技能改变决策时真正需要的概念和机制，避免重复智能体已经掌握的通用背景知识。
 
-Default assumption: Claude is already very smart. Only add context Claude does not already have. Challenge each piece of information:
-- "Does Claude really need this explanation?"
-- "Can I assume Claude knows this?"
-- "Does this paragraph justify its token cost?"
+如果一种机制可以跨多个技能复用，可考虑记录到 researcher/mechanisms/registry.jsonl。
 
-Prefer behavior-changing mechanisms over general background. If a concept should be reusable across the corpus, add or update a record in `researcher/mechanisms/registry.jsonl`.
+## 详细主题
 
-## Detailed Topics
+### 主题一
 
-### Topic 1
+解释首个主要主题，并提供有助于读者理解或使用的例子。
 
-Provide detailed explanation of the first major topic. Include specific techniques, patterns, or approaches. Use examples to illustrate concepts.
+### 主题二
 
-### Topic 2
+解释第二个主要主题。长篇实现细节可以放入 references/，并从此处链接。
 
-Provide detailed explanation of the second major topic. Continue with additional topics as needed.
+## 实践指导
 
-For longer topics, consider moving content to `references/` and linking:
-- See [detailed reference](./references/topic-details.md) for complete implementation
+提供可执行的工作流程、检查清单、决策表或具体规则。说明常用模式、需要避免的问题，以及不同做法之间的取舍。
 
-## Practical Guidance
+具体程度应与任务风险相称：
 
-Provide actionable guidance for applying the skill. Include common patterns, anti-patterns to avoid, and decision frameworks for choosing between approaches.
+- **自由度高**：有多种合理做法，需根据上下文选择。
+- **自由度中等**：有首选方法，但允许调整。
+- **自由度低**：操作脆弱，应遵循明确步骤。
 
-Match the level of specificity to the task's fragility:
-- **High freedom**: Multiple approaches are valid, decisions depend on context
-- **Medium freedom**: Preferred pattern exists, some variation acceptable
-- **Low freedom**: Operations are fragile, specific sequence must be followed
+## 示例
 
-Practical guidance should be executable by an agent: a workflow, checklist, decision table, or concrete operating rule. If a section only explains history or motivation, move it to `references/`.
+提供具体输入和输出，或展示正确用法、前后变化和边界情况。
 
-## Examples
+## 指南
 
-Provide concrete examples that illustrate skill application. Examples should show before/after comparisons, demonstrate correct usage, or show how to handle edge cases.
+列出可执行、可检查的规则，并说明怎样判断其是否满足。
 
-Use input/output pairs for clarity:
+1. 指南应有具体标准。
+2. 成功条件应清楚可见。
 
-**Example:**
-```
-Input: [describe input]
-Output: [show expected output]
-```
+## 常见问题
 
-## Guidelines
+记录容易忽略、但会实际影响工作的失败情况，并说明如何预防。
 
-List specific guidelines to follow when applying this skill. These should be actionable rules that can be checked or verified.
+1. **简短标题**：说明故障如何出现，以及可以采取什么措施。
+2. **另一个问题**：写清应对方法。
 
-1. Guideline one with specific, verifiable criteria
-2. Guideline two with clear success conditions
-3. Continue as needed
+## 集成
 
-## Gotchas
+说明本技能如何与集合中的其他技能配合，并明确职责边界。
 
-List experience-derived failure modes, common mistakes, and counterintuitive behaviors. These are the highest-signal content in any skill. Each gotcha should be specific, actionable, and non-overlapping with guidance already in the skill body. Use numbered format:
+- skill-name：说明配合关系。
+- another-skill：说明适用边界。
 
-1. **Short descriptive title**: One to two sentences explaining what goes wrong and how to prevent it.
-2. **Another gotcha title**: Description of the failure mode and what to do instead.
+## 参考
 
-## Integration
+本技能目录中的参考资料使用相对路径链接。
 
-Explain how this skill integrates with other skills in the collection. List related skills as plain text (not links) to avoid cross-directory reference issues:
+- [参考文件名](./references/reference-file.md)：简要说明内容。
 
-- skill-name-one - Brief description of relationship
-- skill-name-two - Brief description of relationship
+也可列出集合中的相关技能和外部资料。
 
-## References
-
-Internal reference (use relative path to skill's own reference files):
-- [Reference Name](./references/reference-file.md) - Description
-
-Related skills in this collection:
-- skill-name - Relationship description
-
-External resources:
-- Research papers, documentation, or guides
-
-Numeric, benchmark, volatile, or vendor-performance claims need an inline `claim-*` ID backed by `researcher/claims/index.jsonl`, or they should be softened and moved to dated reference material.
-
----
-
-## Skill Metadata
-
-**Created**: [Date]
-**Last Updated**: [Date]
-**Author**: [Author or Attribution]
-**Version**: [Version number]
-
+如需引用数字、基准测试或可能变化的供应商信息，应附上 researcher/claims/index.jsonl 中对应的 claim ID；否则请改为注明日期的参考资料或删除该主张。

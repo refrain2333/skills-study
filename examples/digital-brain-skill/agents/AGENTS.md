@@ -1,82 +1,79 @@
 ---
 name: agents-module
-description: Automation scripts and agent helpers for the Digital Brain. Use these scripts for recurring tasks, summaries, and maintenance.
+description: 数字大脑的自动化脚本和智能体辅助工具；用于周期任务、摘要和维护。
 ---
 
-# Agent Automation
+# 智能体自动化
 
-Scripts and workflows that help maintain and leverage your Digital Brain.
+帮助维护和使用数字大脑的脚本与工作流。
 
-## Available Scripts
+## 可用脚本
 
-| Script | Purpose | Frequency |
-|--------|---------|-----------|
-| `weekly_review.py` | Generate weekly review from data | Weekly |
-| `content_ideas.py` | Generate content ideas from knowledge | On-demand |
-| `stale_contacts.py` | Find contacts needing outreach | Weekly |
-| `metrics_snapshot.py` | Compile metrics for tracking | Weekly |
-| `idea_to_draft.py` | Expand an idea into a draft | On-demand |
+| 脚本 | 用途 | 频率 |
+| --- | --- | --- |
+| `weekly_review.py` | 根据数据生成周度回顾 | 每周 |
+| `content_ideas.py` | 从知识库生成内容创意 | 按需 |
+| `stale_contacts.py` | 查找需要重新联系的人 | 每周 |
+| `metrics_snapshot.py` | 汇总并记录指标 | 每周 |
+| `idea_to_draft.py` | 将创意扩展成草稿 | 按需 |
 
-## How to Use
+## 使用方式
 
-Scripts are in `agents/scripts/`. They work with your Digital Brain data and can be run by the agent when needed.
+脚本位于 `agents/scripts/`。它们读取数字大脑数据，智能体可以在需要时运行。
 
-### Running Scripts
 ```bash
-# Agent can execute scripts directly
 python agents/scripts/weekly_review.py
-
-# Or with arguments
 python agents/scripts/content_ideas.py --pillar "ai_agents" --count 5
 ```
 
-### Script Outputs
-Scripts output to stdout in a format the agent can process. They may also write to files when appropriate (e.g., generating a review document).
+脚本会向标准输出返回智能体可处理的结果；适当时也会写入文件，例如生成周度回顾文档。
 
-## Agent Instructions
+## 智能体指引
 
 <instructions>
-When using automation scripts:
+使用自动化脚本时：
 
-1. **Weekly review**: Run every Sunday, outputs review template with data filled in
-2. **Content ideas**: Use when user asks for ideas, leverages knowledge base
-3. **Stale contacts**: Run weekly, surfaces relationships needing attention
-4. **Metrics snapshot**: Run weekly to append to metrics.jsonl
-5. **Idea to draft**: Use when user wants to develop a specific idea
+1. **周度回顾**：每周日运行，并用数据填充回顾模板。
+2. **内容创意**：用户请求创意时运行，结合知识库生成建议。
+3. **长期未联系的人**：每周运行，找出需要维护的关系。
+4. **指标快照**：每周运行并追加到 metrics.jsonl。
+5. **创意转草稿**：用户要完善某条创意时使用。
 
-Scripts read from Digital Brain files and output actionable results.
+脚本从数字大脑文件读取数据，并返回可执行的结果。
 </instructions>
 
-## Workflow Automations
+## 自动化流程
 
-### Sunday Weekly Review
-```
-1. Run metrics_snapshot.py to update metrics.jsonl
-2. Run stale_contacts.py to identify outreach needs
-3. Run weekly_review.py to generate review document
-4. Present summary to user
-```
+### 周日回顾
 
-### Content Ideation Session
-```
-1. Read recent entries from knowledge/bookmarks.jsonl
-2. Check content/ideas.jsonl for undeveloped ideas
-3. Run content_ideas.py for fresh suggestions
-4. Cross-reference with content calendar
+```text
+1. 运行 metrics_snapshot.py 更新 metrics.jsonl。
+2. 运行 stale_contacts.py 找出待联系对象。
+3. 运行 weekly_review.py 生成回顾文档。
+4. 向用户展示摘要。
 ```
 
-### Pre-Meeting Prep
-```
-1. Look up contact in network/contacts.jsonl
-2. Pull recent interactions from network/interactions.jsonl
-3. Check any pending todos involving them
-4. Generate brief with context
+### 内容创意整理
+
+```text
+1. 阅读 knowledge/bookmarks.jsonl 中近期保存的资料。
+2. 检查 content/ideas.jsonl 中尚未完善的创意。
+3. 运行 content_ideas.py 获取新建议。
+4. 对照内容日历检查安排。
 ```
 
-## Custom Script Development
+### 会前准备
 
-To add new scripts:
-1. Create Python file in `agents/scripts/`
-2. Follow existing patterns (read JSONL, output structured data)
-3. Document in this file
-4. Test with sample data
+```text
+1. 在 network/contacts.jsonl 查找联系人。
+2. 从 network/interactions.jsonl 获取近期互动。
+3. 检查涉及该联系人的待办事项。
+4. 生成包含背景的会前摘要。
+```
+
+## 开发自定义脚本
+
+1. 在 `agents/scripts/` 中创建 Python 文件。
+2. 遵循现有模式（读取 JSONL、输出结构化数据）。
+3. 在本文件中记录脚本用途。
+4. 使用示例数据检查脚本行为。

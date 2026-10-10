@@ -1,75 +1,77 @@
 ---
 name: operations-module
-description: Personal productivity - todos, goals, meetings, and metrics. Use for task management, goal tracking, meeting prep, and productivity reviews.
+description: 个人效率管理，包含待办、目标、会议和指标；用于任务管理、目标追踪、会议准备和效率回顾。
 ---
 
-# Operations Module
+# 日常运营模块
 
-Your personal productivity operating system.
+个人效率管理系统。
 
-## Files in This Module
+## 模块文件
 
-| File | Format | Purpose |
-|------|--------|---------|
-| `todos.md` | Markdown | Active task list |
-| `goals.yaml` | YAML | OKRs and goal tracking |
-| `meetings.jsonl` | JSONL | Meeting log and notes |
-| `metrics.jsonl` | JSONL | Key metrics tracking |
-| `reviews/` | Folder | Weekly/monthly reviews |
+| 文件 | 格式 | 用途 |
+| --- | --- | --- |
+| `todos.md` | Markdown | 当前任务清单 |
+| `goals.yaml` | YAML | OKR 和目标追踪 |
+| `meetings.jsonl` | JSONL | 会议日志和笔记 |
+| `metrics.jsonl` | JSONL | 关键指标记录 |
+| `reviews/` | 目录 | 周度和月度回顾 |
 
-## Workflows
+## 工作流
 
-### Daily Flow
+### 每日流程
+
+```text
+1. 早上：查看 todos.md 并排序。
+2. 白天：勾选已完成事项，并记录新任务。
+3. 晚上：记录会议并更新指标。
 ```
-1. Morning: Review todos.md, prioritize
-2. Throughout: Check off completed, add new
-3. Evening: Log any meetings, update metrics
-```
 
-### Weekly Review (Run every Sunday)
-1. Run `agents/scripts/weekly_review.py`
-2. Review completed vs. planned
-3. Check metrics in metrics.jsonl
-4. Plan next week's priorities
-5. Update goals.yaml progress
+### 周度回顾（每周日）
 
-### Goal Setting (Quarterly)
-1. Review previous quarter goals
-2. Update goals.yaml with new OKRs
-3. Break down into monthly targets
-4. Align content calendar with goals
+1. 运行 `agents/scripts/weekly_review.py`。
+2. 对比已完成事项和原计划。
+3. 检查 `metrics.jsonl` 中的指标。
+4. 规划下周优先事项。
+5. 更新 `goals.yaml` 中的进度。
 
-## Agent Instructions
+### 季度目标设定
+
+1. 回顾上一季度的目标。
+2. 在 `goals.yaml` 中更新新 OKR。
+3. 拆解为月度目标。
+4. 让内容日历与目标保持一致。
+
+## 智能体指引
 
 <instructions>
-When managing operations:
+管理日常运营时：
+1. **待办**：使用 P0—P3 优先级并保持清单最新。
+2. **目标**：作重大决策或规划前查看目标。
+3. **会议**：会后立即记录关键收获。
+4. **指标**：至少每周更新一次。
+5. **回顾**：提炼洞见，不要只罗列摘要。
 
-1. **Todos**: Use priority levels (P0-P3), keep list current
-2. **Goals**: Reference before major decisions or planning
-3. **Meetings**: Log immediately after with key takeaways
-4. **Metrics**: Update at least weekly
-5. **Reviews**: Generate insights, not just summaries
+优先级：
+- P0：今天完成，会阻塞其他工作。
+- P1：本周完成，重要。
+- P2：本月完成，有价值。
+- P3：待办事项，有余力时处理。
 
-Priority levels:
-- P0: Do today, blocking other work
-- P1: Do this week, important
-- P2: Do this month, valuable
-- P3: Backlog, nice to have
-
-When asked to help plan or prioritize:
-1. Check current goals.yaml for alignment
-2. Review existing todos.md capacity
-3. Consider time-sensitivity and dependencies
-4. Suggest realistic timelines
+用户要求规划或排序时：
+1. 检查当前 goals.yaml 是否匹配。
+2. 查看 todos.md 的现有容量。
+3. 考虑时效性和依赖关系。
+4. 提出可行时间表。
 </instructions>
 
-## Productivity Principles
+## 效率原则
 
 ```yaml
 principles:
-  - "Ruthless prioritization over busy work"
-  - "Completion > perfection for P1-P3"
-  - "Batch similar tasks together"
-  - "Protect deep work time"
-  - "Weekly reviews are non-negotiable"
+  - "优先处理重要工作，减少忙而无效"
+  - "P1—P3 任务先完成，再追求完美"
+  - "批量处理相似任务"
+  - "保护深度工作时间"
+  - "周度回顾必须坚持"
 ```

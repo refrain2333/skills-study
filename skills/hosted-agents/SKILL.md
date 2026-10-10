@@ -1,301 +1,351 @@
 ---
 name: hosted-agents
-description: "This skill should be used when designing hosted or background agent infrastructure: sandboxed execution, remote coding environments, warm pools, session persistence, multiplayer collaboration, self-spawning agents, or Modal-style sandboxes."
+description: "用于设计托管或后台智能体基础设施，包括隔离沙箱、远程编程环境、会话持久化和多人协作。"
 ---
 
-# Hosted Agent Infrastructure
+# 托管智能体基础设施
 
-Hosted agents run in remote sandboxed environments rather than on local machines. When designed well, they provide unlimited concurrency, consistent execution environments, and multiplayer collaboration. The critical insight is that session speed should be limited only by model provider time-to-first-token, with all infrastructure setup completed before the user starts their session.
+托管智能体在远程沙箱中运行，而不是在本地设备上运行。设计得当时，它们可以扩展并行任务，提供一致的执行环境，并支持多人协作。关键在于：用户开始会话后，基础设施准备工作应已完成，让会话速度主要受模型服务商首个 Token 的返回时间影响。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
-- Building background coding agents that run independently of user devices
-- Designing sandboxed execution environments for agent workloads
-- Implementing multiplayer agent sessions with shared state
-- Creating multi-client agent interfaces (Slack, Web, Chrome extensions)
-- Scaling agent infrastructure beyond local machine constraints
-- Building systems where agents spawn sub-agents for parallel work
+在以下情况下启用此技能：
 
-Do not activate this skill for adjacent work owned by other skills:
-- Designing the autonomous research loop, novelty gates, rollback policy, or merge boundaries: `harness-engineering`.
-- Choosing supervisor, swarm, or handoff topology without hosted infrastructure concerns: `multi-agent-patterns`.
-- Designing the tools used by a hosted agent, such as spawn/status tools or PR tools: `tool-design`.
-- Managing file-backed state inside a session rather than the hosted runtime itself: `filesystem-context`.
+- 构建可脱离用户设备独立运行的后台编程智能体。
+- 设计智能体工作负载的沙箱执行环境。
+- 实现共享状态的多人智能体会话。
+- 创建多客户端智能体界面（Slack、网页、Chrome 扩展）。
+- 将智能体基础设施扩展到本地设备能力之外。
+- 构建能够派生子智能体、并行执行工作的系统。
 
-## Core Concepts
+相邻任务由其他技能负责，不要为这些任务启用本技能：
 
-Move agent execution to remote sandboxed environments to eliminate the fundamental limits of local execution: resource contention, environment inconsistency, and single-user constraints. Remote sandboxes unlock unlimited concurrency, reproducible environments, and collaborative workflows because each session gets its own isolated compute with a known-good environment image.
+- 设计自主研究循环、新颖性门槛、回滚策略或合并边界：`harness-engineering`。
+- 在不涉及托管基础设施时选择监督者、群体或交接拓扑：`multi-agent-patterns`。
+- 设计托管智能体使用的工具，例如派生/状态工具或 PR 工具：`tool-design`。
+- 管理会话内的文件状态，而不是托管运行时本身：`filesystem-context`。
 
-Design the architecture in three layers because each layer scales independently. Build sandbox infrastructure for isolated execution, an API layer for state management and client coordination, and client interfaces for user interaction across platforms. Keep these layers cleanly separated so sandbox changes do not ripple into clients.
+## 核心概念
 
-## Detailed Topics
+将智能体执行迁移到远程沙箱，以突破本地执行的资源争用、环境不一致和单用户限制。每个会话都获得一个使用已验证环境镜像的独立计算环境，因此远程沙箱可以实现大规模并行、可复现环境与协作工作流。
 
-### Sandbox Infrastructure
+把架构分成三层，因为每层可以独立扩展：用于隔离执行的沙箱基础设施、用于状态管理和客户端协调的 API 层，以及面向不同平台用户的客户端界面。保持层间边界清晰，避免沙箱变更影响客户端。
 
-**The Core Challenge**
-Eliminate sandbox spin-up latency because users perceive anything over a few seconds as broken. Development environments require cloning repositories, installing dependencies, and running build steps -- do all of this before the user ever submits a prompt.
+## 详细主题
 
-**Image Registry Pattern**
-Pre-build environment images on a regular cadence (every 30 minutes works well) because this makes synchronization with the latest code a fast delta rather than a full clone. Include in each image:
-- Cloned repository at a known commit
-- All runtime dependencies installed
-- Initial setup and build commands completed
-- Cached files from running app and test suite once
+### 沙箱基础设施
 
-When starting a session, spin up a sandbox from the most recent image. The repository is at most 30 minutes out of date, making the remaining git sync fast.
+**核心挑战**
 
-**Snapshot and Restore**
-Take filesystem snapshots at key points to enable instant restoration for follow-up prompts without re-running setup:
-- After initial image build (base snapshot)
-- When agent finishes making changes (session snapshot)
-- Before sandbox exit for potential follow-up
+消除沙箱启动延迟，因为用户会把几秒以上的等待视为系统故障。开发环境需要克隆仓库、安装依赖并执行构建步骤；这些工作都应在用户提交提示词前完成。
 
-**Git Configuration for Background Agents**
-Configure git identity explicitly in every sandbox because background agents are not tied to a specific user during image builds:
-- Generate GitHub app installation tokens for repository access during clone
-- Set git config `user.name` and `user.email` when committing and pushing changes
-- Use the prompting user's identity for commits, not the app identity
+**镜像仓库模式**
 
-**Warm Pool Strategy**
-Maintain a pool of pre-warmed sandboxes for high-volume repositories because cold starts are the primary source of user frustration:
-- Keep sandboxes ready before users start sessions
-- Expire and recreate pool entries as new image builds complete
-- Start warming a sandbox as soon as a user begins typing (predictive warm-up)
+定期预构建环境镜像（每 30 分钟一次是一个可用的起点），这样与最新代码同步时只需快速拉取差异，而不是重新完整克隆。每个镜像应包含：
 
-### Agent Framework Selection
+- 固定提交版本的已克隆仓库。
+- 已安装的所有运行时依赖。
+- 已完成的初始配置和构建命令。
+- 曾运行应用和测试套件所生成的一份缓存文件。
 
-**Server-First Architecture**
-Structure the agent framework as a server first, with TUI and desktop apps as thin clients, because this prevents duplicating agent logic across surfaces:
-- Multiple custom clients share one agent backend
-- Consistent behavior across all interaction surfaces
-- Plugin systems extend functionality without client changes
-- Event-driven architectures deliver real-time updates to any connected client
+启动会话时，从最新镜像创建沙箱。仓库内容最多落后 30 分钟，剩余的 Git 同步就会比较快。
 
-**Code as Source of Truth**
-Select frameworks where the agent can read its own source code to understand behavior. Prioritize this because having code as source of truth prevents the agent from hallucinating about its own capabilities -- an underrated failure mode in AI development.
+**快照与恢复**
 
-**Plugin System Requirements**
-Require a plugin system that supports runtime interception because this enables safety controls and observability without modifying core agent logic:
-- Listen to tool execution events (e.g., `tool.execute.before`)
-- Block or modify tool calls conditionally
-- Inject context or state at runtime
+在关键节点保存文件系统快照，以便后续提示词可以快速恢复，而不用重新执行配置：
 
-### Speed Optimizations
+- 初始镜像构建后（基础快照）。
+- 智能体完成修改后（会话快照）。
+- 沙箱退出前，以备后续继续处理。
 
-**Predictive Warm-Up**
-Start warming the sandbox as soon as a user begins typing their prompt, not when they submit it, because the typing interval (5-30 seconds) is enough to complete most setup:
-- Clone latest changes in parallel with user typing
-- Run initial setup before user hits enter
-- For fast spin-up, sandbox can be ready before user finishes typing
+**后台智能体的 Git 配置**
 
-**Parallel File Reading**
-Allow the agent to start reading files immediately even if sync from latest base branch is not complete, because in large repositories incoming prompts rarely touch recently-changed files:
-- Agent can research immediately without waiting for git sync
-- Block file edits (not reads) until synchronization completes
-- This separation is safe because read-time data staleness of 30 minutes rarely matters for research
+在每个沙箱中明确配置 Git 身份，因为后台智能体在构建镜像时并不绑定到特定用户：
 
-**Maximize Build-Time Work**
-Move everything possible to the image build step because build-time duration is invisible to users:
-- Full dependency installation
-- Database schema setup
-- Initial app and test suite runs (populates caches)
+- 克隆仓库时，为访问仓库生成 GitHub App 安装令牌。
+- 提交和推送变更时设置 Git 配置项 `user.name` 与 `user.email`。
+- 提交时使用发起提示词的用户身份，而不是应用身份。
 
-### Self-Spawning Agents
+**热沙箱池策略**
 
-**Agent-Spawned Sessions**
-Build tools that allow agents to spawn new sessions because frontier models are capable of decomposing work and coordinating sub-tasks:
-- Research tasks across different repositories
-- Parallel subtask execution for large changes
-- Multiple smaller PRs from one major task
+对于高流量仓库，预留已预热的沙箱池，因为冷启动是用户最不满的主要来源：
 
-Expose three primitives: start a new session with specified parameters, read status of any session (check-in capability), and continue main work while sub-sessions run in parallel.
+- 在用户开始会话前准备好沙箱。
+- 新镜像构建完成后，淘汰并重建池中的旧沙箱。
+- 用户开始输入时就启动沙箱预热（预测性预热）。
 
-**Prompt Engineering for Self-Spawning**
-Engineer prompts that guide when agents should spawn sub-sessions rather than doing work inline:
-- Research tasks that require cross-repository exploration
-- Breaking monolithic changes into smaller PRs
-- Parallel exploration of different approaches
+### 智能体框架选择
 
-### API Layer
+**服务端优先架构**
 
-**Per-Session State Isolation**
-Isolate state per session (SQLite per session works well) because cross-session interference is a subtle and hard-to-debug failure mode:
-- Dedicated database per session
-- No session can impact another's performance
-- Architecture handles hundreds of concurrent sessions
+先构建智能体服务端，再把 TUI 和桌面应用作为轻客户端，这样可以避免在不同界面重复实现智能体逻辑：
 
-**Real-Time Streaming**
-Stream all agent work in real-time because high-frequency feedback is critical for user trust:
-- Token streaming from model providers
-- Tool execution status updates
-- File change notifications
+- 多个自定义客户端共用一个智能体后端。
+- 所有交互界面表现一致。
+- 插件系统可扩展功能，无须修改客户端。
+- 事件驱动架构可以向任意连接的客户端实时推送更新。
 
-Use WebSocket connections with hibernation APIs to reduce compute costs during idle periods while maintaining open connections.
+**以代码为事实来源**
 
-**Synchronization Across Clients**
-Build a single state system that synchronizes across all clients (chat interfaces, Slack bots, Chrome extensions, web interfaces, VS Code instances) because users switch surfaces frequently and expect continuity. All changes sync to the session state, enabling seamless client switching.
+选择让智能体可以读取自身源代码、了解自身行为的框架。代码作为事实来源，可以减少智能体对自身能力的错误猜测；这是 AI 开发中一个常被低估的故障模式。
 
-### Multiplayer Support
+**插件系统要求**
 
-**Why Multiplayer Matters**
-Design for multiplayer from day one because it is nearly free to add with proper synchronization architecture, and it unlocks high-value workflows:
-- Teaching non-engineers to use AI effectively
-- Live QA sessions with multiple team members
-- Real-time PR review with immediate changes
-- Collaborative debugging sessions
+选择支持运行时拦截的插件系统，以便在不修改核心智能体逻辑的情况下实现安全控制和可观测性：
 
-**Implementation Requirements**
-Build the data model so sessions are not tied to single authors because multiplayer fails silently if authorship is hardcoded:
-- Pass authorship info to each prompt
-- Attribute code changes to the prompting user
-- Share session links for instant collaboration
+- 监听工具执行事件（例如 `tool.execute.before`）。
+- 有条件地阻止或修改工具调用。
+- 在运行时注入上下文或状态。
 
-### Authentication and Authorization
+### 速度优化
 
-**User-Based Commits**
-Use GitHub authentication to open PRs on behalf of the user (not the app) because this preserves the audit trail and prevents users from approving their own AI-generated changes:
-- Obtain user tokens for PR creation
-- PRs appear as authored by the human, not the bot
+**预测性预热**
 
-**Sandbox-to-API Flow**
-Follow this sequence because it keeps sandbox permissions minimal while letting the API handle sensitive operations:
-1. Sandbox pushes changes (updating git user config)
-2. Sandbox sends event to API with branch name and session ID
-3. API uses user's GitHub token to create PR
-4. GitHub webhooks notify API of PR events
+用户开始输入提示词时就启动沙箱预热，不要等到提交提示词后再启动。用户输入通常会持续 5–30 秒，足以完成大多数环境准备：
 
-### Client Implementations
+- 用户输入期间并行克隆最新变更。
+- 在用户按下回车前完成初始配置。
+- 快速启动时，沙箱可能在用户输入完成前就已就绪。
 
-**Slack Integration**
-Prioritize Slack as the first distribution channel for internal adoption because it creates a virality loop as team members see others using it:
-- No syntax required, natural chat interface
-- Build a classifier (fast model with repo descriptions) to determine which repository to work in
-- Include hints for common repositories; allow "unknown" for ambiguous cases
+**并行读取文件**
 
-**Web Interface**
-Build a web interface with these features because it serves as the primary power-user surface:
-- Real-time streaming of agent work on desktop and mobile
-- Hosted VS Code instance running inside sandbox
-- Streamed desktop view for visual verification
-- Before/after screenshots for PRs
-- Statistics page: sessions resulting in merged PRs (primary metric), usage over time, live "humans prompting" count
+即使从最新主分支的同步尚未完成，也允许智能体立即读取文件。大型仓库中的新提示词很少涉及刚修改的文件：
 
-**Chrome Extension**
-Build a Chrome extension for non-engineering users because DOM and React internals extraction gives higher precision than raw screenshots at lower token cost:
-- Sidebar chat interface with screenshot tool
-- Extract DOM/React internals instead of raw images
-- Distribute via managed device policy (bypasses Chrome Web Store)
+- 智能体可以立刻开始研究，无须等待 Git 同步。
+- 在同步完成前禁止编辑文件，但允许读取。
+- 这种读写分离通常安全，因为研究时读取 30 分钟前的数据很少造成问题。
 
-## Practical Guidance
+**尽可能在构建阶段完成工作**
 
-### Hosted Agent Design Checklist
+把所有可能的准备工作放到镜像构建阶段，因为构建时间对用户不可见：
 
-Before building the system, decide these infrastructure properties explicitly:
+- 安装完整依赖。
+- 设置数据库模式。
+- 初次运行应用和测试套件，以填充缓存。
 
-1. **Sandbox lifecycle**: how sessions start, snapshot, restore, time out, and terminate.
-2. **Image and warm-pool policy**: how often images rebuild, which caches are precomputed, and when warm sandboxes expire.
-3. **Read/write synchronization**: whether agents may read before repository sync completes, and which events unblock writes.
-4. **Per-session state isolation**: what storage belongs to one session, what is shared, and how cross-session interference is prevented.
-5. **Auth and commit identity**: which operations use app tokens, which use user tokens, and how commits are attributed.
-6. **Output extraction**: how branches, PRs, files, logs, screenshots, and session summaries leave the sandbox.
-7. **Budget and teardown**: maximum runtime, cost ceilings, idle policy, and forced cleanup behavior.
+### 智能体自行派生会话
 
-### Follow-Up Message Handling
+**由智能体派生的会话**
 
-Choose between queueing and inserting follow-up messages sent during execution. Prefer queueing because it is simpler to manage and lets users send thoughts on next steps while the agent works. Build a mechanism to stop the agent mid-execution when needed, because without it users feel trapped.
+提供工具让智能体派生新会话，因为前沿模型能够分解工作并协调子任务：
 
-### Metrics That Matter
+- 跨不同仓库开展研究。
+- 并行处理大型变更中的多个子任务。
+- 从一个大型任务拆分出多个较小的 PR。
 
-Track these metrics because they indicate real value rather than vanity usage:
-- Sessions resulting in merged PRs (primary success metric)
-- Time from session start to first model response
-- PR approval rate and revision count
-- Agent-written code percentage across repositories
+暴露三种基本能力：按照指定参数启动新会话、查询任意会话的状态（检查进度），以及在子会话并行运行时继续主任务。
 
-### Adoption Strategy
+**为自主派生设计提示词**
 
-Drive internal adoption through visibility rather than mandates because forced usage breeds resentment:
-- Work in public spaces (Slack channels) for visibility
-- Let the product create virality loops
-- Do not force usage over existing tools
-- Build to people's needs, not hypothetical requirements
+设计提示词，引导智能体判断何时应该派生子会话，而不是在当前会话中完成：
 
-## Examples
+- 需要跨多个仓库探索的研究任务。
+- 将整体变更拆成多个较小 PR。
+- 并行探索不同方案。
 
-**Example 1: Background coding session lifecycle**
+### API 层
+
+**隔离每个会话的状态**
+
+按会话隔离状态（每个会话使用一个 SQLite 数据库通常可行），因为跨会话互相干扰很隐蔽，也很难排查：
+
+- 每个会话使用专用数据库。
+- 一个会话不会影响另一个会话的性能。
+- 架构可以处理数百个并发会话。
+
+**实时流式传输**
+
+实时传输智能体的所有工作，因为高频反馈对于建立用户信任很重要：
+
+- 模型服务商返回的 Token 流。
+- 工具执行状态更新。
+- 文件变更通知。
+
+使用支持休眠 API 的 WebSocket，在保持连接的同时降低空闲时的计算成本。
+
+**跨客户端同步**
+
+构建统一的状态系统，让所有客户端（聊天界面、Slack 机器人、Chrome 扩展、网页界面、VS Code 实例）同步，因为用户经常切换界面，并期望会话连续。所有变更都同步到会话状态，用户就能无缝切换客户端。
+
+### 多人协作支持
+
+**多人协作的价值**
+
+从一开始就支持多人协作；如果同步架构设计得当，增加多人协作的成本很低，还能支持高价值工作流：
+
+- 教非工程师有效使用 AI。
+- 多名团队成员实时参与 QA。
+- 直接查看变更的实时 PR 审查。
+- 协同调试。
+
+**实现要求**
+
+设计数据模型时，不要把会话绑定到单一作者；如果作者身份被写死，多人协作可能会悄无声息地失效：
+
+- 为每条提示词传递作者信息。
+- 将代码变更归属于发起该提示词的用户。
+- 分享会话链接以便立即协作。
+
+### 身份验证与授权
+
+**以用户身份提交代码**
+
+使用 GitHub 身份验证，以用户身份（而不是应用身份）创建 PR，保留审计记录，并避免用户批准自己生成的 AI 变更：
+
+- 获取用户令牌以创建 PR。
+- PR 显示为由人类用户创建，而不是机器人。
+
+**沙箱到 API 的流程**
+
+按以下顺序处理，以限制沙箱权限，同时让 API 处理敏感操作：
+
+1. 沙箱推送变更（更新 Git 用户配置）。
+2. 沙箱向 API 发送事件，包含分支名称和会话 ID。
+3. API 使用用户的 GitHub 令牌创建 PR。
+4. GitHub Webhook 将 PR 事件通知 API。
+
+### 客户端实现
+
+**Slack 集成**
+
+将 Slack 作为内部推广的第一个渠道，因为团队成员可以看到彼此使用，形成自然传播：
+
+- 无须特殊语法，使用自然聊天界面。
+- 构建一个分类器，利用快速模型和仓库描述判断应在哪个仓库工作。
+- 为常见仓库提供提示；遇到无法判断的情况允许返回“未知”。
+
+**网页界面**
+
+构建网页界面作为高级用户的主要操作界面，提供以下功能：
+
+- 在桌面端和移动端实时查看智能体工作流。
+- 在沙箱内运行托管版 VS Code。
+- 流式显示桌面画面以便目视验证。
+- 在 PR 中提供变更前后的截图。
+- 统计页面：最终合并 PR 的会话数（主要指标）、随时间变化的使用量，以及当前“正在输入提示词的人数”。
+
+**Chrome 扩展**
+
+为非工程用户构建 Chrome 扩展。提取 DOM 和 React 内部信息比原始截图精度更高、Token 成本更低：
+
+- 提供侧边栏聊天界面和截图工具。
+- 提取 DOM / React 内部信息，而不是只用原始图片。
+- 通过设备管理策略分发（可绕过 Chrome 网上应用店）。
+
+## 实践指南
+
+### 托管智能体设计检查表
+
+开始构建前，明确决定以下基础设施属性：
+
+1. **沙箱生命周期**：会话如何启动、生成快照、恢复、超时和终止。
+2. **镜像与热池策略**：镜像多久重建一次、预先计算哪些缓存，以及何时淘汰热沙箱。
+3. **读写同步**：仓库同步完成前智能体是否可以读取；哪些事件允许开始写入。
+4. **每会话状态隔离**：哪些存储属于单个会话、哪些内容共享，以及如何避免会话间干扰。
+5. **身份验证与提交身份**：哪些操作使用应用令牌，哪些使用用户令牌，以及如何归属提交作者。
+6. **结果提取**：分支、PR、文件、日志、截图和会话摘要如何从沙箱导出。
+7. **预算与清理**：最长运行时间、成本上限、空闲策略和强制清理方式。
+
+### 后续消息处理
+
+选择将执行期间收到的后续消息排队，还是立即插入当前任务。优先排队，因为这种方式更容易管理，也允许用户在智能体工作时补充下一步想法。还应提供中途停止智能体的机制，否则用户会觉得自己被困住。
+
+### 关键指标
+
+跟踪能够反映实际价值、而非表面使用量的指标：
+
+- 最终合并 PR 的会话数（主要成功指标）。
+- 从会话开始到模型首次响应的时间。
+- PR 获批率和修改轮次。
+- 不同仓库中由智能体编写的代码占比。
+
+### 推广策略
+
+通过可见性推动内部采用，而不是强制要求；强迫使用会引起反感：
+
+- 在 Slack 频道等公开空间工作，让更多人看到。
+- 让产品自身形成传播效应。
+- 不要强迫用户放弃现有工具。
+- 根据真实需求构建，而不是满足假想需求。
+
+## 示例
+
+**示例 1：后台编程会话生命周期**
 
 ```text
-user prompt
--> API allocates warm sandbox from current image
--> sandbox syncs latest branch delta
--> reads allowed immediately, writes blocked until sync completes
--> agent edits and tests inside isolated workspace
--> sandbox snapshots final filesystem
--> branch is pushed
--> API creates PR using user token
--> session summary, logs, and PR URL are returned to clients
+用户提交提示词
+-> API 从当前镜像分配热沙箱
+-> 沙箱同步最新分支差异
+-> 立即允许读取；同步完成前禁止写入
+-> 智能体在隔离工作区中编辑并测试
+-> 沙箱保存最终文件系统快照
+-> 推送分支
+-> API 使用用户令牌创建 PR
+-> 向客户端返回会话摘要、日志和 PR 链接
 ```
 
-This sequence keeps setup work outside the user-visible path while preserving auditability and user ownership of code changes.
+这套流程把准备工作移出用户可见路径，同时保留代码变更的审计性和用户所有权。
 
-**Example 2: Boundary decision**
+**示例 2：判断职责边界**
 
-If the task is "make the agent loop run for days with locked rubrics and PR approval," use `harness-engineering`. If the task is "run that loop in remote sandboxes with warm pools, session snapshots, streaming clients, and user-authored PRs," use this skill.
+如果任务是“让智能体循环运行数天，并使用锁定的评分标准和 PR 审批”，请使用 `harness-engineering`。如果任务是“在远程沙箱中运行这个循环，提供热池、会话快照、流式客户端和由用户署名的 PR”，请使用本技能。
 
-## Guidelines
+## 指南
 
-1. Pre-build environment images on regular cadence (30 minutes is a good default)
-2. Start warming sandboxes when users begin typing, not when they submit
-3. Allow file reads before git sync completes; block only writes
-4. Structure agent framework as server-first with clients as thin wrappers
-5. Isolate state per session to prevent cross-session interference
-6. Attribute commits to the user who prompted, not the app
-7. Track merged PRs as primary success metric
-8. Build for multiplayer from the start; it is nearly free with proper sync architecture
+1. 按固定周期预构建环境镜像（每 30 分钟是一个合适的默认值）。
+2. 用户开始输入时就预热沙箱，不要等到提交提示词。
+3. 仓库同步完成前允许读取文件；只阻止写入。
+4. 将智能体框架设计成服务端优先，客户端作为轻量封装。
+5. 隔离每个会话的状态，避免会话间互相影响。
+6. 将提交归属于发起提示词的用户，而不是应用。
+7. 将最终合并 PR 的数量作为主要成功指标。
+8. 从一开始就支持多人协作；同步架构设计得当时，实现成本很低。
 
-## Gotchas
+## 常见问题
 
-1. **Cold start latency**: First sandbox spin-up takes 30-60s and users perceive this as broken. Use warm pools and predictive warm-up on keystroke to eliminate perceived wait time.
-2. **Image staleness**: Infrequent image rebuilds mean agents run with outdated dependencies or code. Set a 30-minute rebuild cadence and monitor image age; alert if builds fail silently.
-3. **Sandbox cost runaway**: Long-running agents without timeout or budget caps accumulate unexpected costs. Set hard timeout limits (default 4 hours) and per-session cost ceilings.
-4. **Auth token expiration mid-session**: Long tasks fail when GitHub tokens expire partway through. Implement token refresh logic and check token validity before sensitive operations like PR creation.
-5. **Git config in sandboxes**: Missing `user.name` or `user.email` causes commit failures in background agents. Always set git identity explicitly during sandbox configuration, never assume it carries over from the image.
-6. **State loss on sandbox recycle**: Agents lose completed work if the sandbox is recycled or times out before results are extracted. Always snapshot before termination and extract artifacts (branches, PRs, files) before letting the sandbox die.
-7. **Oversubscribing warm pools**: Maintaining too many warm sandboxes wastes money during low-traffic periods. Scale pool size based on traffic patterns and time-of-day; use autoscaling rather than fixed pool sizes.
-8. **Missing output extraction**: Agents complete work inside the sandbox but results never get pulled out to the user. Build explicit extraction steps (push branch, create PR, return file contents) into the session teardown flow.
+1. **冷启动延迟**：首次启动沙箱需要 30–60 秒，用户会觉得系统故障。使用热池和按键触发的预测性预热，减少用户感知到的等待。
+2. **镜像过时**：镜像重建不够频繁会让智能体使用过时的依赖或代码。设置 30 分钟的重建周期并监控镜像年龄；构建静默失败时发出告警。
+3. **沙箱成本失控**：没有超时和预算上限的长期运行智能体会带来意外费用。设置硬性超时（默认 4 小时）和每会话成本上限。
+4. **会话中途令牌过期**：长任务可能在 GitHub 令牌过期后失败。实现令牌刷新，并在创建 PR 等敏感操作前检查有效性。
+5. **沙箱中的 Git 配置**：缺少 `user.name` 或 `user.email` 会导致后台智能体提交失败。沙箱配置期间始终明确设置 Git 身份，不要假定镜像会自动带上这些配置。
+6. **沙箱回收导致状态丢失**：如果提取结果前沙箱被回收或超时，智能体已完成的工作就会丢失。终止前始终保存快照，并提取分支、PR 和文件等产物。
+7. **热沙箱池容量过大**：低流量时维持过多热沙箱会浪费资金。根据流量模式和一天中的时段调整池规模；使用自动扩缩容，而不是固定池大小。
+8. **没有提取结果**：智能体在沙箱中完成了工作，用户却拿不到结果。应在会话清理流程中明确加入提取步骤（推送分支、创建 PR 或返回文件内容）。
 
-## Integration
+## 集成
 
-This skill owns hosted runtime infrastructure. Adjacent skills own the control system, topology, and tool contracts:
+本技能负责托管运行时基础设施。相邻技能负责控制系统、拓扑结构和工具契约：
 
-- `harness-engineering`: governance, locked evaluators, rollback, novelty gates, and human approval boundaries around autonomous work.
-- `multi-agent-patterns`: self-spawning and supervisor patterns once hosted infrastructure exists.
-- `tool-design`: spawn, status, teardown, and PR tools exposed to agents.
-- `context-optimization`: managing context across distributed hosted sessions.
-- `filesystem-context`: using the sandbox filesystem for durable session state and artifacts.
+- `harness-engineering`：自主工作周边的治理、锁定的评估器、回滚、新颖性门槛和人工审批边界。
+- `multi-agent-patterns`：托管基础设施就绪后的自主派生与监督者模式。
+- `tool-design`：向智能体开放的派生、状态、清理和 PR 工具。
+- `context-optimization`：管理分布式托管会话中的上下文。
+- `filesystem-context`：使用沙箱文件系统保存会话状态和产物。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Infrastructure Patterns](./references/infrastructure-patterns.md) - Read when: implementing sandbox lifecycle, image builds, or warm pool logic for the first time
+内部参考：
 
-Related skills in this collection:
-- multi-agent-patterns - Read when: designing self-spawning or supervisor coordination patterns
-- tool-design - Read when: building tools for agent session management or status checking
-- context-optimization - Read when: context windows fill up across distributed agent sessions
+- [基础设施模式](./references/infrastructure-patterns.md)——首次实现沙箱生命周期、镜像构建或热池逻辑时阅读。
 
-External resources:
-- [Ramp](https://builders.ramp.com/post/why-we-built-our-background-agent) - Read when: evaluating whether to build vs. buy background agent infrastructure
-- [Modal Sandboxes](https://modal.com/docs/guide/sandbox) - Read when: choosing a cloud sandbox provider or comparing isolation models
-- [Cloudflare Durable Objects](https://developers.cloudflare.com/durable-objects/) - Read when: designing per-session state management with WebSocket hibernation
-- [OpenCode](https://github.com/sst/opencode) - Read when: selecting a server-first agent framework or studying plugin architectures
+本资料集中的相关技能：
+
+- `multi-agent-patterns`——设计自主派生或监督者协调模式时阅读。
+- `tool-design`——构建智能体会话管理或状态检查工具时阅读。
+- `context-optimization`——分布式托管会话中的上下文窗口快满时阅读。
+
+外部资源：
+
+- [Ramp](https://builders.ramp.com/post/why-we-built-our-background-agent)——评估自建或购买后台智能体基础设施时阅读。
+- [Modal 沙箱](https://modal.com/docs/guide/sandbox)——选择云沙箱提供商或比较隔离模型时阅读。
+- [Cloudflare Durable Objects](https://developers.cloudflare.com/durable-objects/)——设计带 WebSocket 休眠机制的每会话状态管理时阅读。
+- [OpenCode](https://github.com/sst/opencode)——选择服务端优先的智能体框架或研究插件架构时阅读。
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2026-01-12
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 1.2.0
+**创建时间**：2026-01-12
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering 贡献者
+**版本**：1.2.0

@@ -1,162 +1,37 @@
-# Read URL Tool
+# 读取网址工具
 
-## Purpose
+## 用途
 
-Extract and parse content from a given URL. Returns structured text content with metadata about the source.
+读取给定网址并提取正文，返回结构化文本以及来源元数据。通常在 `webSearch` 找到相关结果后使用。
 
-## Tool Definition
+## 输入
 
-```typescript
-import { tool } from "ai";
-import { z } from "zod";
+| 字段 | 类型 | 必需 | 说明 |
+| --- | --- | --- | --- |
+| `url` | string | 是 | 待读取的网址 |
+| `contentType` | enum | 否 | `auto`、`article`、`documentation`、`paper` 或 `code`，用于优化提取 |
+| `maxLength` | number | 否 | 返回字符数上限，默认 10,000，范围 1,000—50,000 |
+| `extractSections` | boolean | 否 | 是否识别并标记章节，默认是 |
+| `includeMetadata` | boolean | 否 | 是否包含作者、日期等信息，默认是 |
 
-export const readUrl = tool({
-  description: `Read and extract content from a URL.
-Returns the main text content, stripped of navigation and ads.
-Use after webSearch to get full content from relevant results.`,
+## 输出
 
-  parameters: z.object({
-    url: z.string().url()
-      .describe("The URL to read"),
-    
-    contentType: z.enum(["auto", "article", "documentation", "paper", "code"]).default("auto")
-      .describe("Hint for content type to optimize extraction"),
-    
-    maxLength: z.number().min(1000).max(50000).default(10000)
-      .describe("Maximum characters to return"),
-    
-    extractSections: z.boolean().default(true)
-      .describe("Whether to identify and label sections"),
-    
-    includeMetadata: z.boolean().default(true)
-      .describe("Include author, date, and other metadata")
-  }),
+返回成功状态、网址和标题、正文及可选章节、作者/发布日期/描述/关键词等元数据，以及总字符数、是否截断和章节数。失败时包含错误代码和说明。
 
-  execute: async (input) => {
-    return extractUrlContent(input);
-  }
-});
-```
+## 内容类型处理
 
-## Input Schema
+| 类型 | 处理方式 |
+| --- | --- |
+| `article` | 优先提取正文，跳过侧栏 |
+| `documentation` | 保留代码块和结构 |
+| `paper` | 提取摘要、章节和参考文献 |
+| `code` | 保留格式和语法突出显示 |
+| `auto` | 根据内容自动识别 |
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| url | string | Yes | URL to read |
-| contentType | enum | No | Content type hint |
-| maxLength | number | No | Max chars (default: 10000) |
-| extractSections | boolean | No | Label sections |
-| includeMetadata | boolean | No | Include metadata |
+## 错误类型
 
-## Output Schema
+包括 `URL_NOT_FOUND`、`ACCESS_DENIED`、`TIMEOUT`、`BLOCKED`、`INVALID_CONTENT` 和 `UNSUPPORTED_TYPE`。
 
-```typescript
-interface ReadUrlResult {
-  success: boolean;
-  
-  url: string;
-  title: string;
-  
-  content: {
-    full: string;
-    sections?: {
-      heading: string;
-      level: number;  // h1=1, h2=2, etc.
-      content: string;
-    }[];
-  };
-  
-  metadata?: {
-    author?: string;
-    publishedDate?: string;
-    lastModified?: string;
-    description?: string;
-    keywords?: string[];
-    source: string;
-  };
-  
-  stats: {
-    totalCharacters: number;
-    truncated: boolean;
-    sectionsFound: number;
-  };
-  
-  error?: {
-    code: string;
-    message: string;
-  };
-}
-```
+## 实现建议
 
-## Usage Example
-
-```typescript
-const content = await readUrl.execute({
-  url: "https://eugeneyan.com/writing/llm-evaluators/",
-  contentType: "article",
-  maxLength: 15000,
-  extractSections: true,
-  includeMetadata: true
-});
-
-// Result:
-// {
-//   success: true,
-//   url: "https://eugeneyan.com/writing/llm-evaluators/",
-//   title: "Evaluating the Effectiveness of LLM-Evaluators",
-//   content: {
-//     full: "LLM-evaluators, also known as LLM-as-a-Judge...",
-//     sections: [
-//       {
-//         heading: "Key considerations before adopting an LLM-evaluator",
-//         level: 2,
-//         content: "Before reviewing the literature..."
-//       },
-//       ...
-//     ]
-//   },
-//   metadata: {
-//     author: "Eugene Yan",
-//     publishedDate: "2024-06-15",
-//     source: "eugeneyan.com"
-//   },
-//   stats: {
-//     totalCharacters: 15000,
-//     truncated: true,
-//     sectionsFound: 8
-//   }
-// }
-```
-
-## Content Type Handling
-
-| Type | Optimization |
-|------|-------------|
-| article | Prioritize main content, skip sidebars |
-| documentation | Preserve code blocks, keep structure |
-| paper | Extract abstract, sections, references |
-| code | Preserve formatting, syntax highlighting |
-| auto | Detect type from content |
-
-## Error Handling
-
-```typescript
-const errorCodes = {
-  "URL_NOT_FOUND": "Page does not exist (404)",
-  "ACCESS_DENIED": "Page requires authentication (401/403)",
-  "TIMEOUT": "Request timed out",
-  "BLOCKED": "Access blocked by robots.txt or rate limit",
-  "INVALID_CONTENT": "Content could not be parsed",
-  "UNSUPPORTED_TYPE": "Content type not supported (e.g., binary)"
-};
-```
-
-## Implementation Notes
-
-1. **Respect robots.txt**: Check and honor robots.txt directives
-2. **Rate Limiting**: Don't hammer the same domain
-3. **User Agent**: Use appropriate user agent string
-4. **Timeouts**: Set reasonable timeouts (10-30s)
-5. **JavaScript Rendering**: Consider headless browser for JS-heavy sites
-6. **Caching**: Cache content for repeated reads
-
+遵守 robots.txt；限制同域请求速率；使用合适的 User-Agent；将超时设为 10—30 秒；对依赖 JavaScript 的网页考虑使用无头浏览器；缓存重复读取的内容。

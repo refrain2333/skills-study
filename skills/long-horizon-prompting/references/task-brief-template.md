@@ -1,142 +1,92 @@
-# Pseudo-Formal Task Brief Template
+# 伪形式化任务简报模板
 
-A reusable template for launching long-running autonomous agents or parallel orchestrations on hard problems, plus the pre-launch evaluation rubric. Copy the template, delete blocks that do not apply, and fill the rest. Blocks marked (parallel runs) are only needed when an orchestrator manages concurrent workers.
+此模板用于启动长期运行的自主智能体或并行编排任务，并附有启动前评估表。复制模板后，删除不适用部分并填写其余内容。标注“并行运行”的章节只在编排器管理并发工作者时使用。
 
-## Template
+## 模板
 
 ```text
-DEFINITIONS
+定义
 
-<Define every load-bearing term an adversarial reader could interpret
-two ways. Include degenerate and boundary cases explicitly: the empty
-input, the trivial solution, the duplicate, the disconnected case,
-the zero-measurement. In empirical domains: units, populations,
-inclusion criteria, measurement procedure.>
+<定义所有可能被不同方式理解、且会影响结论的术语。明确边界和退化情况，例如空输入、平凡解、重复项、断开情形和零测量。实证问题还需说明单位、研究对象、纳入条件和测量过程。>
 
-TASK
+任务
 
-<One statement of the success predicate: what must be true of the
-returned artifact, with quantifiers and scope spelled out. Enumerate
-the narrowing assumptions the solution is NOT allowed to make.>
+<用一句话写出成功判定：返回的产物必须满足什么条件，并明确量词与适用范围。列出解答不得擅自缩小的假设范围。>
 
-<If a solution plausibly exists:> Assume for purposes of this task
-that a complete solution exists.
+<若解答很可能存在：> 本任务暂且假设完整解答存在。
 
-<If existence is genuinely uncertain:> Either a complete solution or
-a complete demonstration of impossibility counts; nothing in between
-does.
+<若是否存在确实不确定：> 完整解答或完整的不可能性证明都算完成；除此以外均不算。
 
-DOES NOT COUNT
+不计为完成
 
-Partial progress does not count unless it implies exactly the
-resolution above. In particular, the following are insufficient:
-- results holding only for a narrowed scope or special case
-- reductions of the problem to another unvalidated assumption,
-  unproved statement, or unavailable dataset
-- verification over any bounded subset of cases
-- artifacts with a requirement satisfied approximately where exact
-  satisfaction is specified
-- candidate counterexamples or refutations without a complete
-  certificate
-- plans, surveys, status summaries, or explanations of difficulty
-<Add the near misses specific to this problem. Predict what a capable
-agent under pressure would return instead of a solution, and exclude
-each by name.>
+除非部分进展能够严格推出上述结论，否则不计为完成。以下结果都不足以达标：
+- 只在缩小后的范围或特殊情形成立的结果；
+- 把问题化约为另一个未经验证的假设、未证明的结论或无法获得的数据集；
+- 只在有限个案例上通过验证；
+- 要求精确满足条件，却只近似满足的产物；
+- 没有完整证明的候选反例或反驳；
+- 计划、综述、状态摘要或困难说明。
+<补充这个问题中特别容易误认为成功的情况。预测能力较强但受压力的智能体可能提交什么替代品，并逐项明确排除。>
 
-ORCHESTRATION (parallel runs)
+并行编排（并行运行）
 
-Use concurrent agents aggressively and dynamically. Do not use fixed
-assignments such as "N agents for strategy X". Manage the search with
-these heuristics:
-- Begin with a genuinely diverse portfolio of substantially different
-  formulations and approaches: <list the known families for this
-  domain>.
-- Do not tell most agents the currently favored approach; preserve
-  independence in early rounds.
-- Maintain an explicit registry of approach families, grouped by the
-  underlying idea rather than surface wording. Redirect agents away
-  from crowded families toward underexplored ones.
-- Do not let one approach dominate because it yields elegant
-  reformulations. A route that ends at a subproblem as hard as the
-  original goal is not progress unless it genuinely resolves that
-  subproblem.
-- When a route stalls at a goal-strength gap, mark it blocked and
-  record why. Reassign agents to it only for a materially new
-  mechanism, not for renewed enthusiasm.
-- Keep several incompatible routes alive across rounds; cross-
-  pollinate only after independent development has exposed each
-  route's real strengths and gaps.
-- The root agent repeatedly synthesizes, challenges, redirects, and
-  launches new rounds. Do not stop after the first wave fails.
+积极且动态地使用并发工作者。不要预先固定“某策略派 N 个工作者”之类的分配。采用以下原则管理搜索：
+- 一开始就建立真正多样、思路差异明显的方案组合：<列出该领域已知的思路类型>。
+- 初期不要向大多数工作者透露当前偏好的方案，以免过早趋同。
+- 按底层思路而非表面措辞维护方案登记表；拥挤的思路应让位给探索不足的方向。
+- 不要因为一种方案能给出漂亮的改写就让它垄断搜索。若化约后的子问题和原目标一样难，除非子问题已真正解决，否则不算进展。
+- 若某条路线卡在目标强度差距上，标记为受阻并记录原因。只有出现实质性新机制时才重新分配工作者，不能只因热情恢复就重复尝试。
+- 每轮保留数条互不相容的路线；只有独立探索暴露各自优缺点后，才进行交叉融合。
+- 主协调者要持续综合、质疑、调整方向并开启新一轮搜索。第一轮失败后不要停止。
 
-VERIFICATION
+验证
 
-Use adversarial reviewer agents with fresh context throughout. Every
-candidate must be checked against this list:
-<Enumerate the domain-specific ways a candidate can look right and be
-wrong: the known confounders, degenerate cases, circular arguments,
-leakage paths, and too-good-to-be-true signatures of this field.
-Always include the domain's version of circularity: satisfying the
-goal by assuming something equivalent to it.>
+持续安排具有独立上下文的对抗性审查者。每个候选结果都要按以下清单检查：
+<列出该领域中看似正确但实际错误的情况，例如混杂因素、退化情形、循环论证、信息泄漏和不合理的成功信号。必须说明本领域中“假设了等价于目标的结论”的循环论证形式。>
 
-Require workers to return concrete artifacts: <lemmas, constructions,
-scripts, datasets, measurements, counterexamples appropriate to the
-domain>. Reject status reports, vague optimism, and claims that an
-unresolved step is "routine".
+要求工作者返回可核验的具体产物，例如引理、构造、脚本、数据集、测量或反例。拒绝状态汇报、空泛乐观，以及把未解决步骤称为“例行工作”的说法。
 
-Structure the final artifact modularly so each part can be verified
-in isolation, with its premises and conclusion stated locally.
+最终产物应分成可独立验证的模块，每个模块都在本地写明前提和结论。
 
-RETURN CONDITION
+返回条件
 
-Return only when a candidate satisfies the TASK predicate and
-survives the adversarial audit above. Do not return a reduction,
-partial result, isolated missing step, best-effort summary, or
-explanation of why the problem is difficult.
+只有候选产物满足任务判定并通过上述对抗审查后才可返回。不要返回化约结果、部分成果、单独的未解决步骤、尽力而为的摘要，或问题为何困难的说明。
 
-If the externally enforced budget is exhausted first, return the
-strongest rigorously verified derivation and its exact remaining gap,
-clearly labeled as incomplete.
+如果外部强制预算先耗尽，则返回已严格验证的最强推导，并精确写出尚未解决的缺口，明确标注结果未完成。
 
-EFFORT
+投入要求
 
-Spend at least <floor> before considering returning or giving up. Do
-not return merely because current approaches fail; launch new rounds
-and search for fresh formulations.
+至少投入 <最低投入量> 后，才可以考虑返回或放弃。当前方法失败时不要直接返回；应开启新一轮并寻找新的表述方式。
 
-CONTAMINATION
+污染防护
 
-External search may be used only for <ordinary background, standard
-named results, documented APIs>. Do not search for a solution to this
-exact problem or its benchmark. <If solvability framing is used:> Do
-not conclude from external sources that the problem is unsolved, and
-do not answer that it is open.
+仅可通过外部检索了解 <一般背景、标准命名结果、已有 API 文档>。不得搜索这个具体问题或其基准测试的解答。<若采用“假设问题可解”的表述：> 不得依据外部来源断言问题无解，也不得仅以“这是开放问题”为由作答。
 ```
 
-## Filling notes
+## 填写说明
 
-- **The refusal-list method.** The fastest way to a good DOES NOT COUNT block: imagine a junior collaborator returning with each plausible partial result, and write down every one you would send back. That list, verbatim, is the block.
-- **Solvability framing is a scalpel.** Use "assume a solution exists" only when existence is plausible (engineering problems, well-evidenced conjectures, questions with a definite answer). On genuinely open questions, use the two-sided form or the run will fabricate rather than conclude impossibility.
-- **The fallback clause must be scoped.** Allow a partial-result return only on external budget exhaustion, never at the agent's discretion, or it becomes the escape hatch the rest of the brief closed.
-- **Effort floors are permissions, not schedules.** The floor removes permission to quit early. Enforce real time and cost limits in the harness; a prompt cannot bound spend.
-- **Keep hard constraints out of the brief.** Budgets, tool permissions, and sandbox boundaries stated in prompts are advisory under optimization pressure. State them in the runtime and mention them in the brief only for the agent's planning.
-- **Per-spawn specs for workers.** The orchestrator should give every spawned worker four things: objective, output format, tool and source guidance, and task boundaries. Put this rule in the ORCHESTRATION block for orchestrations that write their own worker prompts.
+- **拒绝清单法**：构造“不计为完成”章节最快的方法，是想象一位初级合作者可能提交的各种部分结果，并写下每种结果为什么会被退回。把清单直接放进模板。
+- **可解性假设要谨慎使用**：只有当问题确实很可能有解时，才写“假设完整解答存在”，例如工程问题、证据充分的猜想或答案确定的问题。真正开放的问题应同时接受完整解答和完整的不可能性证明，否则智能体可能编造结论。
+- **限定回退条件**：只有外部预算耗尽时才允许返回部分结果，不要让智能体自行决定何时可以降低标准；否则回退条款会成为绕过其余要求的出口。
+- **投入下限不是时间表**：最低投入量只用于阻止过早放弃。真实的时间和成本上限应由运行框架强制执行，提示词本身无法限制支出。
+- **不要只在简报里写硬性约束**：预算、工具权限和沙箱边界在优化压力下只是建议。应由运行时执行；可在简报中提及，以供智能体安排计划。
+- **为每位工作者编写独立任务说明**：协调者派生工作者时，应提供目标、输出格式、工具与来源指导、任务边界。凡由编排器自行生成工作者提示词的任务，都应把此规则写入编排章节。
 
-## Pre-launch evaluation rubric
+## 启动前评估表
 
-Score each dimension 0 (absent), 1 (present but gameable), or 2 (adversary-proof). Fix every 0 and 1 before launch; expensive runs deserve a passing brief.
+每项按 0（缺失）、1（存在但容易被钻空子）或 2（能抵御对抗性解释）评分。启动前必须修复所有 0 分和 1 分；昂贵运行需要合格的任务简报。
 
-| # | Dimension | 2 means |
+| 序号 | 维度 | 2 分标准 |
 | --- | --- | --- |
-| 1 | Success predicate | An adversarial reader can decide unambiguously whether an artifact satisfies it; quantifiers and scope explicit |
-| 2 | Definitions | Every load-bearing term defined, degenerate cases settled |
-| 3 | Non-counting outcomes | The plausible near misses for this specific problem are excluded by name |
-| 4 | Auditor checklist | Enumerated, domain-specific failure modes including the circularity analogue |
-| 5 | Persistence-verification pairing | Every persistence instruction has a matching verification gate |
-| 6 | Return condition | A predicate over the artifact; fallback scoped to external budget exhaustion only |
-| 7 | Diversity policy (parallel) | Early independence, idea-keyed registry, blocked-route rules, late cross-pollination |
-| 8 | Reporting contract | Concrete artifacts required; claims must trace to session evidence |
-| 9 | Contamination guards | Retrieval scope stated wherever result independence matters |
-| 10 | Harness separation | No hard constraint lives only in the prompt; budgets and permissions enforced outside |
+| 1 | 成功判定 | 对抗性读者也能明确判断产物是否达标；量词和范围清楚 |
+| 2 | 定义 | 所有关键术语均已定义，退化情形已有处理方式 |
+| 3 | 不计为完成的结果 | 明确排除了本问题中特别容易出现的近似成果 |
+| 4 | 审查清单 | 列出领域特定的失败模式，包括循环论证的对应情形 |
+| 5 | 持续执行与验证配对 | 每条持续执行要求都有对应的验证门槛 |
+| 6 | 返回条件 | 以产物属性作出判定；仅在外部预算耗尽时允许回退 |
+| 7 | 多样性策略（并行） | 明确早期独立、按思路登记、受阻路线规则和后期交叉融合 |
+| 8 | 汇报约定 | 必须提交具体产物；主张可追溯到运行证据 |
+| 9 | 污染防护 | 只要结果独立性重要，就要说明检索范围 |
+| 10 | 与运行框架分工 | 硬性约束不能只写在提示词里；预算和权限须由外部强制执行 |
 
-Final red-team pass: give the brief to a fresh model instance with the single question "How could an agent satisfy the letter of this brief without solving the problem?" Patch every credible answer. Repeat until the answers stop being credible.
+最后进行一次红队检查：把简报交给新的模型实例，只问“智能体怎样才能照字面遵守这份简报，却没有真正解决问题？”修复每个可信的绕过方式，并重复检查，直到不再出现可信漏洞。

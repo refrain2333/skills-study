@@ -1,74 +1,74 @@
-# Autonomous Research Loop
+# 自主研究循环操作手册
 
-This runbook defines how an agent should operate when asked to find research and turn it into repo changes.
+本文规定智能体受托查找研究资料并将其转化为仓库变更时应采用的流程。
 
-## Setup
+## 准备
 
-1. Create a run ID with `python researcher/scripts/research_loop.py init --title "..." --url "..."`.
-2. Read `../source-registry.md` and select source classes for the mission.
-3. Read `../mechanisms/registry.jsonl` to understand accepted mechanisms before claiming novelty.
-4. Read the relevant rubrics before evaluating anything.
-5. Declare locked surfaces: rubrics, manifests, mechanism registry, and merge policy are not editable during scoring.
-6. Declare editable surfaces: evaluations, proposals, drafts, run-local mechanism proposals, and append-only logs.
+1. 使用 `python researcher/scripts/research_loop.py init --title "..." --url "..."` 创建运行编号。
+2. 阅读 `../source-registry.md`，按本次目标选择来源类别。
+3. 阅读 `../mechanisms/registry.jsonl`，在声称机制具有新颖性前了解现有机制。
+4. 开始评估前阅读相关评分规则。
+5. 声明锁定区域：评分规则、清单、机制注册表和合并策略在评分期间不可编辑。
+6. 声明可编辑区域：评估、提案、草稿、运行专属机制提案和只追加日志。
 
-## Loop
+## 循环流程
 
-Repeat until source queue is empty or the human stops the run:
+重复执行，直到来源队列为空或用户停止运行：
 
-1. Discover candidates from the source registry.
-2. Fetch primary sources whenever available and record them with `research_loop.py retrieve`.
-3. Record retrieval status before evaluating.
-4. Apply `../rubrics/content-curation.md`.
-5. Reject failed gates immediately and log why.
-6. For approved or reviewed sources, extract mechanisms and artifacts into the proposal.
-7. Apply `../rubrics/skill-change.md` or `../rubrics/harness-change.md`.
-8. Draft a proposal with `../templates/skill-proposal.md` and any mechanism proposals with `../templates/mechanism-proposal.jsonl`.
-9. Run `python researcher/scripts/research_loop.py novelty --run-dir <run>` before changing published skills; registry overlap is the primary duplicate signal.
-10. If multiple drafts compete, apply `../rubrics/pairwise-skill-revision.md` and run `compare_skill_revisions.py`.
-11. If the proposal passes, prepare repo changes in normal repo structure.
-12. Run deterministic repo and run-readiness validation and record results.
-13. Prepare PR summary and test plan, but do not merge.
-14. Close the run with `accepted`, `rejected`, `reference-only`, or `abandoned` rationale.
+1. 根据来源注册表发现候选资料。
+2. 尽可能获取一手来源，并通过 `research_loop.py retrieve` 记录。
+3. 评估前先记录检索状态。
+4. 应用 `../rubrics/content-curation.md`。
+5. 发现未达门槛时立即拒绝并记录原因。
+6. 对通过或经审查的来源，把机制和产物提取到提案中。
+7. 应用 `../rubrics/skill-change.md` 或 `../rubrics/harness-change.md`。
+8. 使用 `../templates/skill-proposal.md` 起草提案；如有机制提案，使用 `../templates/mechanism-proposal.jsonl`。
+9. 修改已发布技能前，先运行 `python researcher/scripts/research_loop.py novelty --run-dir <运行目录>`；机制注册表重叠是主要的重复信号。
+10. 若有多个草案竞争，应用 `../rubrics/pairwise-skill-revision.md` 并运行 `compare_skill_revisions.py`。
+11. 提案通过后，按仓库常规结构准备修改。
+12. 运行确定性仓库检查和单次运行准备检查，并记录结果。
+13. 准备拉取请求摘要和检查计划，但不要合并。
+14. 关闭运行，并说明接受、拒绝、仅供参考或放弃的理由。
 
-## Novelty And Refresh Rules
+## 新颖性与更新规则
 
-- Before drafting a new skill, compare against accepted mechanisms and existing skill boundaries.
-- Use `novelty_check.py` as a fast mechanism-overlap gate, then apply human or LLM judgment for semantic novelty.
-- For long-running runs, refresh upstream sources before finalizing a proposal.
-- Preserve rejected ideas so future agents do not rediscover the same failed path.
-- Require a pruning pass when a proposal adds multiple rules or concepts. Remove any piece that does not change behavior.
-- Store raw source exports under the run's `sources/evidence/raw/` directory, never at the repository root.
-- Promote accepted or candidate mechanisms only through `research_loop.py promote-mechanisms` after run readiness and recorded human review.
+- 起草新技能前，先与已接受机制和现有技能边界比较。
+- 用 `novelty_check.py` 快速检查机制重叠，再由人工或大语言模型判断语义上的新颖性。
+- 长期运行时，在最终确定提案前重新获取上游来源。
+- 保留被拒绝的想法，避免后续智能体重复探索同一条失败路线。
+- 若提案新增多个规则或概念，必须进行精简审查；删除不会改变行为的内容。
+- 原始来源导出应放在本次运行的 `sources/evidence/raw/` 下，不能放在仓库根目录。
+- 只有运行通过准备检查并记录人工审查后，才能通过 `research_loop.py promote-mechanisms` 晋级已接受或候选机制。
 
-## Failure Handling
+## 失败处理
 
-| Failure | Action |
+| 失败 | 处理方式 |
 | --- | --- |
-| Source fetch fails | Retry once with an alternate URL, then record `partial` or `failed` |
-| JSON evaluation invalid | Save raw output and route to human review |
-| Evidence weak but relevant | Route to human review, do not publish automatically |
-| Skill draft exceeds 500 lines | Move detail to references or reject the draft |
-| Manifest sync uncertain | Stop and request human review before PR |
-| Conflicting sources | Record both claims and prefer no published change until resolved |
+| 来源获取失败 | 换用备用网址重试一次，再记录为 `partial` 或 `failed` |
+| JSON 评估无效 | 保存原始输出并交由人工审查 |
+| 证据较弱但相关 | 转交人工审查，不自动发布 |
+| 技能草案超过 500 行 | 将细节移到参考资料，或拒绝草案 |
+| 清单同步情况不明 | 停止操作，在创建拉取请求前交由人工审查 |
+| 来源互相冲突 | 同时记录两种主张；解决冲突前不发布变更 |
 
-## PR Preparation Policy
+## 拉取请求准备规则
 
-Agents may prepare PRs only after:
+仅当以下条件全部满足时，智能体才可准备拉取请求：
 
-1. Content and skill or harness rubrics pass.
-2. Deterministic checks pass.
-3. Every source cited in the change was retrieved.
-4. The PR body includes unresolved risks.
-5. The PR states that merge requires human approval.
+1. 内容评分规则以及技能或运行框架评分规则均通过。
+2. 确定性检查通过。
+3. 变更中引用的每个来源都已成功获取。
+4. 拉取请求正文列出尚未解决的风险。
+5. 拉取请求明确说明合并需要人工批准。
 
-The user rule remains binding: do not push anything to GitHub without explicit approval.
+用户规则仍然有效：未经明确批准，不得向 GitHub 推送任何内容。
 
-## Handover
+## 交接
 
-Before context compaction, interruption, or model handoff, update the run thread with:
+上下文压缩、中断或模型交接前，更新运行讨论记录，写明：
 
-- Current best candidate.
-- Evaluations completed and their file paths.
-- Rejected candidates and reasons.
-- Open risks.
-- Next action.
+- 当前最佳候选。
+- 已完成的评估及其文件路径。
+- 被拒绝的候选及理由。
+- 尚未解决的风险。
+- 下一步行动。

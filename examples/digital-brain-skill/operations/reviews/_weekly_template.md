@@ -1,114 +1,85 @@
-# Weekly Review: Week of [DATE]
+# 周度回顾：截至[日期]的一周
 
-## Metrics Snapshot
-<!-- Pull from metrics.jsonl or fill manually -->
+## 指标快照
 
-| Metric | Last Week | This Week | Change |
-|--------|-----------|-----------|--------|
-| Twitter followers | | | |
-| Newsletter subs | | | |
-| Posts published | | | |
-| Deep work hours | | | |
+从 `metrics.jsonl` 获取，或手动填写：
 
----
+| 指标 | 上周 | 本周 | 变化 |
+| --- | --- | --- | --- |
+| Twitter 关注者 |  |  |  |
+| 简报订阅者 |  |  |  |
+| 已发布帖子 |  |  |  |
+| 深度工作小时数 |  |  |  |
 
-## What Got Done
+## 完成情况
 
-### Completed
-<!-- List completed tasks -->
-- [PLACEHOLDER]
-- [PLACEHOLDER]
+### 已完成
+- [填写]
 
-### Shipped
-<!-- Anything you put out into the world -->
-- [PLACEHOLDER]
+### 已交付
+- [填写本周发布或交付的内容]
 
-### Progress on Goals
-<!-- Reference goals.yaml -->
-- [PLACEHOLDER: Goal] - [Progress made]
+### 目标进度
+- [目标] — [完成进度]
 
----
+## 未完成事项
 
-## What Didn't Get Done
+### 延后到下周
+- [任务] — 原因：[填写]
 
-### Carried Over
-<!-- Tasks moving to next week -->
-- [PLACEHOLDER] - Why: [reason]
+### 已取消
+- [任务] — 原因：[填写]
 
-### Dropped
-<!-- Tasks you're removing -->
-- [PLACEHOLDER] - Why: [reason]
+## 本周收获
 
----
+### 做得好的事
+1. [填写]
+2. [填写]
 
-## Wins
-<!-- Celebrate what went well -->
-1. [PLACEHOLDER]
-2. [PLACEHOLDER]
+### 学到的经验
+1. [填写]
+2. [填写]
 
-## Lessons Learned
-<!-- What did you learn? -->
-1. [PLACEHOLDER]
-2. [PLACEHOLDER]
+### 遇到的挑战
+1. [填写]
 
-## Challenges
-<!-- What was hard? -->
-1. [PLACEHOLDER]
+## 内容表现
 
----
+### 表现最好
+- [帖子或内容] — [指标或结果]
 
-## Content Performance
+### 表现不佳
+- [内容] — [原因]
 
-### Top Performing
-<!-- What content did well? -->
-- [PLACEHOLDER: Post/content] - [Metric/result]
+## 人际关系
 
-### Underperformed
-<!-- What didn't land? Why? -->
-- [PLACEHOLDER]
+- 新认识的人：[填写]
+- 需要跟进的人：[填写]
 
----
+## 下周安排
 
-## Relationships
+### 三项优先事项
+1. [填写]
+2. [填写]
+3. [填写]
 
-### New Connections
-- [PLACEHOLDER]
+### 日历重点
+- [星期]：[重要事项]
 
-### Follow-ups Needed
-- [PLACEHOLDER]
+### 计划内容
+- [填写]
 
----
+## 精力与状态
 
-## Next Week
+| 方面 | 评分（1—10） | 备注 |
+| --- | --- | --- |
+| 精力 |  |  |
+| 专注 |  |  |
+| 压力 |  |  |
+| 睡眠 |  |  |
 
-### Top 3 Priorities
-1. [PLACEHOLDER]
-2. [PLACEHOLDER]
-3. [PLACEHOLDER]
+## 备注
 
-### Calendar Highlights
-- [Day]: [PLACEHOLDER: Key event]
+[其他想法、创意或背景信息]
 
-### Content Planned
-- [PLACEHOLDER]
-
----
-
-## Energy & Wellbeing
-
-| Aspect | Rating (1-10) | Notes |
-|--------|---------------|-------|
-| Energy | | |
-| Focus | | |
-| Stress | | |
-| Sleep | | |
-
----
-
-## Notes
-
-[PLACEHOLDER: Any additional thoughts, ideas, or context]
-
----
-
-*Reviewed on: [DATE]*
+回顾日期：[日期]

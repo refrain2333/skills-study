@@ -1,203 +1,193 @@
 ---
 name: digital-brain
-description: "This skill should be used for personal operating-system workflows: content creation, voice consistency, relationship lookup, meeting preparation, weekly review, goal tracking, personal brand management, and network management."
+description: "用于个人工作系统任务：创作内容、保持表达风格一致、查询人际关系、准备会议、进行周度回顾、跟踪目标、管理个人品牌和维护人际网络。"
 version: 1.0.0
 ---
 
-# Digital Brain
+# 数字大脑
 
-A structured personal operating system for managing digital presence, knowledge, relationships, and goals with AI assistance. Designed for founders building in public, content creators growing their audience, and tech-savvy professionals seeking AI-assisted personal management.
+一个借助 AI 管理数字形象、知识、人际关系和目标的结构化个人工作系统。适合公开记录创业过程的创始人、内容创作者，以及希望借助 AI 管理个人事务的技术从业者。
 
-**Important**: This skill uses progressive disclosure. Module-specific instructions are in each subdirectory's `.md` file. Only load what's needed for the current task.
+**重要**：本技能采用渐进披露。各子目录的 `.md` 文件包含对应模块说明。只加载当前任务需要的模块。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when the user:
+用户提出以下请求时启用：
 
-- Requests content creation (posts, threads, newsletters) - load identity/voice.md first
-- Asks for help with personal brand or positioning
-- Needs to look up or manage contacts/relationships
-- Wants to capture or develop content ideas
-- Requests meeting preparation or follow-up
-- Asks for weekly reviews or goal tracking
-- Needs to save or retrieve bookmarked resources
-- Wants to organize research or learning materials
+- 创作帖子、串文或简报；先加载 `identity/voice.md`。
+- 寻求个人品牌或定位建议。
+- 查询或管理联系人与人际关系。
+- 记录或拓展内容创意。
+- 准备会议或处理会后跟进。
+- 进行周度回顾或跟踪目标。
+- 保存或检索收藏资料。
+- 整理研究或学习材料。
 
-**Trigger phrases**: "write a post", "my voice", "content ideas", "who is [name]", "prepare for meeting", "weekly review", "save this", "my goals"
+常见说法包括：“写一篇帖子”“按我的风格写”“有哪些内容创意”“某某是谁”“帮我准备会议”“周度回顾”“保存这个”“我的目标是什么”。
 
-## Core Concepts
+## 核心概念
 
-### Progressive Disclosure Architecture
+### 渐进披露架构
 
-The Digital Brain follows a three-level loading pattern:
+数字大脑采用三级加载模式：
 
-| Level | When Loaded | Content |
-|-------|-------------|---------|
-| **L1: Metadata** | Always | This SKILL.md overview |
-| **L2: Module Instructions** | On-demand | `[module]/[MODULE].md` files |
-| **L3: Data Files** | As-needed | `.jsonl`, `.yaml`, `.md` data |
+| 层级 | 加载时机 | 内容 |
+| --- | --- | --- |
+| **L1：元数据** | 始终 | 本 `SKILL.md` 概览 |
+| **L2：模块说明** | 按需 | `[模块]/[模块名].md` 文件 |
+| **L3：数据文件** | 任务需要时 | `.jsonl`、`.yaml`、`.md` 数据 |
 
-### File Format Strategy
+### 文件格式策略
 
-Formats chosen for optimal agent parsing:
+按智能体解析需求选择格式：
 
-- **JSONL** (`.jsonl`): Append-only logs - ideas, posts, contacts, interactions
-- **YAML** (`.yaml`): Structured configs - goals, values, circles
-- **Markdown** (`.md`): Narrative content - voice, brand, calendar, todos
-- **XML** (`.xml`): Complex prompts - content generation templates
+- **JSONL**（`.jsonl`）：只追加日志，如创意、帖子、联系人和互动记录。
+- **YAML**（`.yaml`）：结构化配置，如目标、价值观和关系层级。
+- **Markdown**（`.md`）：叙述内容，如表达风格、品牌、日历和待办。
+- **XML**（`.xml`）：结构复杂的提示词和内容生成模板。
 
-### Append-Only Data Integrity
+### 只追加数据完整性
 
-JSONL files are **append-only**. Never delete entries:
-- Mark as `"status": "archived"` instead of deleting
-- Preserves history for pattern analysis
-- Enables "what worked" retrospectives
+JSONL 文件只追加，绝不删除记录：
 
-## Detailed Topics
+- 使用 `"status": "archived"` 标记归档，而不是删行。
+- 保留历史，便于分析模式。
+- 支持回顾“哪些做法有效”。
 
-### Module Overview
+## 详细主题
+
+### 模块概览
 
 ```
 digital-brain/
-├── identity/     → Voice, brand, values (READ FIRST for content)
-├── content/      → Ideas, drafts, posts, calendar
-├── knowledge/    → Bookmarks, research, learning
-├── network/      → Contacts, interactions, intros
-├── operations/   → Todos, goals, meetings, metrics
-└── agents/       → Automation scripts
+├── identity/     → 表达方式、品牌、价值观（创作内容前先读）
+├── content/      → 创意、草稿、帖子、日历
+├── knowledge/    → 收藏、研究、学习
+├── network/      → 联系人、互动、引荐
+├── operations/   → 待办、目标、会议、指标
+└── agents/       → 自动化脚本
 ```
 
-### Identity Module (Critical for Content)
+### 身份模块（创作内容时必读）
 
-**Always read `identity/voice.md` before generating any content.**
+生成任何内容前，**始终先读 `identity/voice.md`**。
 
-Contains:
-- `voice.md` - Tone, style, vocabulary, patterns
-- `brand.md` - Positioning, audience, content pillars
-- `values.yaml` - Core beliefs and principles
-- `bio-variants.md` - Platform-specific bios
-- `prompts/` - Reusable generation templates
+- `voice.md`：语气、风格、词汇和表达模式。
+- `brand.md`：定位、受众和内容支柱。
+- `values.yaml`：核心信念和原则。
+- `bio-variants.md`：针对不同平台的个人简介。
+- `prompts/`：可重复使用的生成模板。
 
-### Content Module
+### 内容模块
 
-Pipeline: `ideas.jsonl` → `drafts/` → `posts.jsonl`
+流程为 `ideas.jsonl` → `drafts/` → `posts.jsonl`：
 
-- Capture ideas immediately to `ideas.jsonl`
-- Develop in `drafts/` using `templates/`
-- Log published content to `posts.jsonl` with metrics
-- Plan in `calendar.md`
+- 立即把创意记入 `ideas.jsonl`。
+- 使用 `templates/` 在 `drafts/` 中继续完善。
+- 发布后将内容和指标记入 `posts.jsonl`。
+- 在 `calendar.md` 中规划发布时间。
 
-### Network Module
+### 人际网络模块
 
-Personal CRM with relationship tiers:
-- `inner` - Weekly touchpoints
-- `active` - Bi-weekly touchpoints
-- `network` - Monthly touchpoints
-- `dormant` - Quarterly reactivation checks
+通过关系层级管理个人 CRM：
 
-### Operations Module
+- `inner`：每周联系。
+- `active`：每两周联系。
+- `network`：每月联系。
+- `dormant`：每季度检查是否重新联系。
 
-Productivity system with priority levels:
-- P0: Do today, blocking
-- P1: This week, important
-- P2: This month, valuable
-- P3: Backlog, nice to have
+### 日常运营模块
 
-## Practical Guidance
+任务优先级分为：
 
-### Content Creation Workflow
+- P0：今天完成，会阻塞其他工作。
+- P1：本周完成，重要。
+- P2：本月完成，有价值。
+- P3：待办列表，有余力时处理。
 
-```
-1. Read identity/voice.md (REQUIRED)
-2. Check identity/brand.md for topic alignment
-3. Reference content/posts.jsonl for successful patterns
-4. Use content/templates/ as starting structure
-5. Draft matching voice attributes
-6. Log to posts.jsonl after publishing
-```
+## 实践指南
 
-### Pre-Meeting Preparation
+### 内容创作流程
 
-```
-1. Look up contact: network/contacts.jsonl
-2. Get history: network/interactions.jsonl
-3. Check pending: operations/todos.md
-4. Generate brief with context
+```text
+1. 读取 identity/voice.md（必需）。
+2. 查看 identity/brand.md，确认主题是否匹配。
+3. 查阅 content/posts.jsonl，参考效果较好的表达方式。
+4. 使用 content/templates/ 中的模板组织内容。
+5. 按表达风格起草。
+6. 如果暂不发布，将内容记入 posts.jsonl 或 ideas.jsonl。
 ```
 
-### Weekly Review Process
+### 会前准备
 
+```text
+1. 在 network/contacts.jsonl 中查找联系人。
+2. 从 network/interactions.jsonl 获取历史互动。
+3. 在 operations/todos.md 中检查待办。
+4. 生成包含关系背景的会前摘要。
 ```
-1. Run: python agents/scripts/weekly_review.py
-2. Review metrics in operations/metrics.jsonl
-3. Check stale contacts: agents/scripts/stale_contacts.py
-4. Update goals progress in operations/goals.yaml
-5. Plan next week in content/calendar.md
+
+### 周度回顾
+
+```text
+1. 运行 python agents/scripts/weekly_review.py。
+2. 检查 operations/metrics.jsonl 中的指标。
+3. 检查近期未联系的人：agents/scripts/stale_contacts.py。
+4. 更新 operations/goals.yaml 中的目标进度。
+5. 在 content/calendar.md 中规划下周安排。
 ```
 
-## Examples
+## 示例
 
-### Example: Writing an X Post
+### 示例：撰写 X 帖子
 
-**Input**: "Help me write a post about AI agents"
+**输入**：“帮我写一篇关于 AI 智能体的帖子。”
 
-**Process**:
-1. Read `identity/voice.md` → Extract voice attributes
-2. Check `identity/brand.md` → Confirm "ai_agents" is a content pillar
-3. Reference `content/posts.jsonl` → Find similar successful posts
-4. Draft post matching voice patterns
-5. Suggest adding to `content/ideas.jsonl` if not publishing immediately
+**流程**：读取 `identity/voice.md` 提取表达特点；查看 `identity/brand.md` 确认 `ai_agents` 属于内容支柱；查阅 `content/posts.jsonl` 寻找类似的成功帖子；起草符合表达风格的内容；若不立即发布，建议记入 `content/ideas.jsonl`。
 
-**Output**: Post draft in user's authentic voice with platform-appropriate format.
+**输出**：符合用户真实表达方式且适合对应平台的帖子草稿。
 
-### Example: Contact Lookup
+### 示例：查询联系人
 
-**Input**: "Prepare me for my call with Sarah Chen"
+**输入**：“帮我准备和 Sarah Chen 的通话。”
 
-**Process**:
-1. Search `network/contacts.jsonl` for "Sarah Chen"
-2. Get recent entries from `network/interactions.jsonl`
-3. Check `operations/todos.md` for pending items with Sarah
-4. Compile brief: role, context, last discussed, follow-ups
+**流程**：在 `network/contacts.jsonl` 搜索联系人；读取 `network/interactions.jsonl` 中近期互动；检查 `operations/todos.md` 中与 Sarah 相关的待办；整理职位、背景、最近讨论内容和待跟进事项。
 
-**Output**: Pre-meeting brief with relationship context.
+**输出**：包含关系背景的会前摘要。
 
-## Guidelines
+## 指南
 
-1. **Voice First**: Always read `identity/voice.md` before any content generation
-2. **Append Only**: Never delete from JSONL files - archive instead
-3. **Update Timestamps**: Set `updated` field when modifying tracked data
-4. **Cross-Reference**: Knowledge informs content, network informs operations
-5. **Log Interactions**: Always log meetings/calls to `interactions.jsonl`
-6. **Preserve History**: Past content in `posts.jsonl` informs future performance
+1. **先了解表达方式**：生成内容前总是读取 `identity/voice.md`。
+2. **只追加记录**：不要删除 JSONL 记录，改为归档。
+3. **更新时间戳**：修改跟踪数据时设置 `updated` 字段。
+4. **交叉引用模块**：知识支持内容创作，人际网络支持日常运营。
+5. **记录互动**：会面和通话后写入 `interactions.jsonl`。
+6. **保留历史**：`posts.jsonl` 中的过去内容有助于改善后续表现。
 
-## Integration
+## 集成
 
-This skill integrates context engineering principles:
+本技能应用以下上下文工程原则：
 
-- **context-fundamentals** - Progressive disclosure, attention budget management
-- **memory-systems** - JSONL for persistent memory, structured recall
-- **tool-design** - Scripts in `agents/scripts/` follow tool design principles
-- **context-optimization** - Module separation prevents context bloat
+- `context-fundamentals`：渐进披露和注意力预算管理。
+- `memory-systems`：使用 JSONL 保存持久记忆并结构化检索。
+- `tool-design`：`agents/scripts/` 中的脚本遵循工具设计原则。
+- `context-optimization`：通过模块隔离避免上下文膨胀。
 
-## References
+## 参考资料
 
-Internal references:
-- [Identity Module](./identity/IDENTITY.md) - Voice and brand details
-- [Content Module](./content/CONTENT.md) - Content pipeline docs
-- [Network Module](./network/NETWORK.md) - CRM documentation
-- [Operations Module](./operations/OPERATIONS.md) - Productivity system
-- [Agent Scripts](./agents/AGENTS.md) - Automation documentation
+内部参考：
 
-External resources:
-- [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
-- [Anthropic Context Engineering Guide](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
+- [身份模块](./identity/IDENTITY.md)：表达风格和个人品牌。
+- [内容模块](./content/CONTENT.md)：内容流程文档。
+- [人际网络模块](./network/NETWORK.md)：联系人管理说明。
+- [日常运营模块](./operations/OPERATIONS.md)：生产力系统。
+- [智能体脚本](./agents/AGENTS.md)：自动化文档。
 
----
+外部参考：
 
-## Skill Metadata
+- [智能体上下文工程技能集](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
+- [Anthropic 上下文工程指南](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
 
-**Created**: 2024-12-29
-**Last Updated**: 2024-12-29
-**Author**: Murat Can Koylan
-**Version**: 1.0.0
+## 技能元数据
+
+创建时间：2024-12-29；最后更新：2024-12-29；作者：Murat Can Koylan；版本：1.0.0。

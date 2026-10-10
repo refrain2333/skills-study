@@ -1,184 +1,158 @@
-# Case Studies: LLM Project Development
+# 大语言模型项目开发案例
 
-This reference contains detailed case studies of production LLM projects that demonstrate effective development methodology. Each case study analyzes the problem, approach, architecture, and lessons learned.
+本文整理多个生产级大语言模型项目的案例，分析问题、方案、架构和经验。
 
-## Case Study 1: Karpathy's HN Time Capsule
+## 案例一：Karpathy 的 Hacker News 十年回望
 
-**Source**: https://github.com/karpathy/hn-time-capsule
+**来源**：[hn-time-capsule](https://github.com/karpathy/hn-time-capsule)
 
-### Problem Statement
+### 问题
 
-Analyze Hacker News discussions from 10 years ago and grade commenters on how prescient their predictions were with the benefit of hindsight.
+分析十年前的 Hacker News 讨论，并根据后来发生的事实，评价评论者预测得有多准确。
 
-### Task-Model Fit Analysis
+### 任务与模型的匹配度
 
-This task is well-suited for LLM processing because:
+| 因素 | 判断 |
+| --- | --- |
+| 综合能力 | 需要结合文章内容与多个评论串 |
+| 主观判断 | 根据已知结果评价预测 |
+| 领域知识 | 模型可能掌握相关事件的后续发展 |
+| 错误容忍度 | 单条评论评分错误不会破坏整个系统 |
+| 批处理 | 每篇文章相互独立 |
+| 自然语言输出 | 目标是生成人类可读的分析 |
 
-| Factor | Assessment |
-|--------|------------|
-| Synthesis | Combining article content + multiple comment threads |
-| Subjective judgment | Grading predictions against known outcomes |
-| Domain knowledge | Model has knowledge of what actually happened |
-| Error tolerance | Wrong grade on one comment does not break the system |
-| Batch processing | Each article is independent |
-| Natural language output | Human-readable analysis is the goal |
+### 开发流程
 
-### Development Methodology
+**第 1 步：手动原型验证**
 
-**Step 1: Manual Prototype**
+自动化前，Karpathy 把一篇文章和评论串复制到 ChatGPT，几分钟内验证了方案：
 
-Before building any automation, Karpathy copy-pasted one article + comment thread into ChatGPT to validate the approach. This took minutes and confirmed:
-- The model could produce insightful hindsight analysis
-- The output format worked for the intended use case
-- The quality exceeded what he could do manually
+- 模型能根据后见之明给出有启发性的分析。
+- 输出格式适合预期用途。
+- 质量高于手动完成的结果。
 
-**Step 2: Agent-Assisted Implementation**
+**第 2 步：智能体辅助实现**
 
-Used Opus 4.5 to build the pipeline in approximately 3 hours. The agent handled:
-- HTML parsing for HN frontpage
-- Algolia API integration for comments
-- Prompt template design
-- Output parsing logic
-- Static HTML rendering
+使用 Opus 4.5，约三小时构建处理流程。智能体负责 Hacker News 首页的 HTML 解析、通过 Algolia API 获取评论、设计提示词模板、解析输出及渲染静态 HTML。
 
-**Step 3: Batch Execution**
+**第 3 步：批量运行**
 
-- 930 LLM queries (31 days × 30 articles)
-- 15 parallel workers
-- ~$58 total cost
-- ~1 hour execution time
+- 930 次模型查询（31 天 × 每天 30 篇文章）。
+- 15 个并行工作者。
+- 总成本约 58 美元。
+- 运行约一小时。
 
-### Pipeline Architecture
+### 流程架构
 
-```
-fetch → prompt → analyze → parse → render
+```text
+获取 → 生成提示词 → 分析 → 解析 → 渲染
 ```
 
-**Stage 1: Fetch**
-- Download HN frontpage for target date
-- Fetch article content via HTTP
-- Fetch comments via Algolia API
-- Output: `data/{date}/{item_id}/meta.json`, `article.txt`, `comments.json`
+**阶段一：获取**
 
-**Stage 2: Prompt**
-- Load article metadata and content
-- Load comment tree
-- Generate markdown prompt from template
-- Output: `data/{date}/{item_id}/prompt.md`
+- 下载目标日期的 Hacker News 首页。
+- 通过 HTTP 获取文章正文。
+- 通过 Algolia API 获取评论。
+- 输出 `data/{date}/{item_id}/meta.json`、`article.txt` 和 `comments.json`。
 
-**Stage 3: Analyze**
-- Submit prompt to GPT 5.1 Thinking API
-- Parallel execution with ThreadPoolExecutor
-- Output: `data/{date}/{item_id}/response.md`
+**阶段二：生成提示词**
 
-**Stage 4: Parse**
-- Extract grades from "Final grades" section via regex
-- Extract interestingness score via regex
-- Aggregate grades across all articles
-- Output: `data/{date}/{item_id}/grades.json`, `score.json`
+- 加载文章元数据和正文。
+- 加载评论树。
+- 根据模板生成 Markdown 提示词。
+- 输出 `data/{date}/{item_id}/prompt.md`。
 
-**Stage 5: Render**
-- Generate static HTML with embedded JavaScript
-- Create day pages with article navigation
-- Create Hall of Fame with aggregated rankings
-- Output: `output/{date}/index.html`, `output/hall-of-fame.html`
+**阶段三：分析**
 
-### Structured Output Design
+- 将提示词提交给 GPT-5.1 Thinking API。
+- 使用 ThreadPoolExecutor 并行运行。
+- 输出 `data/{date}/{item_id}/response.md`。
 
-The prompt template specifies exact output format:
+**阶段四：解析**
 
+- 用正则表达式从“最终评分”章节提取等级。
+- 用正则表达式提取趣味度分数。
+- 汇总所有文章的评分。
+- 输出 `data/{date}/{item_id}/grades.json` 和 `score.json`。
+
+**阶段五：渲染**
+
+- 生成内嵌 JavaScript 的静态 HTML。
+- 创建包含文章导航的每日页面。
+- 创建汇总排名的“名人堂”页面。
+- 输出 `output/{date}/index.html` 和 `output/hall-of-fame.html`。
+
+### 结构化输出设计
+
+提示词要求按以下六部分精确输出：
+
+```text
+请从后见之明出发，按以下六部分分析：
+
+1. 简要概述文章及其讨论。
+2. 这个主题后来发生了什么？
+3. 评选“预测最准”和“预测最错”的评论。
+4. 补充其他有趣或值得注意的内容。
+5. 为具体评论者评分。
+6. 最后给出 0 到 10 分的总分。
+
+第 5 部分请使用“最终评分”作为标题，后面只接无序列表，格式为“姓名：等级（可选评论）”。
+
+请严格遵守格式，因为程序会解析结果。
 ```
-Let's use our benefit of hindsight now in 6 sections:
 
-1. Give a brief summary of the article and the discussion thread.
-2. What ended up happening to this topic?
-3. Give out awards for "Most prescient" and "Most wrong" comments.
-4. Mention any other fun or notable aspects.
-5. Give out grades to specific people for their comments.
-6. At the end, give a final score (from 0-10).
+关键做法：使用编号章节组织内容；明确规定格式并提供示例；解释格式要求的原因（供程序解析）；约束输出范围（字母等级和 0—10 分）。
 
-As for the format of Section 5, use the header "Final grades" and follow it 
-with simply an unordered list in the format of "name: grade (optional comment)".
+### 解析实现
 
-Please follow the format exactly because I will be parsing it programmatically.
-```
-
-Key techniques:
-- Numbered sections for structure
-- Explicit format specification with examples
-- Rationale disclosure ("because I will be parsing it")
-- Constrained output (letter grades, 0-10 scores)
-
-### Parsing Implementation
-
-The parsing code handles variations gracefully:
+解析代码能够容忍标题格式差异：
 
 ```python
 def parse_grades(text: str) -> dict[str, dict]:
     # Match "Final grades" with optional section number or markdown
     pattern = r'(?:^|\n)(?:\d+[\.\)]\s*)?(?:#+ *)?Final grades\s*\n'
     match = re.search(pattern, text, re.IGNORECASE)
-    
+
     # Handle both ASCII and Unicode minus signs
     line_pattern = r'^[\-\*]\s*([^:]+):\s*([A-F][+\-−]?)(?:\s*\(([^)]+)\))?'
 ```
 
-### Lessons Learned
+### 经验
 
-1. **Manual validation first**: The 5-minute copy-paste test prevented hours of wasted development.
+1. **先手动验证**：五分钟的复制粘贴试验避免了数小时无效开发。
+2. **用文件系统保存状态**：每篇文章目录保存所有中间结果，调试很容易。
+3. **阶段幂等**：再次运行时，只处理缺少输出文件的项目。
+4. **智能体辅助开发**：聚焦需求而非实现细节，三小时就做出可用代码。
+5. **并行执行**：15 个工作者缩短了运行时间，没有增加令牌成本。
 
-2. **File system as state**: Each article directory contains all intermediate outputs, making debugging trivial.
+## 案例二：Vercel d0 精简架构
 
-3. **Idempotent stages**: Re-running only processes items that lack output files.
+**来源**：[移除了智能体 80% 的工具](https://vercel.com/blog/we-removed-80-percent-of-our-agents-tools)
 
-4. **Agent-assisted development**: 3 hours to working code by focusing on requirements, not implementation details.
+### 问题
 
-5. **Parallel execution**: 15 workers reduced execution time without increasing token costs.
+构建文本转 SQL 智能体，使 Vercel 员工都能在 Slack 中用自然语言查询分析数据。
 
----
+### 初版方案及失败结果
 
-## Case Study 2: Vercel d0 Architectural Reduction
+团队构建了复杂系统：17 个专用工具（查询结构、查询验证、错误恢复等）、大量限制推理的提示词工程、精细上下文管理，以及手写的结构检索。
 
-**Source**: https://vercel.com/blog/we-removed-80-percent-of-our-agents-tools
+结果：成功率 80%，平均执行 274.8 秒，平均使用约 102K 令牌，约 12 步，维护负担持续增加。
 
-### Problem Statement
+### 根本问题
 
-Build a text-to-SQL agent that enables anyone at Vercel to query analytics data through natural language questions in Slack.
+团队在解决模型本来能自行处理的问题：预先筛选上下文、限制选项、给每次交互套上验证逻辑，以及构建工具“保护”模型免受复杂性的影响。
 
-### Initial Approach (Failed)
+每个边界案例都要加补丁；每次模型更新都要重新校准约束。维护脚手架花的时间超过改善结果的时间。
 
-The team built a sophisticated system with:
-- 17 specialized tools (schema lookup, query validation, error recovery, etc.)
-- Heavy prompt engineering to constrain reasoning
-- Careful context management
-- Hand-coded retrieval for schema information
+### 精简后的架构
 
-**Results**:
-- 80% success rate
-- 274.8 seconds average execution time
-- ~102k tokens average usage
-- ~12 steps average
-- Constant maintenance burden
+核心假设：如果直接向 Claude 提供原始文件，让它自行探索，会怎样？
 
-### The Problem
-
-The team was solving problems the model could handle on its own:
-- Pre-filtering context
-- Constraining options
-- Wrapping every interaction in validation logic
-- Building tools to "protect" the model from complexity
-
-Every edge case required another patch. Every model update required re-calibrating constraints. More time was spent maintaining scaffolding than improving outcomes.
-
-### Architectural Reduction
-
-The hypothesis: What if we just give Claude access to the raw files and let it figure things out?
-
-**New architecture**:
-- 2 tools total: ExecuteCommand (bash) + ExecuteSQL
-- Direct file system access via sandbox
-- Semantic layer as YAML/Markdown/JSON files
-- Standard Unix utilities (grep, cat, find, ls)
+- 总共只保留两个工具：执行命令（Bash）和执行 SQL。
+- 通过沙箱直接访问文件系统。
+- 语义层存为 YAML、Markdown 和 JSON 文件。
+- 使用标准 Unix 工具，例如 `grep`、`cat`、`find`、`ls`。
 
 ```javascript
 const agent = new ToolLoopAgent({
@@ -190,199 +164,168 @@ const agent = new ToolLoopAgent({
 });
 ```
 
-### Results
+### 结果
 
-| Metric | Before (17 tools) | After (2 tools) | Change |
-|--------|-------------------|-----------------|--------|
-| Avg execution time | 274.8s | 77.4s | 3.5x faster |
-| Success rate | 80% | 100% | +20% |
-| Avg token usage | ~102k | ~61k | 37% fewer |
-| Avg steps | ~12 | ~7 | 42% fewer |
+| 指标 | 调整前（17 个工具） | 调整后（2 个工具） | 变化 |
+| --- | --- | --- | --- |
+| 平均执行时间 | 274.8 秒 | 77.4 秒 | 快 3.5 倍 |
+| 成功率 | 80% | 100% | 提升 20 个百分点 |
+| 平均令牌使用 | 约 102K | 约 61K | 减少 37% |
+| 平均步骤数 | 约 12 | 约 7 | 减少 42% |
 
-The worst case before: 724 seconds, 100 steps, 145k tokens, and still failed.
-Same query after: 141 seconds, 19 steps, 67k tokens, succeeded.
+调整前最差的一次耗时 724 秒、执行 100 步、使用 145K 令牌，仍以失败告终。同一查询调整后耗时 141 秒、执行 19 步、使用 67K 令牌，并成功完成。
 
-### Why It Worked
+### 为什么有效
 
-1. **Good documentation already existed**: The semantic layer files contained dimension definitions, measure calculations, and join relationships. The tools were summarizing what was already legible.
+1. **已有高质量文档**：语义层文件已说明维度、度量计算和连接关系；工具只是在总结已清楚可读的内容。
+2. **文件系统是成熟抽象**：模型通过训练深入理解文件系统；`grep` 已有约 50 年历史，足够可靠。
+3. **约束变成负担**：模型能力提升后，防护栏可能更多地限制性能，而不是提供帮助。
 
-2. **File systems are proven abstractions**: The model understands file systems deeply from training. grep is 50 years old and works perfectly.
+### 经验
 
-3. **Constraints became liabilities**: With better models, the guardrails were limiting performance more than helping.
+1. **通过删减实现增强**：工具越少，智能体有时表现越好。每个工具都替模型作出一个选择。
+2. **面向未来模型设计**：模型进步速度快于工具。为今天优化的架构，明天可能过度受限。
+3. **清楚的上下文胜过巧妙工具**：投入精力维护文档、明确命名和结构化数据，比构建复杂工具更重要。
+4. **从简单开始**：模型、文件系统和目标。只有证明必要后才增加复杂性。
 
-### Key Lessons
+## 案例三：Manus 上下文工程
 
-1. **Addition by subtraction**: The best agents might be ones with the fewest tools. Every tool is a choice you are making for the model.
+**来源**：Peak Ji 的文章《构建 Manus 的经验：智能体上下文工程》。
 
-2. **Build for future models**: Models improve faster than tooling. Architectures optimized for today may be over-constrained for tomorrow.
+### 问题
 
-3. **Good context over clever tools**: Invest in documentation, clear naming, and well-structured data. That foundation matters more than sophisticated tooling.
+构建通用消费级智能体，使其能在 50 次以上工具调用中完成复杂任务，同时保持表现并控制成本。
 
-4. **Start simple**: Model + file system + goal. Add complexity only when proven necessary.
+### 核心观察
 
----
+KV 缓存命中率是生产智能体最重要的单项指标，直接影响延迟和成本。
 
-## Case Study 3: Manus Context Engineering
+- Claude Sonnet 缓存价格：每百万令牌 0.30 美元。
+- Claude Sonnet 未缓存价格：每百万令牌 3.00 美元。
+- 成本相差 10 倍。
 
-**Source**: Peak Ji's blog "Context Engineering for AI Agents: Lessons from Building Manus"
+智能体工作负载的平均输入与输出比例约为 100:1，因此优化缓存命中几乎决定成本表现。
 
-### Problem Statement
+### 关键模式
 
-Build a general-purpose consumer agent that can accomplish complex tasks across 50+ tool calls while maintaining performance and managing costs.
+**1. 只追加上下文**
 
-### Core Insight
+不要修改以前的动作或观察，并确保序列化结果确定（JSON 键顺序必须稳定）。只要一个令牌不同，该位置之后的缓存就会失效。
 
-KV-cache hit rate is the single most important metric for production agents. It directly affects both latency and cost.
+常见错误：在系统提示词开头加入时间戳，会彻底破坏缓存命中率。
 
-- Claude Sonnet cached: $0.30/MTok
-- Claude Sonnet uncached: $3.00/MTok
-- 10x cost difference
+**2. 屏蔽内容，不要移除定义**
 
-With an average input-to-output ratio of 100:1 in agentic workloads, optimizing for cache hits dominates the cost equation.
+不要在迭代中动态增加或删除工具。工具定义位于上下文靠前位置；任何变化都会让后续内容的 KV 缓存失效。
 
-### Key Patterns
+可以在解码时使用 logits 遮罩限制工具选择，而不修改定义。这样可以保留缓存，同时控制行为。
 
-**1. Append-Only Context**
+**3. 把文件系统用作上下文**
 
-Never modify previous actions or observations. Ensure deterministic serialization (JSON key ordering must be stable). A single token difference invalidates the cache from that point forward.
+把文件系统视为容量近乎无限、可持久保存且可由智能体操作的记忆。模型可按需读写文件。
 
-Common mistake: Including a timestamp at the beginning of the system prompt kills cache hit rate entirely.
+压缩策略应可恢复：如果保留了 URL，可以删除网页正文；如果仍保留文件路径，可以省略文档内容。
 
-**2. Mask, Do Not Remove**
+**4. 通过复述维持注意力**
 
-Do not dynamically add or remove tools mid-iteration. Tool definitions live near the front of context - any change invalidates the KV-cache for all subsequent content.
+Manus 创建并逐步更新 `todo.md`。这不仅是整理工作，也会把全局计划推到模型近期注意力范围内。
 
-Instead, use logit masking during decoding to constrain tool selection without modifying definitions. This maintains cache while still controlling behavior.
+持续把目标改写到上下文末尾，可以缓解“中间位置丢失”，并保持目标一致性。
 
-**3. File System as Context**
+**5. 保留错误**
 
-Treat the file system as unlimited, persistent, agent-operable memory. The model learns to write and read files on demand.
+不要隐藏失败。当模型看到失败动作及错误结果时，它会据此更新判断，减少重复错误。
 
-Compression strategies should be restorable:
-- Web page content can be dropped if URL is preserved
-- Document contents can be omitted if file path remains available
+删除失败记录会抹掉模型适应任务所需的证据。
 
-**4. Recitation for Attention**
+### 多智能体用于上下文隔离
 
-Manus creates a todo.md file and updates it step-by-step. This is not just organization - it pushes the global plan into the model's recent attention span.
+Manus 使用子智能体的首要目标是隔离上下文，而不是按组织角色分工。对于可分离任务：
 
-By constantly rewriting objectives at the end of context, the agent avoids "lost in the middle" issues and maintains goal alignment.
+- 规划者向使用独立上下文窗口的子智能体分派工作。
+- 简单任务通过函数调用传递指令。
+- 复杂任务可把完整上下文分享给子智能体。
 
-**5. Keep Errors In Context**
+子智能体使用受约束输出结构的 `submit_results` 工具。受约束解码可帮助遵循规定格式。
 
-Do not hide failures. When the model sees a failed action and the resulting error, it implicitly updates beliefs and avoids repeating mistakes.
+### 分层动作空间
 
-Erasing failures removes evidence the model needs to adapt.
+不要把每个实用能力都注册成工具：
 
-### Multi-Agent for Context Isolation
+- 保留少量（少于 20 个）原子函数，例如 Bash、文件系统访问和代码执行。
+- 多数操作交给沙箱层。
+- MCP 工具通过命令行暴露，再由 Bash 工具执行。
 
-The primary goal of sub-agents in Manus is context isolation, not role division. For tasks requiring discrete work:
-- Planner assigns tasks to sub-agents with their own context windows
-- Simple tasks: pass instructions via function call
-- Complex tasks: share full context with sub-agent
+这样可以减少工具定义所占令牌，并避免模型被重叠描述混淆。
 
-Sub-agents have a submit_results tool with constrained output schema. Constrained decoding ensures adherence to defined format.
+### 迭代预期
 
-### Layered Action Space
+Manus 从发布以来重构了智能体运行框架五次。经验规律提示：为应对当前局限添加的结构，会随着模型进步变成约束。
 
-Rather than binding every utility as a tool:
-- Small set (<20) of atomic functions: Bash, filesystem access, code execution
-- Most actions offload to sandbox layer
-- MCP tools exposed through CLI, executed via Bash tool
+应使用不同能力等级的模型测试，确认运行框架没有限制性能。简单、不过度规定的设计更容易适应模型改进。
 
-This reduces tool definition tokens and prevents model confusion from overlapping descriptions.
+## 案例四：Anthropic 多智能体研究系统
 
-### Iteration Expectation
+**来源**：Anthropic 文章《我们如何构建多智能体研究系统》。
 
-Manus has refactored their agent framework five times since launch. The Bitter Lesson suggests structures added for current limitations become constraints as models improve.
+### 问题
 
-Test across model strengths to verify your harness is not limiting performance. Simple, unopinionated designs adapt better to model improvements.
+构建研究功能，通过多个并行智能体从网络、Google Workspace 和集成服务中探索复杂主题。
 
----
+### 架构
 
-## Case Study 4: Anthropic Multi-Agent Research
+采用协调者—工作者模式：主智能体分析问题并制定策略；派生子智能体并行探索；子智能体把发现交回主智能体进行综合；引用智能体处理最终输出。
 
-**Source**: Anthropic blog "How we built our multi-agent research system"
+### 性能观察
 
-### Problem Statement
+BrowseComp 评估中，三个因素解释了 95% 的表现差异：
 
-Build a research feature that can explore complex topics using multiple parallel agents searching across web, Google Workspace, and integrations.
+- 令牌使用量解释 80%。
+- 工具调用数量也会影响表现。
+- 模型选择同样会影响表现。
 
-### Architecture
+多智能体架构可有效提高任务可用令牌量，处理超出单智能体限制的问题。
 
-Orchestrator-worker pattern:
-- Lead agent analyzes query and develops strategy
-- Lead spawns subagents for parallel exploration
-- Subagents return findings to lead for synthesis
-- Citation agent processes final output
+### 令牌成本
 
-### Performance Insight
+- 普通聊天作为基线。
+- 单智能体约使用聊天的 4 倍令牌。
+- 多智能体约使用聊天的 15 倍令牌。
 
-Three factors explained 95% of performance variance in BrowseComp evaluation:
-- Token usage: 80% of variance
-- Number of tool calls: additional factor
-- Model choice: additional factor
+只有任务价值足够高，多智能体的成本才划算。
 
-Multi-agent architectures effectively scale token usage for tasks exceeding single-agent limits.
+### 提示词设计经验
 
-### Token Economics
+1. **像智能体一样思考**：构建模拟，逐步观察执行过程并定位失败模式。
+2. **教会智能体委派**：为子智能体说明目标、输出格式、工具与来源指导、任务边界。
+3. **按复杂度分配投入**：根据任务类型明确智能体数量与工具调用次数。
+4. **认真设计工具**：每个工具都应职责明确、描述清楚；糟糕的描述会把智能体引向错误路径。
+5. **让智能体改进自身**：Claude 4 模型可以诊断提示词失败并提出改进；工具测试智能体可以重写工具描述以避免常见错误。
+6. **先广后窄**：先用宽泛查询了解全貌，再评估信息分布并深入具体问题。
+7. **引导思考过程**：使用扩展思考作为可控草稿区，辅助规划。
+8. **并行调用工具**：同时运行 3—5 个子智能体，每个子智能体并行调用 3 个以上工具；研究用时最多减少 90%。
 
-- Chat interactions: baseline
-- Single agent: ~4x more tokens than chat
-- Multi-agent: ~15x more tokens than chat
+### 评估方法
 
-Multi-agent requires high-value tasks to justify the cost.
+- 尽早准备约 20 个代表性查询。
+- 使用大语言模型评审和评分规则，衡量事实准确性、引用准确性、完整性、来源质量和工具效率。
+- 人工评估用于发现自动化遗漏的边界案例。
+- 多轮智能体应重点评估最终结果。
 
-### Prompting Principles
+## 跨案例共性
 
-1. **Think like your agents**: Build simulations, watch step-by-step, identify failure modes.
+### 常见成功因素
 
-2. **Teach delegation**: Subagents need objective, output format, tools/sources guidance, and clear boundaries.
+1. **先手动验证，再自动化**：成功案例都先用简单实验验证任务是否适合模型。
+2. **以文件系统为基础**：无论保存状态（Karpathy）、作为工具接口（Vercel）还是充当记忆（Manus），文件系统都提供了成熟抽象。
+3. **保持架构简单**：多个案例中，精简方案优于复杂方案。先从最小实现开始，只添加经过证明必要的部分。
+4. **结构化输出与稳健解析**：明确规定输出格式，同时让解析器能够容忍合理变体。
+5. **预期架构会反复调整**：没有项目第一次就选对架构，应按可变更方式设计。
 
-3. **Scale effort to complexity**: Explicit guidelines for agent/tool call counts by task type.
+### 常见失败模式
 
-4. **Tool design is critical**: Distinct purpose and clear description for each tool. Bad descriptions send agents down wrong paths entirely.
-
-5. **Let agents improve themselves**: Claude 4 models can diagnose prompt failures and suggest improvements. Tool-testing agents can rewrite tool descriptions to avoid common mistakes.
-
-6. **Start wide, then narrow**: Broad queries first, evaluate landscape, then drill into specifics.
-
-7. **Guide thinking process**: Extended thinking mode as controllable scratchpad for planning.
-
-8. **Parallel tool calling**: 3-5 subagents in parallel, 3+ tools per subagent in parallel. Cut research time by up to 90%.
-
-### Evaluation Approach
-
-- Start with ~20 representative queries immediately
-- LLM-as-judge with rubric: factual accuracy, citation accuracy, completeness, source quality, tool efficiency
-- Human evaluation catches edge cases automation misses
-- Focus on end-state evaluation for multi-turn agents
-
----
-
-## Cross-Case Patterns
-
-### Common Success Factors
-
-1. **Manual validation before automation**: All successful projects validated task-model fit with simple tests first.
-
-2. **File system as foundation**: Whether for state management (Karpathy), tool interface (Vercel), or memory (Manus), the file system provides proven abstractions.
-
-3. **Architectural simplicity**: Reduction outperformed complexity in multiple cases. Start minimal, add only what proves necessary.
-
-4. **Structured outputs with robust parsing**: Explicit format specifications combined with flexible parsing that handles variations.
-
-5. **Iteration expectation**: No project got architecture right on the first try. Build for change.
-
-### Common Failure Patterns
-
-1. **Over-constraining models**: Guardrails that helped with weaker models become liabilities as capabilities improve.
-
-2. **Tool proliferation**: More tools often means more confusion and worse performance.
-
-3. **Hiding errors**: Removing failures from context prevents models from learning.
-
-4. **Premature optimization**: Adding complexity before basic functionality works.
-
-5. **Ignoring economics**: Token costs compound quickly; estimation and tracking are essential.
-
+1. **过度限制模型**：帮助较弱模型的防护栏，可能成为更强模型的负担。
+2. **工具泛滥**：更多工具经常导致更多混淆和更差表现。
+3. **隐藏错误**：从上下文移除失败，会阻止模型据此学习。
+4. **过早优化**：基础功能还未跑通就添加复杂结构。
+5. **忽视成本**：令牌费用累积很快，应估算并持续跟踪。

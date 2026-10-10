@@ -1,407 +1,274 @@
-# How Agent Skills for Context Engineering Built Digital Brain
+# 上下文工程技能如何构建数字大脑
 
-> This document demonstrates how the [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering) collection was used by a Claude Code agent to design and build a production-ready personal knowledge management system.
+> 本文介绍 Claude Code 智能体如何运用[智能体上下文工程技能集](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)，设计并构建可用于生产的个人知识管理系统。
 
----
+## 执行摘要
 
-## Executive Summary
+数字大脑并非凭直觉从零搭建，而是系统性应用了十项上下文工程技能。每项架构决策都能追溯到技能集合中的具体原则。
 
-Digital Brain wasn't built from scratch intuition—it was systematically designed by applying 10 context engineering skills. Each architectural decision traces back to specific principles from the skills collection.
+**结果**：构建出可扩展的个人工作系统，特点包括：
 
-**Result**: A scalable personal OS with:
-- ~650 tokens per content task (vs ~5000 without optimization)
-- 6 isolated modules preventing context pollution
-- 4 automation scripts following tool design principles
-- Progressive disclosure at every layer
+- 每项内容任务约使用 650 个令牌，未经优化时约需 5,000 个。
+- 六个隔离模块，减少上下文污染。
+- 四个遵循工具设计原则的自动化脚本。
+- 各层都采用渐进披露。
 
----
+## 逐项技能的应用
 
-## Skill-by-Skill Application
+### 1. 上下文基础 → 核心架构
 
-### 1. Context Fundamentals → Core Architecture
+**技能原则**：
 
-**Skill Teaching**:
-> "Context is a finite resource with diminishing marginal returns—every token depletes the attention budget."
+> 上下文资源有限，边际收益递减；每个令牌都会占用注意力预算。
 
-**Applied in Digital Brain**:
+**在数字大脑中的应用**：
 
-| Principle | Implementation |
-|-----------|----------------|
-| Attention budget | 6 modules load independently, not all at once |
-| Progressive disclosure | L1 (SKILL.md) → L2 (MODULE.md) → L3 (data files) |
-| Right altitude | SKILL.md gives overview; modules give specifics |
-| Position awareness | Critical instructions at top of each file |
+| 原则 | 实现方式 |
+| --- | --- |
+| 注意力预算 | 六个模块分别加载，不会一次全部放入上下文 |
+| 渐进披露 | L1（`SKILL.md`）→ L2（模块说明）→ L3（数据文件） |
+| 合适的信息层级 | `SKILL.md` 提供概览，模块文件说明细节 |
+| 内容位置 | 每个文件的关键指令放在开头 |
 
-**Specific Design Decision**:
+**设计决策示例**：
+
 ```
 digital-brain/
-├── SKILL.md              # L1: Always loaded (~50 tokens)
+├── SKILL.md              # L1：始终加载，约 50 个令牌
 ├── identity/
-│   ├── IDENTITY.md       # L2: Loaded when content task (~80 tokens)
-│   └── voice.md          # L3: Loaded when writing (~200 tokens)
+│   ├── IDENTITY.md       # L2：内容任务时加载，约 80 个令牌
+│   └── voice.md          # L3：写作时加载，约 200 个令牌
 ```
 
-The 3-level hierarchy directly implements the skill's "hybrid loading strategy"—stable metadata pre-loaded, dynamic content just-in-time.
+三级结构直接采用技能中的混合加载策略：稳定元数据预先加载，动态内容则在需要时载入。
 
----
+### 2. 上下文优化 → 模块拆分
 
-### 2. Context Optimization → Module Separation
+**技能原则**：
 
-**Skill Teaching**:
-> "Context quality matters more than quantity. Optimization preserves signal while reducing noise."
+> 上下文质量比数量重要；优化应减少噪声，同时保留有效信号。
 
-**Applied in Digital Brain**:
+| 技术 | 实现方式 |
+| --- | --- |
+| 上下文分区 | 拆为身份、内容、知识、人际网络、日常运营和自动化六个模块 |
+| 适合缓存的顺序 | 先放稳定配置（`.yaml`），再放动态日志（`.jsonl`） |
+| 选择性保留 | 每类任务只加载相关模块 |
 
-| Technique | Implementation |
-|-----------|----------------|
-| Context partitioning | 6 modules (identity, content, knowledge, network, operations, agents) |
-| Cache-friendly ordering | Stable configs (.yaml) before dynamic logs (.jsonl) |
-| Selective preservation | Only relevant module loads for each task type |
+**设计决策示例**：创作内容时加载 `identity/` 和 `content/`，不加载 `knowledge/`、`network/` 和 `operations/`。
 
-**Specific Design Decision**:
+**令牌节省**：每项任务约 650 个令牌；如果每次加载全部内容则超过 5,000 个。
 
-Content creation task loads:
-- `identity/` ✓ (voice patterns)
-- `content/` ✓ (templates, past posts)
-- `knowledge/` ✗ (not needed)
-- `network/` ✗ (not needed)
-- `operations/` ✗ (not needed)
+### 3. 上下文压缩 → JSONL 设计
 
-**Token Savings**: 650 tokens vs 5000+ if everything loaded
+**技能原则**：
 
----
+> 结构能迫使信息得到保留；专用章节相当于必填检查项，可防止信息悄悄丢失。
 
-### 3. Context Compression → JSONL Design
+| 原则 | 实现方式 |
+| --- | --- |
+| 结构化摘要 | 每条 JSONL 记录采用一致的数据结构 |
+| 产物追踪 | `posts.jsonl` 记录所有已发布内容及指标 |
+| 必填结构 | 由数据结构说明行记录字段与版本，例如 `{"_schema": "...", "_version": "..."}` |
 
-**Skill Teaching**:
-> "Structure forces preservation: Dedicated sections act as mandatory checkboxes preventing silent information loss."
+每个 JSONL 文件都以数据结构说明开头：
 
-**Applied in Digital Brain**:
-
-| Principle | Implementation |
-|-----------|----------------|
-| Structured summaries | Every JSONL entry has consistent schema |
-| Artifact trail | `posts.jsonl` tracks all published content with metrics |
-| Mandatory sections | Schema line documents structure: `{"_schema": "...", "_version": "..."}` |
-
-**Specific Design Decision**:
-
-Every JSONL file starts with schema documentation:
 ```json
-{"_schema": "contact", "_version": "1.0", "_description": "Personal contact database..."}
+{"_schema": "contact", "_version": "1.0", "_description": "个人联系人数据库..."}
 {"id": "contact_001", "name": "...", "last_contact": "..."}
 ```
 
-This ensures agents always understand the structure—implementing the skill's "structure forces preservation" principle.
+这样智能体总能理解文件结构，体现了“用结构防止信息丢失”的原则。
 
----
+### 4. 上下文退化 → 缓解策略
 
-### 4. Context Degradation → Mitigation Strategies
+**技能原则**：
 
-**Skill Teaching**:
-> "Lost-in-middle phenomenon: U-shaped attention curves where beginning/end receive 10-40% higher recall accuracy than middle."
+> “中间位置丢失”指 U 形注意力曲线：开头和结尾的回忆准确率可能比中段高 10%—40%。
 
-**Applied in Digital Brain**:
+| 风险 | 缓解方式 |
+| --- | --- |
+| 中间位置丢失 | 将关键表达模式放在 `voice.md` 开头 |
+| 上下文污染 | JSONL 只追加，避免错误传播 |
+| 上下文混淆 | 每个领域只有一个事实来源 |
+| 上下文分心 | 模块隔离，减少无关内容 |
 
-| Risk | Mitigation |
-|------|------------|
-| Lost-in-middle | Critical voice patterns at TOP of voice.md |
-| Context poisoning | Append-only JSONL prevents error propagation |
-| Context confusion | One source of truth per domain |
-| Context distraction | Module separation prevents irrelevant content |
+技能中的“四类缓解方法”直接影响了数字大脑设计：
 
-**Specific Design Decision**:
+| 方法 | 实现方式 |
+| --- | --- |
+| **写入外部** | 数据保存在文件中，而不是塞进提示词 |
+| **选择相关内容** | 按模块过滤，只加载需要的部分 |
+| **压缩信息** | 流式读取 JSONL，一次一行，不解析完整文件 |
+| **隔离上下文** | 六个模块各自独立 |
 
-The skill's "four-bucket approach" directly shaped Digital Brain:
+### 5. 记忆系统 → 数据架构
 
-| Bucket | Implementation |
-|--------|----------------|
-| **Write** | All data in external files, not inline |
-| **Select** | Module-based filtering (only load relevant module) |
-| **Compress** | JSONL streaming (read line-by-line, not full parse) |
-| **Isolate** | 6 isolated modules |
+**技能原则**：
 
----
+> 根据查询需求选择架构：简单需求用文件系统，关系推理需求再考虑图结构。
 
-### 5. Memory Systems → Data Architecture
+| 记忆层级 | 实现方式 |
+| --- | --- |
+| 工作记忆 | 当前对话上下文 |
+| 短期记忆 | `operations/todos.md` 中的会话记录 |
+| 长期记忆 | 跨会话持久保存的 JSONL 文件 |
+| 实体记忆 | 带关系信息的 `network/contacts.jsonl` |
 
-**Skill Teaching**:
-> "Match architecture complexity to query requirements (file systems for simple needs; graphs for relationship reasoning)."
+数字大脑采用文件系统，不需要数据库或向量存储：文件可自然持久化、兼容 Git、可供智能体读取，也没有额外依赖。
 
-**Applied in Digital Brain**:
+技能中的“时间有效性”原则体现在联系人 `last_contact` 时间戳和帖子 `metrics_updated` 字段中。
 
-| Memory Layer | Implementation |
-|--------------|----------------|
-| Working memory | Current conversation context |
-| Short-term | Session notes in `operations/todos.md` |
-| Long-term | Persistent JSONL files across sessions |
-| Entity memory | `network/contacts.jsonl` with relationships |
+### 6. 评估 → 测试方法
 
-**Specific Design Decision**:
+**技能原则**：
 
-The skill recommends file systems for "simple needs"—Digital Brain uses exactly this:
+> 以结果为中心评估：智能体可通过不同有效路径完成目标，因此应评估结果，而不是规定具体步骤。
 
-```yaml
-# No database needed
-# No vector store needed
-# File system provides:
-- Natural persistence
-- Git-friendly versioning
-- Agent-readable formats
-- Zero dependencies
+| 原则 | 实现方式 |
+| --- | --- |
+| 重视结果 | 示例展示预期输出，而非唯一操作步骤 |
+| 多维度检查 | 内容流程同时检查表达风格、主题和格式 |
+| 分层测试 | 从简单的查找任务到复杂的周度回顾 |
+
+`examples/` 文件夹中的工作流示例展示了这种评估方式：输入“帮我写一条关于 AI 智能体的串文”，预期输出应符合 `voice.md` 的表达特点、`brand.md` 的内容支柱和 `templates/thread.md` 的结构。
+
+不规定唯一执行步骤，而是检查最终结果是否达标。
+
+### 7. 高级评估 → 质量检查
+
+**技能原则**：
+
+> 定义清楚的评分规则可将评估差异降低约 40%—60%。
+
+| 技术 | 实现方式 |
+| --- | --- |
+| 明确的评分规则 | 在 `voice.md` 中将表达特点按 1—10 分评价 |
+| 显式标准 | 每份模板都包含检查清单 |
+| 置信度信号 | 待办使用 P0—P3 优先级 |
+
+每份内容模板都有发布前检查清单，例如：开头是否吸引人、每条帖子能否独立阅读又连贯、价值是否明确、是否符合用户风格、是否超过 280 字符、行动号召是否清楚但不过度推销。
+
+这类检查清单就是评分规则，能减少评估差异。
+
+### 8. 多智能体模式 → 模块隔离
+
+**技能原则**：
+
+> 子智能体的主要作用是隔离上下文，而不是扮演不同人物。
+
+| 模式 | 实现方式 |
+| --- | --- |
+| 上下文隔离 | 每个模块相当于独立的“子智能体上下文” |
+| 监督者模式 | `SKILL.md` 将任务路由到合适模块 |
+| 专业分工 | 每个模块只针对自己的领域优化 |
+
+数字大脑没有实际派生子智能体，但采用了相同原则：`SKILL.md` 充当路由器，将任务交给 `identity/IDENTITY.md`、`content/CONTENT.md` 或 `network/NETWORK.md` 等模块。
+
+技能还提醒要避免“电话游戏”问题；数字大脑让智能体直接读取来源文件，而不是层层转述摘要。
+
+### 9. 项目开发 → 构建方法
+
+**技能原则**：
+
+> 自动化前先验证；手动原型可以避免无效开发。
+
+| 原则 | 实现方式 |
+| --- | --- |
+| 判断任务与模型的匹配度 | 个人知识管理适合大语言模型处理 |
+| 流程架构 | 创意 → 草稿 → 帖子，分阶段处理 |
+| 文件系统状态 | 通过目录自然追踪进度 |
+| 结构化输出 | 使用模板保持格式一致 |
+
+任务与大语言模型的匹配点包括：综合表达风格、主观排序内容创意、生成自然语言、跨模块执行周度批处理，以及使用品牌上下文和表达方式等领域知识。
+
+### 10. 工具设计 → 自动化脚本
+
+**技能原则**：
+
+> 与其把相关流程拆成很多小工具，不如合并成能完成整体任务的工具。
+
+| 原则 | 实现方式 |
+| --- | --- |
+| 描述清楚 | 每个脚本都有说明用途的文档字符串 |
+| 输出可执行 | 脚本返回智能体可直接使用的 Markdown |
+| 工具集合精简 | 只保留 4 个脚本，而不是 20 个微型工具 |
+| 动词—名词命名 | 例如 `weekly_review.py` 和 `content_ideas.py` |
+
+技能引用的案例显示，将 17 个专用工具缩减为 2 个基础工具后，执行速度提高约 3.5 倍。数字大脑同样采用合并思路：不分别实现创意读取、筛选、评分和排版，而由 `content_ideas.py` 统一完成相关流程。四个完整脚本取代了可能达到 15 个以上的微型工具。
+
+## 跨技能协同
+
+### 令牌效率链
+
+```text
+上下文基础（注意力预算）
+    → 上下文优化（模块拆分）
+    → 上下文压缩（JSONL 流式读取）
+    → 上下文退化（缓解策略）
 ```
 
-The skill's "temporal validity" principle is implemented via `last_contact` timestamps in contacts and `metrics_updated` in posts.
+结果：每项任务的令牌使用量减少约 87%。
 
----
+### 质量保证链
 
-### 6. Evaluation → Testing Approach
-
-**Skill Teaching**:
-> "Outcome-focused evaluation: Agents reach goals through diverse valid paths; assess results, not specific steps."
-
-**Applied in Digital Brain**:
-
-| Principle | Implementation |
-|-----------|----------------|
-| Outcome focus | Examples show expected OUTPUT, not exact steps |
-| Multi-dimensional | Content workflow checks voice, topic, format |
-| Stratified testing | Simple (lookup) → Complex (weekly review) workflows |
-
-**Specific Design Decision**:
-
-The `examples/` folder demonstrates outcome-focused evaluation:
-
-```markdown
-# examples/content-workflow.md
-
-**Input**: "Help me write a thread about AI agents"
-
-**Expected Output**:
-- Draft matches voice.md patterns
-- Topic aligns with brand.md pillars
-- Format follows templates/thread.md structure
+```text
+评估（重视结果）
+    → 高级评估（评分规则）
+    → 工具设计（输出清楚）
 ```
 
-Not prescribing exact steps—evaluating the outcome.
+结果：模板内置质量检查。
 
----
+### 架构链
 
-### 7. Advanced Evaluation → Quality Checks
-
-**Skill Teaching**:
-> "Well-defined rubrics reduce evaluation variance 40-60%."
-
-**Applied in Digital Brain**:
-
-| Technique | Implementation |
-|-----------|----------------|
-| Defined rubrics | Voice attributes rated 1-10 in voice.md |
-| Explicit criteria | Checklists in every template |
-| Confidence signals | Priority levels (P0-P3) for todos |
-
-**Specific Design Decision**:
-
-Every content template includes a quality checklist:
-
-```markdown
-## Pre-publish Checklist
-- [ ] Hook is compelling (would I stop scrolling?)
-- [ ] Each tweet stands alone but flows together
-- [ ] Value is clear and actionable
-- [ ] Matches my voice (checked against voice.md)
-- [ ] No tweets over 280 characters
-- [ ] CTA is clear but not pushy
+```text
+记忆系统（文件存储）
+    → 多智能体模式（上下文隔离）
+    → 项目开发（分阶段流程）
 ```
 
-This is a rubric—reducing evaluation variance per the skill's teaching.
+结果：六个隔离模块之间的数据流清晰。
 
----
+## 量化影响
 
-### 8. Multi-Agent Patterns → Module Isolation
+| 指标 | 未使用技能 | 使用技能 | 改善 |
+| --- | ---: | ---: | --- |
+| 每项内容任务的令牌数 | 约 5,000 | 约 650 | 减少 **87%** |
+| 任务触及的模块文件 | 全部 45 个 | 相关的 5—8 个 | 减少 **82%** |
+| 上下文污染风险 | 高 | 隔离 | **消除** |
+| 自动化脚本 | 15 个以上微型脚本 | 4 个完整脚本 | 减少 **73%** |
+| 数据结构一致性 | 临时处理 | 强制执行 | **覆盖 100%** |
 
-**Skill Teaching**:
-> "Sub-agents exist primarily to isolate context, not to anthropomorphize roles."
+## 后续如何使用技能
 
-**Applied in Digital Brain**:
+### 运行时
 
-| Pattern | Implementation |
-|---------|----------------|
-| Context isolation | Each module is a "sub-agent context" |
-| Supervisor pattern | SKILL.md routes to appropriate module |
-| Specialization | Each module optimized for its domain |
+智能体使用数字大脑时，可按如下方式应用技能：
 
-**Specific Design Decision**:
+1. **创作内容**：上下文基础只加载身份模块；记忆系统从 `posts.jsonl` 找表达模式；评估规则对照 `voice.md` 检查。
+2. **准备会议**：多智能体模式隔离到人际网络模块；上下文退化策略只提取相关联系人；工具设计生成结构化摘要。
+3. **周度回顾**：上下文压缩总结本周活动；高级评估对照 `goals.yaml` 评分；项目开发生成可执行结果。
 
-While Digital Brain doesn't spawn literal sub-agents, it implements the same principle:
+### 扩展功能
 
-```
-SKILL.md (supervisor/router)
-    ↓ routes to
-identity/IDENTITY.md (specialist context)
-content/CONTENT.md (specialist context)
-network/NETWORK.md (specialist context)
-...
-```
+添加功能时应用以下原则：
 
-The skill warns about "telephone game problem"—Digital Brain avoids this by having agents read source files directly, not summaries of summaries.
+1. **新增模块**：使用上下文基础的渐进披露。
+2. **新增脚本**：使用工具设计的合并原则。
+3. **新增模板**：使用评估中的结果导向原则。
+4. **新增数据文件**：使用记忆系统中与任务匹配的记忆层级。
 
----
+## 结论
 
-### 9. Project Development → Build Methodology
+数字大脑展示了智能体上下文工程技能集并非理论材料，而是可以用于构建生产级 AI 系统的实践框架。
 
-**Skill Teaching**:
-> "Validate before automating: Manual prototyping prevents wasted development."
+**每项架构决策都对应一条具体技能原则。**
 
-**Applied in Digital Brain**:
+这就是上下文工程的实际应用：不只是改进提示词，而是设计与语言模型的信息处理方式相适配的系统。
 
-| Principle | Implementation |
-|-----------|----------------|
-| Task-model fit | Personal knowledge management is LLM-suitable |
-| Pipeline architecture | Ideas → Drafts → Posts (staged workflow) |
-| File system state | Folders track progress naturally |
-| Structured output | Templates enforce consistent formats |
+## 延伸阅读
 
-**Specific Design Decision**:
+- **技能集合**：[Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
+- **数字大脑**：[digital-brain-skill](https://github.com/muratcankoylan/digital-brain-skill)
 
-The skill's "LLM suitability matrix" confirms Digital Brain's fit:
-
-| Strength | Digital Brain Task |
-|----------|-------------------|
-| Synthesis | Generating content from voice patterns |
-| Subjective judgment | Prioritizing content ideas |
-| Natural output | Writing in user's voice |
-| Batch processing | Weekly review across modules |
-| Domain knowledge | Applying voice/brand context |
-
----
-
-### 10. Tool Design → Automation Scripts
-
-**Skill Teaching**:
-> "Consolidation over fragmentation: Bundle related workflows into comprehensive tools."
-
-**Applied in Digital Brain**:
-
-| Principle | Implementation |
-|-----------|----------------|
-| Clear descriptions | Each script has docstring explaining purpose |
-| Actionable output | Scripts return markdown agents can use |
-| Minimal collection | 4 scripts, not 20 micro-tools |
-| Verb-noun naming | `weekly_review.py`, `content_ideas.py` |
-
-**Specific Design Decision**:
-
-The skill's evidence showed "reducing from 17 specialized tools to 2 primitive tools achieved 3.5× faster execution."
-
-Digital Brain follows this:
-
-```python
-# NOT: separate tools for each step
-# get_ideas.py, filter_ideas.py, score_ideas.py, format_ideas.py
-
-# YES: consolidated comprehensive tool
-# content_ideas.py - does all of the above
-```
-
-4 comprehensive scripts vs potential 15+ micro-tools.
-
----
-
-## Cross-Skill Synergies
-
-### Token Efficiency Chain
-
-```
-Context Fundamentals (attention budget)
-    → Context Optimization (module separation)
-    → Context Compression (JSONL streaming)
-    → Context Degradation (mitigation)
-```
-
-**Result**: 87% token reduction per task
-
-### Quality Assurance Chain
-
-```
-Evaluation (outcome focus)
-    → Advanced Evaluation (rubrics)
-    → Tool Design (clear outputs)
-```
-
-**Result**: Templates with built-in quality checks
-
-### Architecture Chain
-
-```
-Memory Systems (file-based)
-    → Multi-Agent Patterns (isolation)
-    → Project Development (staged pipelines)
-```
-
-**Result**: 6 isolated modules with clear data flow
-
----
-
-## Quantified Impact
-
-| Metric | Without Skills | With Skills | Improvement |
-|--------|---------------|-------------|-------------|
-| Tokens per content task | ~5000 | ~650 | **87% reduction** |
-| Module files touched | All 45 | 5-8 relevant | **82% reduction** |
-| Context pollution risk | High | Isolated | **Eliminated** |
-| Automation scripts | 15+ micro | 4 comprehensive | **73% reduction** |
-| Schema consistency | Ad-hoc | Enforced | **100% coverage** |
-
----
-
-## How Skills Will Continue to Be Used
-
-### Runtime Usage
-
-When agents use Digital Brain, skills guide behavior:
-
-1. **Content Creation**
-   - Context Fundamentals → Load only identity module
-   - Memory Systems → Retrieve from posts.jsonl for patterns
-   - Evaluation → Check against voice.md rubric
-
-2. **Meeting Prep**
-   - Multi-Agent Patterns → Isolate to network module
-   - Context Degradation → Pull only relevant contact
-   - Tool Design → Output structured brief
-
-3. **Weekly Review**
-   - Context Compression → Summarize week's activity
-   - Advanced Evaluation → Score against goals.yaml
-   - Project Development → Generate actionable output
-
-### Extension Development
-
-Adding new features should apply:
-
-1. **New Module**: Context Fundamentals (progressive disclosure)
-2. **New Script**: Tool Design (consolidation principle)
-3. **New Template**: Evaluation (outcome-focused)
-4. **New Data File**: Memory Systems (appropriate layer)
-
----
-
-## Conclusion
-
-Digital Brain demonstrates that the Agent Skills for Context Engineering collection isn't theoretical—it's a practical framework for building production AI systems.
-
-**Every architectural decision traces to a specific skill principle.**
-
-This is context engineering in action: not just prompting better, but designing systems that work with—not against—how language models process information.
-
----
-
-## Learn More
-
-- **Skills Collection**: [github.com/muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
-- **Digital Brain**: [github.com/muratcankoylan/digital-brain-skill](https://github.com/muratcankoylan/digital-brain-skill)
-
----
-
-*This document itself demonstrates context engineering: structured sections, clear headings, tables for quick scanning, and progressive detail—all principles from the skills collection.*
+*本文本身也展示了上下文工程：使用结构化章节、清楚标题、便于浏览的表格和渐进式细节。*

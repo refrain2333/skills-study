@@ -1,73 +1,74 @@
-# Thread Template
+# 串文模板
 
-## Metadata
+## 元数据
+
 ```yaml
-topic: "[PLACEHOLDER]"
-pillar: "[PLACEHOLDER: Content pillar]"
+topic: "[主题]"
+pillar: "[内容支柱]"
 target_platform: "twitter"
-estimated_tweets: "[X]"
+estimated_tweets: "[预计条数]"
 ```
 
----
+## 1/ 开场
 
-## 1/ Hook
-<!-- First tweet - must stop the scroll -->
-```
-[PLACEHOLDER: Controversial take, surprising stat, or curiosity gap]
-```
+第一条必须让读者停下来：
 
-## 2/ Context
-<!-- Set up the problem or situation -->
-```
-[PLACEHOLDER: Why should they care? What's the context?]
+```text
+[有争议的观点、意外数据或好奇心缺口]
 ```
 
-## 3-7/ Main Points
-<!-- Core value of the thread -->
+## 2/ 背景
 
-### Point 1
-```
-[PLACEHOLDER]
-```
+交代问题或情境：
 
-### Point 2
-```
-[PLACEHOLDER]
+```text
+[为什么读者要关注？背景是什么？]
 ```
 
-### Point 3
-```
-[PLACEHOLDER]
+## 3—7/ 核心要点
+
+### 要点一
+```text
+[填写]
 ```
 
-### Point 4 (optional)
-```
-[PLACEHOLDER]
-```
-
-### Point 5 (optional)
-```
-[PLACEHOLDER]
+### 要点二
+```text
+[填写]
 ```
 
-## 8/ Takeaway
-<!-- Summarize the key insight -->
-```
-[PLACEHOLDER: The one thing they should remember]
-```
-
-## 9/ CTA
-<!-- What should they do next? -->
-```
-[PLACEHOLDER: Follow, subscribe, reply, share, etc.]
+### 要点三
+```text
+[填写]
 ```
 
----
+### 要点四（可选）
+```text
+[填写]
+```
 
-## Pre-publish Checklist
-- [ ] Hook is compelling (would I stop scrolling?)
-- [ ] Each tweet stands alone but flows together
-- [ ] Value is clear and actionable
-- [ ] Matches my voice (checked against voice.md)
-- [ ] No tweets over 280 characters
-- [ ] CTA is clear but not pushy
+### 要点五（可选）
+```text
+[填写]
+```
+
+## 8/ 收获
+
+```text
+[总结读者应记住的关键见解]
+```
+
+## 9/ 行动号召
+
+```text
+[请读者关注、订阅、回复或分享]
+```
+
+## 发布前检查
+
+- [ ] 开场足以让人停下滚动。
+- [ ] 每条内容单独成立，整体又连贯。
+- [ ] 价值清晰且可操作。
+- [ ] 符合 voice.md 中记录的表达方式。
+- [ ] 单条不超过 280 个字符。
+- [ ] 行动号召清楚但不过度推销。

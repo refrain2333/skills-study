@@ -1,85 +1,97 @@
 ---
 name: multi-agent-patterns
-description: "This skill should be used when designing multi-agent systems that need context isolation, supervisor or swarm coordination, explicit handoffs, parallel execution, or a decision on whether multiple agents are justified."
+description: "用于设计多智能体系统，包括上下文隔离、监督者或群体协作、明确交接与并行执行。"
 ---
 
-# Multi-Agent Architecture Patterns
+# 多智能体架构模式
 
-Multi-agent architectures distribute work across multiple language model instances, each with its own context window. When designed well, this distribution enables capabilities beyond single-agent limits. When designed poorly, it introduces coordination overhead that negates benefits. The critical insight is that sub-agents exist primarily to isolate context, not to anthropomorphize role division.
+多智能体架构把工作分配给多个语言模型实例，每个实例都有独立的上下文窗口。设计得当时，这种分工能够突破单个智能体的能力限制；设计不当时，协调开销会抵消收益。关键在于：引入子智能体主要是为了隔离上下文，而不是为了把团队角色拟人化。
 
-## When to Activate
+## 何时启用
 
-Activate this skill when:
-- Single-agent context limits constrain task complexity
-- Tasks decompose naturally into parallel subtasks
-- Different subtasks require different tool sets or system prompts
-- Building systems that must handle multiple domains simultaneously
-- Scaling agent capabilities beyond single-context limits
-- Designing production agent systems with multiple specialized components
+在以下情况下启用此技能：
 
-Do not activate this skill for adjacent work owned by other skills:
-- Deciding task-model fit, pipeline shape, or project-level cost before topology is known: `project-development`.
-- Designing hosted sandboxes, warm pools, remote sessions, or background runtime infrastructure: `hosted-agents`.
-- Sharing orchestrator state through KV-cache compaction in controlled runtimes: `latent-briefing`.
-- Designing the tools each agent exposes: `tool-design`.
+- 单个智能体的上下文限制了任务复杂度。
+- 任务可以自然拆分为多个子任务。
+- 不同子任务需要不同的工具集或系统提示词。
+- 构建需要同时处理多个领域的系统。
+- 需要让能力扩展到单个上下文窗口之外。
+- 设计由多个专用组件组成的生产级智能体系统。
 
-## Core Concepts
+相邻任务由其他技能负责，不要为这些任务启用本技能：
 
-Use multi-agent patterns when a single agent's context window cannot hold all task-relevant information. Context isolation is the primary benefit — each agent operates in a clean context without accumulated noise from other subtasks, preventing the telephone game problem where information degrades through repeated summarization.
+- 在尚未确定拓扑前，选择任务与模型的匹配方式、工作流形态或项目级成本：`project-development`。
+- 设计托管沙箱、热池、远程会话或后台运行时基础设施：`hosted-agents`。
+- 在可控运行时中，通过 KV 缓存压缩共享编排者状态：`latent-briefing`。
+- 设计各智能体使用的工具：`tool-design`。
 
-Choose among three dominant patterns based on coordination needs, not organizational metaphor:
+## 核心概念
 
-- **Supervisor/orchestrator** — Use for centralized control when tasks have clear decomposition and human oversight matters. A single coordinator delegates to specialists and synthesizes results.
-- **Peer-to-peer/swarm** — Use for flexible exploration when rigid planning is counterproductive. Any agent can transfer control to any other through explicit handoff mechanisms.
-- **Hierarchical** — Use for large-scale projects with layered abstraction (strategy, planning, execution). Each layer operates at a different level of detail with its own context structure.
+当单个智能体的上下文窗口无法容纳任务所需的全部信息时，考虑使用多智能体模式。主要收益是上下文隔离——每个智能体都在干净的上下文中处理自己的子任务，不受其他子任务累积的噪声影响，从而减少信息经过多次摘要后逐渐失真的“传话游戏”问题。
 
-Design every multi-agent system around explicit coordination protocols, consensus mechanisms that resist sycophancy, and failure handling that prevents error propagation cascades.
+根据协调需求，而不是组织架构类比，在三种主要模式中选择：
 
-## Detailed Topics
+- **监督者 / 编排者**——任务可以清楚拆分且需要人工监督时采用集中控制。一个协调者分派任务给专家并综合结果。
+- **点对点 / 群体**——固定计划不合适、需要灵活探索时采用。智能体通过明确的交接机制彼此转交控制权。
+- **分层架构**——大型项目具有策略、规划、执行等不同抽象层时采用。每层处理不同粒度的问题，并使用各自的上下文结构。
 
-### Why Multi-Agent Architectures
+所有多智能体系统都应具备明确的协调协议、能够抵御谄附的共识机制，以及防止错误传播扩散的故障处理方式。
 
-**The Context Bottleneck**
-Reach for multi-agent architectures when a single agent's context fills with accumulated history, retrieved documents, and tool outputs to the point where performance degrades. Recognize three degradation signals: the lost-in-middle effect (attention weakens for mid-context content), attention scarcity (too many competing items), and context poisoning (irrelevant content displaces useful content).
+## 详细主题
 
-Partition work across multiple context windows so each agent operates in a clean context focused on its subtask. Aggregate results at a coordination layer without any single context bearing the full burden.
+### 为什么要使用多智能体架构
 
-**The Token Economics Reality**
-Budget for substantially higher token costs. Production data shows multi-agent systems can cost far more tokens than single-agent chat (claim-multi-agent-token-multiplier):
+**上下文瓶颈**
 
-| Architecture | Token Multiplier | Use Case |
-|--------------|------------------|----------|
-| Single agent chat | Baseline | Simple queries |
-| Single agent with tools | Higher than baseline | Tool-using tasks |
-| Multi-agent system | Much higher than baseline | Complex research/coordination |
+当单个智能体的上下文被历史记录、检索文档和工具输出填满，导致表现下降时，再考虑多智能体架构。留意三种退化信号：中间信息遗失（模型对上下文中部内容的注意力变弱）、注意力稀缺（相互竞争的信息过多）和上下文污染（无关内容挤走有用信息）。
 
-Browsing-agent evaluation research suggests token usage, tool calls, and model choice dominate performance variance (claim-evaluation-browsecomp-variance). This supports measuring multi-agent setups against single-agent baselines instead of assuming extra agents help.
+将工作划分到多个上下文窗口，让每个智能体都能在干净的上下文中专注自己的子任务。通过协调层汇总结果，不让任何一个上下文承担全部工作。
 
-Prioritize model selection alongside architecture design — upgrading to better models often provides larger performance gains than doubling token budgets. BrowseComp data shows that model quality improvements frequently outperform raw token increases. Treat model selection and multi-agent architecture as complementary strategies.
+**Token 成本现实**
 
-**The Parallelization Argument**
-Assign parallelizable subtasks to dedicated agents with fresh contexts rather than processing them sequentially in a single agent. A research task requiring searches across multiple independent sources, analysis of different documents, or comparison of competing approaches benefits from parallel execution. Total real-world time approaches the duration of the longest subtask rather than the sum of all subtasks.
+预算时应考虑到，多智能体系统的 Token 成本可能明显高于单智能体方案（claim-multi-agent-token-multiplier）：
 
-**The Specialization Argument**
-Configure each agent with only the system prompt, tools, and context it needs for its specific subtask. A general-purpose agent must carry all possible configurations in context, diluting attention. Specialized agents carry only what they need, operating with lean context optimized for their domain. Route from a coordinator to specialized agents to achieve specialization without combinatorial explosion.
+| 架构 | Token 用量 | 适用场景 |
+|--------------|----------|----------|
+| 单智能体聊天 | 基线 | 简单查询 |
+| 带工具的单智能体 | 高于基线 | 使用工具的任务 |
+| 多智能体系统 | 远高于基线的可能性较大 | 复杂研究 / 协调 |
 
-### Architectural Patterns
+浏览代理评估研究显示，Token 用量、工具调用次数和模型选择是表现差异的重要来源（claim-evaluation-browsecomp-variance）。这说明应该把多智能体方案与单智能体基线进行测量比较，而不是假定增加智能体就会有帮助。
 
-**Pattern 1: Supervisor/Orchestrator**
-Deploy a central agent that maintains global state and trajectory, decomposes user objectives into subtasks, and routes to appropriate workers.
+设计架构时也要重视模型选择：升级到更强的模型，常常比单纯增加 Token 预算带来更大的表现提升。BrowseComp 数据表明，改善模型质量往往比增加 Token 更有效。模型选择和多智能体架构是互补策略。
+
+**并行化理由**
+
+任务中常常包含可并行的子任务，而单智能体只能按顺序处理。需要搜索多个相互独立的来源、分析不同文档或比较互相竞争方案的研究任务，就适合并行执行。只有在子任务能够真正并行、协调开销较低时，总耗时才可能接近最慢子任务的耗时，而不是所有子任务耗时的简单相加。
+
+**专门化理由**
+
+根据子任务，为每个智能体配置所需的系统提示词、工具和上下文。通用智能体必须在上下文中携带所有可能的配置，注意力容易被稀释；专用智能体只携带需要的内容，可以使用为领域优化的精简上下文。通过协调者将任务路由给专用智能体，可以实现专门化而不造成配置组合爆炸。
+
+### 架构模式
+
+**模式 1：监督者 / 编排者**
+
+由一个中央智能体保持全局状态和任务进度，拆解用户目标，并把子任务分派给合适的工作者。
 
 ```
-User Query -> Supervisor -> [Specialist, Specialist, Specialist] -> Aggregation -> Final Output
+用户请求 -> 监督者 -> [专家, 专家, 专家] -> 汇总 -> 最终结果
 ```
 
-Choose this pattern when: tasks have clear decomposition, coordination across domains is needed, or human oversight is important.
+**易懂类比：项目经理分工**
 
-Expect these trade-offs: strict workflow control and easier human-in-the-loop interventions, but the supervisor context becomes a bottleneck, supervisor failures cascade to all workers, and the "telephone game" problem emerges where supervisors paraphrase sub-agent responses incorrectly.
+假设要写一份手机市场分析报告：监督者像项目经理，把苹果、三星、华为的数据分别交给不同的研究员；每位研究员只专注自己的品牌，再把结果交回监督者整理成报告。项目经理掌握全局，但不必亲自完成每项资料收集。
 
-**The Telephone Game Problem and Solution**
-Anticipate that supervisor architectures initially perform approximately 50% worse than optimized versions due to the telephone game problem (LangGraph benchmarks). Supervisors paraphrase sub-agent responses, losing fidelity with each pass.
+适用于任务拆分明确、需要协调多个领域，或需要人工监督的场景。
 
-Fix this by implementing a `forward_message` tool that allows sub-agents to pass responses directly to users:
+这种模式能严格控制工作流，也便于人工介入；代价是监督者的上下文可能成为瓶颈，监督者失效会影响所有工作者，而且监督者转述工作者回复时可能产生“传话游戏”式的信息失真。
+
+**传话游戏问题与解决方式**
+
+LangGraph 基准测试观察到，未经优化的监督者架构与优化版本之间存在明显表现差距。一个原因是监督者会转述子智能体的回答，在每次转述中丢失细节。
+
+可以实现 `forward_message` 工具，让子智能体在适当时直接将回复交给用户：
 
 ```python
 def forward_message(message: str, to_user: bool = True):
@@ -96,10 +108,11 @@ def forward_message(message: str, to_user: bool = True):
     return {"type": "supervisor_input", "content": message}
 ```
 
-Prefer swarm architectures over supervisors when sub-agents can respond directly to users, as this eliminates translation errors entirely.
+如果子智能体可以直接回复用户，群体模式可能略优于监督者模式，因为这样可以消除转述过程中的信息损失。
 
-**Pattern 2: Peer-to-Peer/Swarm**
-Remove central control and allow agents to communicate directly based on predefined protocols. Any agent transfers control to any other through explicit handoff mechanisms.
+**模式 2：点对点 / 群体**
+
+移除中央控制，让智能体根据预设协议直接通信。任何智能体都可以通过明确的交接机制将控制权转交给其他智能体。
 
 ```python
 def transfer_to_agent_b():
@@ -111,90 +124,110 @@ agent_a = Agent(
 )
 ```
 
-Choose this pattern when: tasks require flexible exploration, rigid planning is counterproductive, or requirements emerge dynamically and defy upfront decomposition.
+**易懂类比：传球接力**
 
-Expect these trade-offs: no single point of failure and effective breadth-first scaling, but coordination complexity increases with agent count, divergence risk rises without a central state keeper, and robust convergence constraints become essential.
+还是写手机市场报告，但没有项目经理：搜索专家先收集原始资料；发现资料需要分析后，把任务“传给”数据分析专家；分析结果需要行业背景时，再交给行业专家补充趋势并完成报告。每位智能体根据手头结果判断下一步该交给谁。
 
-Define explicit handoff protocols with state passing. Ensure agents communicate their context needs to receiving agents.
+适用于需要灵活探索、严格预先规划会妨碍工作，或需求会动态出现、难以事先拆解的任务。
 
-**Pattern 3: Hierarchical**
-Organize agents into layers of abstraction: strategy (goal definition), planning (task decomposition), and execution (atomic tasks).
+这种模式没有单点故障，适合广度优先的探索，也可能产生涌现式的问题解决能力；代价是智能体越多，协调越复杂。缺少中央状态维护者时，任务容易偏离，因此需要可靠的收敛约束。
+
+明确交接协议并传递必要状态。还应确保交接方能说明接收方需要哪些上下文。
+
+**模式 3：分层架构**
+
+按抽象层次组织智能体：策略层定义目标和约束；规划层把目标拆成可执行计划；执行层完成原子任务。
 
 ```
-Strategy Layer (Goal Definition) -> Planning Layer (Task Decomposition) -> Execution Layer (Atomic Tasks)
+策略层（定义目标） -> 规划层（拆解任务） -> 执行层（完成原子任务）
 ```
 
-Choose this pattern when: projects have clear hierarchical structure, workflows involve management layers, or tasks require both high-level planning and detailed execution.
+**易懂类比：公司组织结构**
 
-Expect these trade-offs: clear separation of concerns and support for different context structures at different levels, but coordination overhead between layers, potential strategy-execution misalignment, and complex error propagation paths.
+策略智能体确定报告面向谁、重点关注什么；规划智能体把目标变成数据收集、对比分析和总结建议等步骤；执行智能体各自完成价格、性能、口碑数据收集和分析。规划层汇总执行结果，策略层再检查是否满足最初目标。
 
-### Context Isolation as Design Principle
+适用于组织层级清楚的大型项目、有管理层级的企业工作流，以及同时需要高层规划和细节执行的任务。
 
-Treat context isolation as the primary purpose of multi-agent architectures. Each sub-agent should operate in a clean context window focused on its subtask without carrying accumulated context from other subtasks.
+这种模式的优点是职责分明、不同层可以使用不同上下文结构；代价是层与层之间有协调开销，策略和执行可能脱节，错误传播路径也更复杂。
 
-**Isolation Mechanisms**
-Select the right isolation mechanism for each subtask:
+### 将上下文隔离作为设计原则
 
-- **Full context delegation** — Share the planner's entire context with the sub-agent. Use for complex tasks where the sub-agent needs complete understanding. The sub-agent has its own tools and instructions but receives full context for its decisions. Note: this partially defeats the purpose of context isolation.
-- **Instruction passing** — Create instructions via function call; the sub-agent receives only what it needs. Use for simple, well-defined subtasks. Maintains isolation but limits sub-agent flexibility.
-- **File system memory** — Agents read and write to persistent storage. Use for complex tasks requiring shared state. The file system serves as the coordination mechanism, avoiding context bloat from shared state passing. Introduces latency and consistency challenges but scales better than message-passing.
+把上下文隔离作为多智能体架构的主要目的。每个子智能体都应在干净的上下文窗口中专注于自己的任务，不携带其他子任务累积的上下文。
 
-Choose based on task complexity, coordination needs, and acceptable latency. Default to instruction passing and escalate to file system memory when shared state is needed. Avoid full context delegation unless the subtask genuinely requires it.
+**隔离机制**
 
-### Consensus and Coordination
+根据子任务选择合适的隔离机制：
 
-**The Voting Problem**
-Avoid simple majority voting — it treats hallucinations from weak models as equal to reasoning from strong models. Without intervention, multi-agent discussions devolve into consensus on false premises due to inherent bias toward agreement.
+- **完整上下文委派**——将规划者的全部上下文共享给子智能体。适用于子智能体需要完整背景的复杂任务。子智能体仍可拥有自己的工具和指令，但会获得全部决策上下文。注意：这会部分抵消上下文隔离的意义。
+- **传递指令**——通过函数调用构造指令，只给子智能体提供必需内容。适用于定义清楚的简单子任务。可以保持隔离，但会限制子智能体的灵活性。
+- **文件系统记忆**——智能体读写持久化存储。适用于需要共享状态的复杂任务。文件系统可作为协调机制，避免通过消息传递共享状态而使上下文膨胀；代价是增加延迟和一致性挑战，但扩展能力较好。
 
-**Weighted Voting**
-Weight agent votes by confidence or expertise. Agents with higher confidence or domain expertise should carry more weight in final decisions.
+根据任务复杂度、协调需求和可接受延迟选择。默认传递指令；需要共享状态时再升级到文件系统记忆。除非子任务确实需要，否则避免传递完整上下文。
 
-**Debate Protocols**
-Structure agents to critique each other's outputs over multiple rounds. Adversarial critique often yields higher accuracy on complex reasoning than collaborative consensus. Guard against sycophantic convergence where agents agree to be agreeable rather than correct.
+### 共识与协调
 
-**Trigger-Based Intervention**
-Monitor multi-agent interactions for behavioral markers. Activate stall triggers when discussions make no progress. Detect sycophancy triggers when agents mimic each other's answers without unique reasoning.
+**投票问题**
 
-### Framework Considerations
+避免简单多数投票，因为它会把弱模型的幻觉与强模型的推理等量齐观。如果不加干预，多智能体讨论容易因内在的趋同倾向而对错误前提达成一致。
 
-Different frameworks implement these patterns with different philosophies. LangGraph uses graph-based state machines with explicit nodes and edges. AutoGen uses conversational/event-driven patterns with GroupChat. CrewAI uses role-based process flows with hierarchical crew structures.
+**加权投票**
 
-## Practical Guidance
+根据智能体的置信度或专业程度为投票加权。置信度较高或领域经验更丰富的智能体，在最终决策中可以占更大权重。
 
-### Failure Modes and Mitigations
+**辩论协议**
 
-**Failure: Supervisor Bottleneck**
-The supervisor accumulates context from all workers, becoming susceptible to saturation and degradation.
+安排智能体在多轮中互相批评输出。对于复杂推理，对抗性批评通常比合作式共识带来更高准确率。要防止谄附式趋同——智能体只是为了附和而同意，而不是因为结论正确。
 
-Mitigate by constraining worker output schemas so workers return only distilled summaries. Use checkpointing to persist supervisor state without carrying full history in context.
+**基于触发条件的干预**
 
-**Failure: Coordination Overhead**
-Agent communication consumes tokens and introduces latency. Complex coordination can negate parallelization benefits.
+监控多智能体交互中的行为信号。讨论停滞、没有进展时触发停滞机制；发现智能体只是在重复彼此答案、没有独立推理时触发谄附检测。
 
-Mitigate by minimizing communication through clear handoff protocols. Batch results where possible. Use asynchronous communication patterns. Measure whether multi-agent coordination actually saves time versus a single agent with a longer context.
+### 框架考量
 
-**Failure: Divergence**
-Agents pursuing different goals without central coordination drift from intended objectives.
+不同框架以不同方式实现这些模式。LangGraph 使用带显式节点和边的图状态机；AutoGen 使用基于对话和事件的 GroupChat 模式；CrewAI 使用基于角色的流程和分层 crew 结构。
 
-Mitigate by defining clear objective boundaries for each agent. Implement convergence checks that verify progress toward shared goals. Set time-to-live limits on agent execution to prevent unbounded exploration.
+## 实践指南
 
-**Failure: Error Propagation**
-Errors in one agent's output propagate to downstream agents that consume that output, compounding into increasingly wrong results.
+### 故障模式与缓解措施
 
-Mitigate by validating agent outputs before passing to consumers. Implement retry logic with circuit breakers. Use idempotent operations where possible. Consider adding a verification agent that cross-checks critical outputs before they enter the pipeline.
+**故障：监督者瓶颈**
 
-## Examples
+监督者汇总所有工作者的结果，逐渐积累上下文，容易达到容量上限并退化。
 
-**Example 1: Research Team Architecture**
+缓解方式：限制工作者的输出格式，让他们只返回提炼后的摘要；使用检查点保存监督者状态，避免把完整历史一直留在上下文里。
+
+**故障：协调开销**
+
+智能体通信会消耗 Token 并增加延迟。复杂协调可能抵消并行收益。
+
+缓解方式：用清晰的交接协议减少通信；尽可能批量返回结果；采用异步通信。测量多智能体协调是否真的比单个使用较长上下文的智能体节省时间。
+
+**故障：目标漂移**
+
+智能体在缺乏中央协调时各自追求不同目标，逐渐偏离共同任务。
+
+缓解方式：为每个智能体定义明确的目标边界；实现收敛检查以确认是否在推进共同目标；为智能体运行设置存活时间上限，避免无界探索。
+
+**故障：错误传播**
+
+一个智能体的错误输出被下游智能体当作输入，错误不断叠加。
+
+缓解方式：传递结果前验证输出；实现带熔断机制的重试逻辑；尽可能采用幂等操作。关键输出进入流程前，可以加入验证智能体进行交叉检查。
+
+## 示例
+
+**示例 1：研究团队架构**
+
 ```text
-Supervisor
-├── Researcher (web search, document retrieval)
-├── Analyzer (data analysis, statistics)
-├── Fact-checker (verification, validation)
-└── Writer (report generation, formatting)
+监督者
+├── 研究员（网页搜索、文档检索）
+├── 分析员（数据分析、统计）
+├── 核查员（核验、验证）
+└── 撰稿员（报告生成、格式整理）
 ```
 
-**Example 2: Handoff Protocol**
+**示例 2：交接协议**
+
 ```python
 def handle_customer_request(request):
     if request.type == "billing":
@@ -207,61 +240,64 @@ def handle_customer_request(request):
         return handle_general(request)
 ```
 
-## Guidelines
+## 指南
 
-1. Design for context isolation as the primary benefit of multi-agent systems
-2. Choose architecture pattern based on coordination needs, not organizational metaphor
-3. Implement explicit handoff protocols with state passing
-4. Use weighted voting or debate protocols for consensus
-5. Monitor for supervisor bottlenecks and implement checkpointing
-6. Validate outputs before passing between agents
-7. Set time-to-live limits to prevent infinite loops
-8. Test failure scenarios explicitly
+1. 将上下文隔离作为多智能体系统的主要收益来设计。
+2. 根据协调需求选择架构模式，而不是根据组织结构类比选择。
+3. 实现明确的交接协议，并传递必要状态。
+4. 使用加权投票或辩论协议实现共识。
+5. 监控监督者瓶颈，并实现检查点机制。
+6. 在智能体之间传递输出前进行验证。
+7. 设置存活时间上限，防止无限循环。
+8. 明确测试故障场景。
 
-## Gotchas
+## 常见问题
 
-1. **Supervisor bottleneck scaling** — Supervisor context pressure grows non-linearly with worker count. At 5+ workers, the supervisor spends more tokens processing summaries than workers spend on actual tasks. Set a hard cap on workers per supervisor (3-5) and add a second supervisor tier rather than overloading one.
-2. **Token cost underestimation** — Multi-agent runs cost approximately 15x baseline. Teams consistently underbudget because they estimate per-agent costs without accounting for coordination overhead, retries, and consensus rounds. Budget for 15x and treat anything less as a bonus.
-3. **Sycophantic consensus** — Agents in debate patterns tend to converge on agreeable answers, not correct ones. LLMs have an inherent bias toward agreement. Counter this by assigning explicit adversarial roles and requiring agents to state disagreements before convergence is allowed.
-4. **Agent sprawl** — Adding more agents past 3-5 shows diminishing returns and increases coordination overhead. Each additional agent adds communication channels quadratically. Start with the minimum viable number of agents and add only when a clear context isolation benefit exists.
-5. **Telephone game in message-passing** — Information degrades through repeated summarization as it passes between agents. Each agent paraphrases and loses nuance. Use filesystem coordination instead of message-passing for state that multiple agents need to access faithfully.
-6. **Error propagation cascades** — One agent's hallucination becomes another agent's "fact." Downstream agents have no way to distinguish upstream hallucinations from genuine information. Add validation checkpoints between agents and never trust upstream output without verification.
-7. **Over-decomposition** — Splitting tasks too finely creates more coordination overhead than the task itself. A 10-step pipeline with 10 agents spends more tokens on handoffs than on actual work. Decompose only when subtasks genuinely benefit from separate contexts.
-8. **Missing shared state** — Agents operating without a shared filesystem or state store duplicate work, produce inconsistent outputs, and lose track of what has already been accomplished. Establish shared persistent storage before building multi-agent workflows.
+1. **监督者瓶颈随规模扩大**：随着工作者数量增加，监督者上下文压力呈非线性增长。达到 5 个以上工作者时，监督者可能花在处理摘要上的 Token 比工作者花在实际任务上的还多。为单个监督者设置工作者数量上限（3–5 个），并在需要时增加第二层监督者，而不是让一个监督者超负荷。
+2. **低估 Token 成本**：多智能体运行的成本可能远高于单智能体基线。团队经常只估算每个智能体自身的成本，却漏掉协调、重试和共识轮次。应按完整工作流做预算，并根据实测调整。
+3. **谄附式共识**：辩论模式中的智能体可能趋向于达成彼此认同的答案，而不是正确答案。LLM 有趋同偏好。可分配明确的对抗性角色，并要求各智能体先说明分歧，再允许达成共识。
+4. **智能体泛滥**：超过 3–5 个智能体后，收益可能递减，协调开销会上升。每增加一个智能体，通信渠道数量可能以平方级增加。先从满足需求的最少数量开始，只有出现明确的上下文隔离收益时才增加。
+5. **消息传递中的传话游戏**：信息在智能体之间反复摘要时会逐渐失真，每个智能体都可能在转述时丢失细节。需要多个智能体准确共享的状态，可以使用文件系统协调，而不是反复通过消息转述。
+6. **错误传播扩散**：一个智能体的幻觉可能成为另一个智能体所谓的“事实”。下游智能体无法判断上游输出究竟是幻觉还是真实信息。应在智能体之间设置验证检查点，不要未经核实就信任上游输出。
+7. **过度拆解**：任务拆得过细时，协调开销可能超过任务本身。包含许多智能体的长流水线，可能把更多 Token 用在交接而非实际工作上。只有在子任务确实受益于独立上下文时才拆分。
+8. **缺少共享状态**：没有共享文件系统或状态存储时，智能体会重复劳动、产生互相矛盾的结果，也无法确认已完成的工作。构建多智能体工作流前，先建立持久共享存储。
 
-## Integration
+## 集成
 
-This skill owns agent topology and coordination protocols. Adjacent skills own project shape, hosted runtime, and latent-state transfer:
+本技能负责智能体拓扑和协调协议。相邻技能负责项目形态、托管运行时和潜在状态传递：
 
-- `project-development`: project-level single-vs-multi choice before topology details.
-- `hosted-agents`: remote sandbox, session, warm-pool, and multiplayer infrastructure.
-- `memory-systems`: shared persistent state across agents.
-- `tool-design`: tool specialization and spawn/status tool contracts.
-- `context-optimization`: partitioning as one token-efficiency tactic.
-- `latent-briefing`: KV-cache trajectory handoff between orchestrator and worker when models align.
-- `evaluation`: measuring whether multiple agents improve outcomes after coordination cost.
+- `project-development`：在讨论具体拓扑之前，决定项目级别是否需要从单智能体改为多智能体。
+- `hosted-agents`：远程沙箱、会话、热池和多人协作基础设施。
+- `memory-systems`：智能体之间的持久共享状态。
+- `tool-design`：工具专门化以及派生/状态工具的契约。
+- `context-optimization`：将上下文分区作为一种 Token 效率手段。
+- `latent-briefing`：模型表示空间匹配时，在编排者和工作者之间传递 KV 缓存轨迹。
+- `evaluation`：衡量协调成本之后，多智能体是否改善结果。
 
-## References
+## 参考资料
 
-Internal reference:
-- [Frameworks Reference](./references/frameworks.md) - Read when: implementing a specific multi-agent pattern in LangGraph, AutoGen, or CrewAI and needing framework-specific code examples
+内部参考：
 
-Related skills in this collection:
-- context-fundamentals - Read when: needing to understand context window mechanics before designing agent partitioning
-- memory-systems - Read when: agents need to share state across context boundaries or persist information between runs
-- context-optimization - Read when: individual agent contexts are too large and need partitioning or compression strategies
+- [框架参考](./references/frameworks.md)——在 LangGraph、AutoGen 或 CrewAI 中实现特定多智能体模式，需要框架专用代码示例时阅读。
 
-External resources:
-- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/) - Read when: building graph-based multi-agent workflows with explicit state machines
-- [AutoGen Framework](https://microsoft.github.io/autogen/) - Read when: implementing conversational GroupChat patterns or event-driven agent coordination
-- [CrewAI Documentation](https://docs.crewai.com/) - Read when: designing role-based hierarchical agent processes
-- [Research on Multi-Agent Coordination](https://arxiv.org/abs/2308.00352) - Read when: needing academic grounding on multi-agent system theory and evaluation
+本资料集中的相关技能：
+
+- `context-fundamentals`——在设计智能体上下文分区前，需要理解上下文窗口机制时阅读。
+- `memory-systems`——智能体需要跨上下文边界共享状态或在不同运行之间持久保存信息时阅读。
+- `context-optimization`——单个智能体上下文过大，需要分区或压缩策略时阅读。
+
+外部资源：
+
+- [LangGraph 文档](https://langchain-ai.github.io/langgraph/)——构建带显式状态机的图式多智能体工作流时阅读。
+- [AutoGen 框架](https://microsoft.github.io/autogen/)——实现对话式 GroupChat 模式或事件驱动协调时阅读。
+- [CrewAI 文档](https://docs.crewai.com/)——设计基于角色的分层智能体流程时阅读。
+- [多智能体协调研究](https://arxiv.org/abs/2308.00352)——需要多智能体系统理论和评估的学术依据时阅读。
 
 ---
 
-## Skill Metadata
+## 技能元数据
 
-**Created**: 2025-12-20
-**Last Updated**: 2026-05-15
-**Author**: Agent Skills for Context Engineering Contributors
-**Version**: 2.1.0
+**创建时间**：2025-12-20
+**最后更新**：2026-05-15
+**作者**：Agent Skills for Context Engineering 贡献者
+**版本**：2.1.0
