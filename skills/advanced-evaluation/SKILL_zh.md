@@ -1,325 +1,266 @@
 ---
-name: 高级评估
-description: 掌握LLM作为判官的评估技术，包括直接评分、成对比较、评分标准生成和偏差缓解。在构建评估系统、比较模型输出或为AI生成的内容建立质量标准时使用。
+name: advanced-evaluation
+description: "This skill should be used for advanced LLM evaluation: LLM-as-judge systems, direct scoring, pairwise comparison, rubric calibration, evaluator bias mitigation, confidence scoring, and automated quality assessment."
 ---
+
+> 本文是同目录 `SKILL.md` 的中文翻译；安装和调用时以 `SKILL.md` 为准。
 
 # 高级评估
 
-本技能涵盖使用LLM作为判官评估LLM输出的生产级技术。它将学术论文、行业实践和实际实现经验的研究综合成可操作的模式，用于构建可靠的评估系统。
+本技能涵盖使用 LLM 作为判官评估 LLM 输出的生产级技术，将学术论文、行业实践和实际实现经验综合为构建可靠评估系统的可操作模式。
 
-**关键洞察**：LLM作为判官不是单一的技术，而是一族方法，每种都适合不同的评估环境。选择正确的方法和缓解已知的偏差是本技能的核心能力。
+**关键洞见**：LLM 判官不是单一技术，而是一组适用于不同评估场景的方法。掌握如何选择合适方法并缓解已知偏差，是本技能的核心。
 
-## 何时激活
+## 何时启用
 
-激活本技能的场景：
+在以下情况下启用本技能：
 
-- 为LLM输出构建自动化评估流程
-- 比较多个模型响应以选择最佳响应
+- 为 LLM 输出构建 LLM 判官系统
+- 比较多个模型响应并选出最佳结果
 - 在评估团队间建立一致的质量标准
-- 调试显示不一致结果的评估系统
-- 设计提示词或模型变化的A/B测试
-- 为人工或自动化评估创建评分标准
-- 分析自动化与人工判断之间的相关性
+- 调试结果不稳定的评估系统
+- 为提示词或模型变更设计 A/B 测试
+- 专门为 LLM 判官或人工与 LLM 混合判官创建评分标准
+- 分析自动化判断与人工判断之间的相关性
+
+以下相邻工作由其他技能负责，不要为它们启用本技能：
+
+- 通用确定性检查、回归套件、生产质量门禁或结果指标：`evaluation`。
+- 自主循环治理、锁定评分标准、回滚或 PR 审批边界：`harness-engineering`。
+- 评估工具的工具 API 契约：`tool-design`。
 
 ## 核心概念
 
-### 评估分类学
+### 评估方法分类
 
-评估方法分为两个主要类别，具有不同的可靠性特征：
+根据是否存在真实答案，在两种主要方法中选择：
 
-**直接评分**：单个LLM在定义的量表上评价一个响应。
-- 最佳用途：客观标准（事实准确性、指令遵循、有害内容检测）
-- 可靠性：定义清晰的标准下中等到高
-- 失败模式：评分校准漂移、不一致的量表解释
+**直接评分** —— 当存在客观标准时使用（事实准确性、指令遵循、毒性检测）。单个 LLM 按定义好的量表给一条响应评分。在标准定义清楚时可靠性中等至较高。需注意分数校准漂移以及量表解释不一致。
 
-**成对比较**：LLM比较两个响应并选择更好的那个。
-- 最佳用途：主观偏好（语气、风格、说服力）
-- 可靠性：高于直接评分（用于偏好）
-- 失败模式：位置偏差、长度偏差
+**成对比较** —— 用于主观偏好（语气、风格、说服力）。LLM 比较两条响应并选出更好的一条。对于主观任务，成对方法往往比开放式直接评分更符合人类偏好（claim-advanced-evaluation-position-swap）。需注意位置偏差和长度偏差。
 
-来自MT-Bench论文（Zheng等，2023）的研究表明，成对比较与直接评分相比能达到与人类判官更高的一致性，用于基于偏好的评估，而直接评分仍然适合具有明确基准真值的客观标准。
+### 偏差类型
 
-### 偏差景观
+每个评估系统都应缓解以下系统性偏差：
 
-LLM判官表现出必须主动缓解的系统性偏差：
+**位置偏差**：排在第一位的响应更容易获得偏爱。缓解方法：交换顺序评估两次，然后采用多数投票或一致性检查。
 
-**位置偏差**：成对比较中的第一位置响应获得优先处理。缓解方法：评估两次并交换位置，使用多数投票或一致性检查。
+**长度偏差**：较长的响应不论质量如何都容易获得更高评分。缓解方法：在提示词中明确要求忽略长度，并使用按长度归一化的评分。
 
-**长度偏差**：较长的响应被评分更高，无论质量如何。缓解方法：明确提示忽略长度、长度归一化评分。
+**自我增强偏差**：模型更偏爱自己的输出。缓解方法：生成模型与评估模型使用不同模型。
 
-**自我提升偏差**：模型对自己的输出评分更高。缓解方法：使用不同的模型进行生成和评估，或承认限制。
+**冗长偏差**：即使内容不必要，过多细节也可能得到更高评分。缓解方法：使用针对具体标准的评分标准，对无关细节扣分。
 
-**冗长偏差**：详细的解释获得更高的评分，即使不必要。缓解方法：标准特定的评分标准，对不相关的细节进行惩罚。
-
-**权威偏差**：自信、权威的语气无论准确性如何都被评分更高。缓解方法：要求证据引用、事实检查层。
+**权威偏差**：无论准确性如何，自信的语气更容易得到高分。缓解方法：要求引用证据并增加事实核查层。
 
 ### 指标选择框架
 
-根据评估任务的结构选择指标：
+根据评估任务结构匹配指标：
 
 | 任务类型 | 主要指标 | 次要指标 |
-|---------|---------|---------|
-| 二元分类（通过/失败） | 召回率、精确度、F1 | Cohen's κ |
-| 序数量表（1-5评分） | Spearman's ρ、Kendall's τ | Cohen's κ（加权） |
-| 成对偏好 | 一致性率、位置一致性 | 置信度校准 |
-| 多标签 | 宏观F1、微观F1 | 每个标签的精确度/召回率 |
+|-----------|-----------------|-------------------|
+| 二元分类（通过/失败） | 召回率、精确率、F1 | Cohen's kappa |
+| 序数量表（1–5 分） | Spearman's rho、Kendall's tau | Cohen's kappa（加权） |
+| 成对偏好 | 一致率、位置一致性 | 置信度校准 |
+| 多标签 | Macro-F1、Micro-F1 | 各标签的精确率/召回率 |
 
-关键洞察：绝对一致性的高度不如系统性分歧模式重要。与人类在特定标准上系统性不同意的判官比随机噪声更有问题。
+相较于绝对一致率，应优先关注系统性的分歧模式，因为判官若在特定标准上持续与人类意见不同，比随机噪声更值得担忧。
 
 ## 评估方法
 
-### 直接评分实现
+### 实现直接评分
 
-直接评分需要三个组件：清晰的标准、校准的量表和结构化的输出格式。
+直接评分需要三个组成部分：清晰的评估标准、经过校准的量表，以及结构化输出格式。
 
-**标准定义模式**：
+**评估标准定义模板**：
 ```
-标准名称：[名称]
-描述：[这个标准衡量什么]
-权重：[相对重要性，0-1]
+Criterion: [Name]
+Description: [What this criterion measures]
+Weight: [Relative importance, 0-1]
 ```
 
-**量表校准**：
-- 1-3量表：二元加中立选项，认知负荷最低
-- 1-5量表：标准李克特量表，粒度和可靠性的良好平衡
-- 1-10量表：粒度高但难以校准，仅在有详细评分标准时使用
+**量表校准** —— 根据评分标准的细致程度选择量表粒度：
+- 1–3：带中立选项的二元判断，认知负担最低
+- 1–5：标准李克特量表，在粒度与可靠性之间最平衡
+- 1–10：只有在每个分值都有详细说明时才使用，因为校准更困难
 
-**直接评分的提示词结构**：
+**直接评分提示词结构**：
 ```
-你是一个专家评估者，评估响应质量。
+You are an expert evaluator assessing response quality.
 
-## 任务
-根据每个标准评估以下响应。
+## Task
+Evaluate the following response against each criterion.
 
-## 原始提示
+## Original Prompt
 {prompt}
 
-## 要评估的响应
+## Response to Evaluate
 {response}
 
-## 标准
-{对于每个标准：名称、描述、权重}
+## Criteria
+{for each criterion: name, description, weight}
 
-## 说明
-对于每个标准：
-1. 在响应中找到具体证据
-2. 根据评分标准评分（1-{最大}量表）
-3. 用证据为你的评分辩护
-4. 提出一个具体的改进建议
+## Instructions
+For each criterion:
+1. Find specific evidence in the response
+2. Score according to the rubric (1-{max} scale)
+3. Justify your score with evidence
+4. Suggest one specific improvement
 
-## 输出格式
-用包含评分、辩护和摘要的结构化JSON响应。
+## Output Format
+Respond with structured JSON containing scores, justifications, and summary.
 ```
 
-**思维链要求**：所有评分提示都必须在评分前要求证明。研究表明这比评分优先的方法可靠性提高15-25%。
+在评分提示词中要求先找出证据再打分，让判官先依据输出中可观察到的特征作判断，再给出数字。
 
-### 成对比较实现
+### 实现成对比较
 
-成对比较本质上对基于偏好的评估更可靠，但需要偏差缓解。
+每次成对评估都要缓解位置偏差：
 
-**位置偏差缓解协议**：
-1. 第一次：响应A在首位，响应B在其次
-2. 第二次：响应B在首位，响应A在其次
-3. 一致性检查：如果两次不同意，返回同分且置信度降低
-4. 最终判决：与平均置信度一致的赢家
+1. 先运行确定性预检查：两个候选都必须符合相同的模式、来源证据要求和范围限制。
+2. 第一轮判定：响应 A 放在第一位，响应 B 放在第二位。
+3. 第二轮判定：响应 B 放在第一位，响应 A 放在第二位。
+4. 一致性检查：两轮意见不同时，返回 TIE（平局），并降低置信度。
+5. 最终结论：若胜者一致，则采用胜者、平均置信度，并明确说明平局判定依据。
 
-**成对比较的提示词结构**：
+**成对比较提示词结构**：
 ```
-你是一个专家评估者，比较两个AI响应。
+You are an expert evaluator comparing two AI responses.
 
-## 关键说明
-- 不要因为响应更长就偏好它
-- 不要根据位置（第一个或第二个）偏好响应
-- 仅根据指定的标准关注质量
-- 当响应确实相当时，平局是可接受的
+## Critical Instructions
+- Do NOT prefer responses because they are longer
+- Do NOT prefer responses based on position (first vs second)
+- Focus ONLY on quality according to the specified criteria
+- Ties are acceptable when responses are genuinely equivalent
 
-## 原始提示
+## Original Prompt
 {prompt}
 
-## 响应A
+## Response A
 {response_a}
 
-## 响应B
+## Response B
 {response_b}
 
-## 比较标准
-{标准列表}
+## Comparison Criteria
+{criteria list}
 
-## 说明
-1. 首先独立分析每个响应
-2. 在每个标准上比较它们
-3. 确定总体赢家和置信水平
+## Instructions
+1. Analyze each response independently first
+2. Compare them on each criterion
+3. Determine overall winner with confidence level
 
-## 输出格式
-包含每个标准的比较、总体赢家、置信度（0-1）和推理的JSON。
+## Output Format
+JSON with per-criterion comparison, overall winner, confidence (0-1), and reasoning.
 ```
 
-**置信度校准**：置信度评分应该反映位置一致性：
-- 两次都同意：置信度 = 个人置信度的平均值
-- 两次不同意：置信度 = 0.5，判决 = 同分
+**置信度校准** —— 根据位置一致性映射置信度：
+- 两轮意见一致：置信度为两轮各自置信度的平均值
+- 两轮意见不一致：置信度 = 0.5，结论 = TIE（平局）
 
-### 评分标准生成
+### 生成评分标准
 
-定义良好的评分标准将评估差异减少40-60%，相比开放式评分。
+与开放式评分相比，生成评分标准有助于减少评估差异。除非在目标评估集上实际测量过，否则应将具体的差异缩减幅度视为依工作负载而定。
 
-**评分标准组件**：
-1. **级别描述**：每个评分级别的清晰边界
-2. **特征**：定义每个级别的可观察特征
-3. **示例**：每个级别的代表文本（可选但有价值）
-4. **边界情况**：模糊情况的指导
-5. **评分指南**：一致应用的一般原则
+**评分标准应包含以下组成部分**：
+1. **等级描述**：清楚说明各分值等级的界限
+2. **特征**：定义各等级的可观察特征
+3. **示例**：各等级的代表性文本（可选，但很有帮助）
+4. **边缘情况**：说明如何处理模糊情况
+5. **评分指南**：帮助一致应用评分标准的一般原则
 
-**严格程度校准**：
-- **宽松**：降低通过评分的门槛，适合鼓励迭代
-- **平衡**：公平，典型的生产使用预期
-- **严格**：高标准，适合安全关键或高风险评估
+**根据使用场景校准严格程度**：
+- **宽松**：通过门槛较低，适合鼓励迭代
+- **平衡**：符合一般生产要求
+- **严格**：适用于安全关键或高风险评估
 
-**领域适配**：评分标准应使用领域特定的术语。一个"代码可读性"评分标准提到变量、函数和注释。一个"医学准确性"评分标准引用临床术语和证据标准。
+评分标准要适配领域，并使用领域特定的术语。代码可读性评分标准会提及变量、函数和注释；医疗准确性评分标准则会引用临床术语和证据标准。
 
-## 实践指导
+## 实践指南
 
-### 评估流程设计
+### 评估流水线设计
 
-生产评估系统需要多层：
+生产级评估系统应包含以下层次：标准加载器（评分标准 + 权重）→ 主评分器（直接评分或成对比较）→ 偏差缓解（交换位置等）→ 置信度评分（校准）→ 输出（分数 + 理由 + 置信度）。完整结构见[评估流水线图](./references/evaluation-pipeline.md)。
 
-```
-┌─────────────────────────────────────────────────┐
-│                 评估流程                        │
-├─────────────────────────────────────────────────┤
-│                                                   │
-│  输入：响应 + 提示 + 上下文                       │
-│        │                                        │
-│        ▼                                        │
-│  ┌─────────────────────┐                        │
-│  │   标准加载器        │ ◄── 评分标准，权重      │
-│  └──────────┬──────────┘                        │
-│             │                                    │
-│             ▼                                    │
-│  ┌─────────────────────┐                        │
-│  │   主评分器          │ ◄── 直接或成对          │
-│  └──────────┬──────────┘                        │
-│             │                                    │
-│             ▼                                    │
-│  ┌─────────────────────┐                        │
-│  │   偏差缓解          │ ◄── 位置交换等          │
-│  └──────────┬──────────┘                        │
-│             │                                    │
-│             ▼                                    │
-│  ┌─────────────────────┐                        │
-│  │   置信度评分        │ ◄── 校准                │
-│  └──────────┬──────────┘                        │
-│             │                                    │
-│             ▼                                    │
-│  输出：评分 + 辩护 + 置信度                      │
-│                                                   │
-└─────────────────────────────────────────────────┘
-```
+### 决策框架：直接评分还是成对比较
 
-### 常见反模式
-
-**反模式：没有辩护的评分**
-- 问题：评分缺乏基础，难以调试或改进
-- 解决方案：始终在评分前要求基于证据的辩护
-
-**反模式：单次成对比较**
-- 问题：位置偏差腐蚀结果
-- 解决方案：始终交换位置并检查一致性
-
-**反模式：超载的标准**
-- 问题：测量多个事物的标准不可靠
-- 解决方案：一个标准 = 一个可测量的方面
-
-**反模式：缺少边界情况指导**
-- 问题：评估者处理模糊情况不一致
-- 解决方案：在评分标准中包含边界情况和明确的指导
-
-**反模式：忽视置信度校准**
-- 问题：高置信度的错误判断比低置信度更糟
-- 解决方案：将置信度校准到位置一致性和证据强度
-
-### 决策框架：直接 vs. 成对
-
-使用这个决策树：
+按以下决策树选择：
 
 ```
-是否有客观的基准真值？
-├── 是 → 直接评分
-│   └── 示例：事实准确性、指令遵循、格式合规
-│
-└── 否 → 是否是偏好或质量判断？
-    ├── 是 → 成对比较
-    │   └── 示例：语气、风格、说服力、创意
-    │
-    └── 否 → 考虑参考基础评估
-        └── 示例：摘要（与源比较）、翻译（与参考比较）
+Is there an objective ground truth?
++-- Yes -> Direct Scoring
+|   Examples: factual accuracy, instruction following, format compliance
+|
++-- No -> Is it a preference or quality judgment?
+    +-- Yes -> Pairwise Comparison
+    |   Examples: tone, style, persuasiveness, creativity
+    |
+    +-- No -> Consider reference-based evaluation
+        Examples: summarization (compare to source), translation (compare to reference)
 ```
 
-### 扩展评估
+### 扩展评估规模
 
-对于大容量评估：
+对于大量评估，可采用以下策略之一：
 
-1. **LLM评委小组（PoLL）**：使用多个模型作为判官，汇总投票
-   - 减少个别模型偏差
-   - 虽然成本更高但对高风险决策更可靠
+1. **LLM 判官小组（PoLL）**：使用多个模型作为判官并汇总投票，以减少单个模型的偏差。成本更高，但对高风险决策更可靠。
 
-2. **分层评估**：快速便宜的模型进行筛选，昂贵的模型处理边界情况
-   - 大容量成本效益
-   - 需要筛选阈值的校准
+2. **分层评估**：先用快速、低成本的模型筛查，再用昂贵模型处理边缘情况。需要校准筛查阈值。
 
-3. **人工在线**：自动化评估明确情况，人工审查低置信度情况
-   - 关键应用的最佳可靠性
-   - 设计反馈循环来改进自动化评估
+3. **人工介入**：自动处理明确案例，并将低置信度判断交给人工审核。设计反馈循环，逐步改进自动评估。
 
 ## 示例
 
-### 示例1：准确性的直接评分
+### 示例 1：准确性直接评分
 
 **输入**：
 ```
-提示："地球季节是什么原因？"
-响应："季节是由地球倾斜的轴线引起的。当地球绕太阳公转时，
-不同的半球在一年的不同时间接受更直接的阳光。"
-标准：事实准确性（权重：1.0）
-量表：1-5
+Prompt: "What causes seasons on Earth?"
+Response: "Seasons are caused by Earth's tilted axis. As Earth orbits the Sun,
+different hemispheres receive more direct sunlight at different times of year."
+Criterion: Factual Accuracy (weight: 1.0)
+Scale: 1-5
 ```
 
 **输出**：
 ```json
 {
-  "criterion": "事实准确性",
+  "criterion": "Factual Accuracy",
   "score": 5,
   "evidence": [
-    "正确识别轴向倾斜作为主要原因",
-    "正确解释不同半球的不同阳光",
-    "不存在事实错误"
+    "Correctly identifies axial tilt as primary cause",
+    "Correctly explains differential sunlight by hemisphere",
+    "No factual errors present"
   ],
-  "justification": "响应准确解释了季节的原因，具有正确的科学推理。轴向倾斜及其对阳光分布的影响都被正确描述。",
-  "improvement": "可以添加具体的倾斜角度（23.5°）以更加完整。"
+  "justification": "Response accurately explains the cause of seasons with correct
+scientific reasoning. Both the axial tilt and its effect on sunlight distribution
+are correctly described.",
+  "improvement": "Could add the specific tilt angle (23.5 degrees) for completeness."
 }
 ```
 
-### 示例2：位置交换的成对比较
+### 示例 2：交换位置的成对比较
 
 **输入**：
 ```
-提示："向初学者解释机器学习"
-响应A：[包含行话的技术解释]
-响应B：[基于类比的简单解释]
-标准：["清晰度", "易接近性"]
+Prompt: "Explain machine learning to a beginner"
+Response A: [Technical explanation with jargon]
+Response B: [Simple analogy-based explanation]
+Criteria: ["clarity", "accessibility"]
 ```
 
-**第一次（A首先）**：
+**第一轮（A 在前）**：
 ```json
 { "winner": "B", "confidence": 0.8 }
 ```
 
-**第二次（B首先）**：
+**第二轮（B 在前）**：
 ```json
 { "winner": "A", "confidence": 0.6 }
 ```
-（注：赢家是A因为B在首位）
+（注意：由于 B 排在第一位，这里的胜者 A 对应原始响应 B。）
 
-**映射第二次**：
+**将第二轮结果映射回原始响应**：
 ```json
 { "winner": "B", "confidence": 0.6 }
 ```
@@ -337,56 +278,56 @@ LLM判官表现出必须主动缓解的系统性偏差：
 }
 ```
 
-### 示例3：评分标准生成
+### 示例 3：生成评分标准
 
 **输入**：
 ```
-标准名称："代码可读性"
-标准描述："代码的易理解和可维护程度"
-领域："软件工程"
-量表："1-5"
-严格程度："平衡"
+criterionName: "Code Readability"
+criterionDescription: "How easy the code is to understand and maintain"
+domain: "software engineering"
+scale: "1-5"
+strictness: "balanced"
 ```
 
-**输出**（缩略版）：
+**输出**（节选）：
 ```json
 {
   "levels": [
     {
       "score": 1,
-      "label": "较差",
-      "description": "代码难以理解，需要大量努力",
+      "label": "Poor",
+      "description": "Code is difficult to understand without significant effort",
       "characteristics": [
-        "没有有意义的变量或函数名称",
-        "没有注释或文档",
-        "嵌套深或逻辑复杂"
+        "No meaningful variable or function names",
+        "No comments or documentation",
+        "Deeply nested or convoluted logic"
       ]
     },
     {
       "score": 3,
-      "label": "充分",
-      "description": "代码可以理解但需要一些努力",
+      "label": "Adequate",
+      "description": "Code is understandable with some effort",
       "characteristics": [
-        "大多数变量有有意义的名称",
-        "复杂部分有基本注释",
-        "逻辑可以跟踪但可以更清晰"
+        "Most variables have meaningful names",
+        "Basic comments present for complex sections",
+        "Logic is followable but could be cleaner"
       ]
     },
     {
       "score": 5,
-      "label": "优秀",
-      "description": "代码立即清晰且易于维护",
+      "label": "Excellent",
+      "description": "Code is immediately clear and maintainable",
       "characteristics": [
-        "所有名称都有描述性且一致",
-        "全面的文档",
-        "干净、模块化的结构"
+        "All names are descriptive and consistent",
+        "Comprehensive documentation",
+        "Clean, modular structure"
       ]
     }
   ],
   "edgeCases": [
     {
-      "situation": "代码结构良好但使用领域特定的缩写",
-      "guidance": "根据领域专家的可读性评分，而不是一般受众"
+      "situation": "Code is well-structured but uses domain-specific abbreviations",
+      "guidance": "Score based on readability for domain experts, not general audience"
     }
   ]
 }
@@ -394,59 +335,78 @@ LLM判官表现出必须主动缓解的系统性偏差：
 
 ## 指南
 
-1. **始终在评分前要求证明** - 思维链提示将可靠性提高15-25%
+1. **打分前必须先要求证据** —— 先列证据的提示词更容易审核，也能减少缺少依据的数字评分。
 
-2. **始终在成对比较中交换位置** - 单次比较被位置偏差腐蚀
+2. **成对比较时必须交换位置** —— 单轮比较会受到位置偏差影响。
 
-3. **将量表粒度与评分标准特异性相匹配** - 没有详细的级别描述不要使用1-10
+3. **量表粒度应与评分标准的细致程度匹配** —— 没有详细等级说明时，不要使用 1–10 量表。
 
-4. **分离客观和主观标准** - 使用直接评分对客观，成对对主观
+4. **分开处理客观标准和主观标准** —— 客观标准使用直接评分，主观标准使用成对比较。
 
-5. **包含置信度评分** - 校准到位置一致性和证据强度
+5. **提供置信度分数** —— 根据位置一致性和证据强度进行校准。
 
-6. **明确定义边界情况** - 模糊情况导致最多的评估差异
+6. **明确界定边缘情况** —— 模糊情形最容易造成评估差异。
 
-7. **使用领域特定的评分标准** - 通用评分标准产生通用（较少有用）的评估
+7. **使用领域特定的评分标准** —— 通用标准会产生通用、较不实用的评估。
 
-8. **根据人类判断验证** - 自动化评估仅在与人类评估相关联时有价值
+8. **与人工判断进行验证** —— 只有自动评估与人工评估相关时，它才有价值。
 
-9. **监控系统性偏差** - 按标准、响应类型、模型追踪分歧模式
+9. **监控系统性偏差** —— 按评估标准、响应类型和模型追踪分歧模式。
 
-10. **设计用于迭代** - 评估系统通过反馈循环改进
+10. **按迭代改进来设计** —— 反馈循环可以逐步改善评估系统。
+
+## 注意事项
+
+1. **评分却不给理由**：评分缺少依据，难以调试。必须先要求给出基于证据的理由，再给分。
+
+2. **只做一轮成对比较**：不交换位置就会受到位置偏差影响。必须交换位置评估两次并检查一致性。
+
+3. **标准涵盖过多内容**：一个标准同时衡量多件事，会导致评分不可靠。确保一个标准只对应一个可测量方面。
+
+4. **缺少边缘情况说明**：没有明确指导时，评估者会以不一致的方式处理模糊案例。应在评分标准中加入边缘案例及其明确处理规则。
+
+5. **忽略置信度校准**：高置信度的错误判断比低置信度判断更糟。应根据位置一致性和证据强度校准置信度。
+
+6. **评分标准漂移**：质量标准演变或模型能力提升后，评分标准会逐渐失准。应定期审查评分标准，并用新的人工作标注示例重新锚定分值等级。
+
+7. **评估提示词敏感性**：提示词中细微的措辞变化也可能导致分数明显波动。对评估提示词进行版本控制，并在部署提示词改动前运行回归测试。
+
+8. **长度偏差不受控制**：即使更简洁更可取，较长响应也会系统性地得到更高评分。在评估提示词中明确要求对长度保持中立，并使用控制长度的测试对进行验证。
 
 ## 集成
 
-本技能集成了：
+本技能负责判官设计和偏差缓解。相邻技能负责更广泛的质量门禁和基础设施：
 
-- **context-fundamentals** - 评估提示需要有效的上下文结构
-- **tool-design** - 评估工具需要适当的模式和错误处理
-- **context-optimization** - 评估提示可以优化用于令牌效率
-- **evaluation**（基础） - 本技能扩展了基础评估概念
+- `evaluation`：通用确定性检查、回归套件、质量门禁和生产监控。
+- `context-fundamentals`：判官提示词的上下文结构。
+- `tool-design`：评估工具的模式和错误处理。
+- `context-optimization`：大规模评估中的 Token 与延迟效率。
+- `harness-engineering`：自主循环中锁定的评估器界面和治理。
 
-## 参考文献
+## 参考资料
 
 内部参考：
-- [LLM作为判官实现模式](./references/implementation-patterns.md)
-- [偏差缓解技术](./references/bias-mitigation.md)
-- [指标选择指南](./references/metrics-guide.md)
+- [LLM 判官实现模式](./references/implementation-patterns.md) - 在以下情况下阅读：从头构建评估流水线，或将 LLM 判官集成到 CI/CD。
+- [偏差缓解技术](./references/bias-mitigation.md) - 在以下情况下阅读：评估结果显示评分不一致或可疑模式。
+- [指标选择指南](./references/metrics-guide.md) - 在以下情况下阅读：选择用于验证评估可靠性的统计指标。
+- [评估流水线图](./references/evaluation-pipeline.md) - 在以下情况下阅读：设计多阶段评估系统的架构。
 
 外部研究：
-- [Eugene Yan: 评估LLM评估者的有效性](https://eugeneyan.com/writing/llm-evaluators/)
-- [判断LLM作为判官（Zheng等，2023）](https://arxiv.org/abs/2306.05685)
-- [G-Eval: 使用GPT-4的NLG评估（Liu等，2023）](https://arxiv.org/abs/2303.16634)
-- [大语言模型不是公平的评估者（Wang等，2023）](https://arxiv.org/abs/2305.17926)
+- [Eugene Yan：评估 LLM 评估器的有效性](https://eugeneyan.com/writing/llm-evaluators/) - 在以下情况下阅读：了解 LLM 评估领域的最新进展。
+- [Judging LLM-as-a-Judge（Zheng 等，2023）](https://arxiv.org/abs/2306.05685) - 在以下情况下阅读：了解位置偏差和 MT-Bench 方法。
+- [G-Eval：使用 GPT-4 评估 NLG（Liu 等，2023）](https://arxiv.org/abs/2303.16634) - 在以下情况下阅读：实现链式思考评估评分。
+- [大型语言模型并非公平的评估者（Wang 等，2023）](https://arxiv.org/abs/2305.17926) - 在以下情况下阅读：诊断评估输出中的系统性偏差。
 
-此集合中的相关技能：
-- evaluation - 基础评估概念
-- context-fundamentals - 评估提示的上下文结构
+本合集中的相关技能：
+- evaluation - 评估基础概念
+- context-fundamentals - 评估提示词的上下文结构
 - tool-design - 构建评估工具
 
 ---
 
 ## 技能元数据
 
-**创建时间**：2024-12-24
-**最后更新**：2024-12-24
-**作者**：Muratcan Koylan
-**版本**：1.0.0
-
+**创建时间**：2025-12-24  
+**最后更新**：2026-05-15  
+**作者**：Agent Skills for Context Engineering Contributors  
+**版本**：2.1.0

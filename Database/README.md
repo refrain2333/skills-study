@@ -1,5 +1,7 @@
 # Semantic Knowledge Registry
 
+> Legacy learning example: this optional database extension is not included in upstream version 2.6.0. Its setup steps, dependencies, hosted-service plans, and prices are retained for historical reference and may be outdated. Review current provider documentation before deploying it.
+
 A PostgreSQL + pgvector database layer for the Agent Skills repository. Enables semantic search over skills and documents, allowing agents to find relevant knowledge by meaning rather than exact text matching.
 
 ## Architecture

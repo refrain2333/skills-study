@@ -1,177 +1,118 @@
 ---
 name: skill-template
-description: 创建新智能体上下文工程技能的模板。在向集合添加新技能时使用此模板。
+description: "Template for creating new Agent Skills for context engineering. Use this template when adding new skills to the collection."
 ---
 
-# 技能名称
+# Skill Name
 
-提供清晰、简洁的描述，说明本技能涵盖的内容以及何时使用。此描述出现在技能发现中，应帮助智能体（和人类）确定何时该技能相关。
+Provide a clear, concise description of what this skill covers and when to use it. This description appears in skill discovery and should help agents (and humans) determine when this skill is relevant.
 
-**重要**：将总 SKILL.md 正文保持在 500 行以下以获得最佳性能。将详细参考资料移动到 `references/` 目录中的单独文件。
+**Important**: Keep the total SKILL.md body under 500 lines for optimal performance. Move detailed reference material to separate files in the `references/` directory.
 
-## 何时激活
+Every skill body must make its ownership boundary explicit. The description and `When to Activate` section should say what the skill owns and which adjacent skills own nearby work. This prevents broad skills from stealing activation from narrower skills.
 
-描述应该激活此技能的具体情况、任务或上下文。包括直接触发因素（特定关键词或任务类型）和间接信号（指示技能相关性的更广泛模式）。
+## When to Activate
 
-用第三人称写作。描述被注入到系统提示中，不一致的人称可能会导致发现问题。
+Describe specific situations, tasks, or contexts where this skill should be activated. Include both direct triggers (specific keywords or task types) and indirect signals (broader patterns that indicate skill relevance).
 
-- 好的例子："处理 Excel 文件并生成报告"
-- 避免："我可以帮你处理 Excel 文件"
+Write in third person. The description is injected into the system prompt, and inconsistent point-of-view can cause discovery problems.
 
-## 核心概念
+- Good: "Processes Excel files and generates reports"
+- Avoid: "I can help you process Excel files"
 
-解释本技能涵盖的基本概念。这些是该技能教授的心智模型、原则或框架。
+Include a short "Do not activate" block for adjacent skills. Example:
 
-默认假设：Claude 已经非常聪明。只添加 Claude 不知道的上下文。质疑每条信息：
-- "Claude 真的需要这个解释吗？"
-- "我能假设 Claude 知道这个吗？"
-- "这个段落是否值得其 token 成本？"
+- Do not activate for project-level pipeline shape: `project-development`.
+- Do not activate for individual tool schema design: `tool-design`.
 
-## 详细主题
+## Core Concepts
 
-### 主题 1
+Explain the fundamental concepts covered by this skill. These are the mental models, principles, or frameworks that the skill teaches.
 
-提供第一个主要主题的详细解释。包括具体的技术、模式或方法。使用示例来说明概念。
+Default assumption: Claude is already very smart. Only add context Claude does not already have. Challenge each piece of information:
+- "Does Claude really need this explanation?"
+- "Can I assume Claude knows this?"
+- "Does this paragraph justify its token cost?"
 
-### 主题 2
+Prefer behavior-changing mechanisms over general background. If a concept should be reusable across the corpus, add or update a record in `researcher/mechanisms/registry.jsonl`.
 
-提供第二个主要主题的详细解释。根据需要继续添加其他主题。
+## Detailed Topics
 
-对于较长的主题，考虑将内容移动到 `references/` 并链接：
-- 参见 [详细参考](./references/topic-details.md) 了解完整实现
+### Topic 1
 
-## 实践指导
+Provide detailed explanation of the first major topic. Include specific techniques, patterns, or approaches. Use examples to illustrate concepts.
 
-提供应用此技能的可操作指导。包括常见模式、要避免的反模式以及在方法之间进行选择的决策框架。
+### Topic 2
 
-匹配特异性水平与任务的脆弱性：
-- **高自由度**：多种方法有效，决策取决于上下文
-- **中等自由度**：存在首选模式，某些变化可接受
-- **低自由度**：操作很脆弱，必须遵循特定顺序
+Provide detailed explanation of the second major topic. Continue with additional topics as needed.
 
-## 示例
+For longer topics, consider moving content to `references/` and linking:
+- See [detailed reference](./references/topic-details.md) for complete implementation
 
-提供说明技能应用的具体示例。示例应显示前后对比、演示正确用法或显示如何处理边界情况。
+## Practical Guidance
 
-使用输入/输出对以获得清晰度：
+Provide actionable guidance for applying the skill. Include common patterns, anti-patterns to avoid, and decision frameworks for choosing between approaches.
 
-**示例：**
+Match the level of specificity to the task's fragility:
+- **High freedom**: Multiple approaches are valid, decisions depend on context
+- **Medium freedom**: Preferred pattern exists, some variation acceptable
+- **Low freedom**: Operations are fragile, specific sequence must be followed
+
+Practical guidance should be executable by an agent: a workflow, checklist, decision table, or concrete operating rule. If a section only explains history or motivation, move it to `references/`.
+
+## Examples
+
+Provide concrete examples that illustrate skill application. Examples should show before/after comparisons, demonstrate correct usage, or show how to handle edge cases.
+
+Use input/output pairs for clarity:
+
+**Example:**
 ```
-输入：[描述输入]
-输出：[显示预期输出]
+Input: [describe input]
+Output: [show expected output]
 ```
 
-## 指南
+## Guidelines
 
-列出应用此技能时要遵循的具体指南。这些应该是可以检查或验证的可操作规则。
+List specific guidelines to follow when applying this skill. These should be actionable rules that can be checked or verified.
 
-1. 具有具体、可验证标准的指南一
-2. 具有清晰成功条件的指南二
-3. 根据需要继续
+1. Guideline one with specific, verifiable criteria
+2. Guideline two with clear success conditions
+3. Continue as needed
 
-## 集成
+## Gotchas
 
-解释此技能如何与集合中的其他技能集成。将相关技能列为纯文本（不是链接）以避免跨目录参考问题：
+List experience-derived failure modes, common mistakes, and counterintuitive behaviors. These are the highest-signal content in any skill. Each gotcha should be specific, actionable, and non-overlapping with guidance already in the skill body. Use numbered format:
 
-- 技能名称一 - 关系的简要描述
-- 技能名称二 - 关系的简要描述
+1. **Short descriptive title**: One to two sentences explaining what goes wrong and how to prevent it.
+2. **Another gotcha title**: Description of the failure mode and what to do instead.
 
-## 参考资源
+## Integration
 
-内部参考（使用相对路径指向技能自己的参考文件）：
-- [参考名称](./references/reference-file.md) - 描述
+Explain how this skill integrates with other skills in the collection. List related skills as plain text (not links) to avoid cross-directory reference issues:
 
-本集合中的相关技能：
-- 技能名称 - 关系描述
+- skill-name-one - Brief description of relationship
+- skill-name-two - Brief description of relationship
 
-外部资源：
-- 研究论文、文档或指南
+## References
+
+Internal reference (use relative path to skill's own reference files):
+- [Reference Name](./references/reference-file.md) - Description
+
+Related skills in this collection:
+- skill-name - Relationship description
+
+External resources:
+- Research papers, documentation, or guides
+
+Numeric, benchmark, volatile, or vendor-performance claims need an inline `claim-*` ID backed by `researcher/claims/index.jsonl`, or they should be softened and moved to dated reference material.
 
 ---
 
-## 技能元数据
+## Skill Metadata
 
-**创建时间**：[日期]
-**最后更新**：[日期]
-**作者**：[作者或属性]
-**版本**：[版本号]
+**Created**: [Date]
+**Last Updated**: [Date]
+**Author**: [Author or Attribution]
+**Version**: [Version number]
 
----
-
-## 使用此模板的提示
-
-### 📋 结构检查清单
-
-创建新技能时，确保：
-- ✅ 有清晰的"何时激活"部分
-- ✅ 核心概念部分简洁（不超过 100 行）
-- ✅ 至少提供 2-3 个实际示例
-- ✅ 列出 5-10 条具体的指南
-- ✅ 说明与其他技能的集成关系
-- ✅ 总行数不超过 500 行
-
-### 💡 内容写作建议
-
-**好的技能包含**：
-- 清晰的概念解释
-- 具体的代码或流程示例
-- 常见错误和如何避免
-- 与其他技能的联系
-- 可操作的指南
-
-**避免**：
-- 过度详细的理论
-- 冗长的定义
-- 不必要的背景信息
-- 模糊的建议
-
-### 📊 长篇内容的处理
-
-如果某个主题很长（超过 100 行）：
-
-```
-❌ 不要：全部写在 SKILL.md 里
-✅ 应该：
-1. 在 SKILL.md 写简要概述（20-30 行）
-2. 在 references/ 目录创建详细文件
-3. 用链接连接两者
-```
-
-### 🔗 文件组织示例
-
-```
-my-skill/
-├── SKILL.md                    # 主文件（<500行）
-│   ├── 何时激活
-│   ├── 核心概念
-│   ├── 实践指导
-│   └── 指南
-├── references/
-│   ├── detailed-topic.md       # 主题详解
-│   ├── best-practices.md       # 最佳实践
-│   └── case-studies.md         # 案例研究
-└── scripts/
-    └── example.py              # 实现示例
-```
-
-### ✍️ 写作示例
-
-**好的核心概念**：
-```markdown
-## 核心概念
-
-认证有三层：身份识别（你是谁）、
-认证（验证你是谁）和授权（你能做什么）。
-有效的系统设计需要分清这三者。
-```
-
-**差的核心概念**：
-```markdown
-## 核心概念
-
-认证是一个复杂的系统，涉及许多不同的组件。
-有许多不同的方法来实现认证...
-（太模糊，没有具体要点）
-```
-
-现在你可以基于此模板创建新技能了！🚀

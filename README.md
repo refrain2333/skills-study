@@ -1,159 +1,82 @@
 # 智能体上下文工程技能集
 
-> **⚠️ 学习用途复刻版本**
-> 
-> 本仓库为学习目的复刻自 [muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
-> 
-> 原作者：Muratcan Koylan | 许可证：MIT
-> 
-> 仅用于个人学习和研究，不用于商业用途
+> 本仓库是对[原项目](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)的中文学习副本。
 
-一个全面、开放的智能体技能集合，专注于上下文工程原则，用于构建生产级 AI 智能体系统。这些技能传授通过精心策划上下文来最大化智能体效能的艺术和科学，适用于任何智能体平台。
+按 MIT 许可证保留原作者署名。当前内容同步到上游提交 [58b55a8（2026-10-01）](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering/commit/58b55a8921758d13453b440704fb1b5b208c0b0e)。
+
+技能共 18 个。上游英文文件 skills/<技能名>/SKILL.md 是规范版本；同目录的 SKILL_zh.md 是便于阅读的中文译文。英文入口见 [README.en.md](README.en.md)。
+
+这个项目收集了帮助智能体管理上下文、设计工具、组织多智能体协作和评估结果的技能，也包括自主智能体运行框架、记忆和长任务规划等主题。
 
 ## 什么是上下文工程？
 
-上下文工程是管理语言模型上下文窗口的学科。与关注于制作有效指令的提示词工程不同，上下文工程处理进入模型有限注意力预算的所有信息的整体策划：系统提示词、工具定义、检索文档、消息历史和工具输出。
+上下文不只是提示词。它包括模型回答时能看到的系统指令、工具定义、检索到的资料、对话历史和工具结果。上下文工程关注如何挑选、组织并维护这些信息，让模型把注意力放在当前任务真正需要的内容上。
 
-根本挑战是上下文窗口受到的限制不是原始token容量，而是注意力机制。随着上下文长度增加，模型表现出可预见的退化模式："迷失在中间"现象、U形注意力曲线和注意力稀缺。有效的上下文工程意味着找到最小的高信号token集合，最大化期望结果的可能性。
+## 技能目录
 
-## 技能概览
+### 基础与上下文管理
 
-### 基础技能
+| 技能 | 说明 |
+| --- | --- |
+| [context-fundamentals](skills/context-fundamentals/SKILL_zh.md) | 认识上下文的组成部分，以及它们如何影响智能体。 |
+| [context-degradation](skills/context-degradation/SKILL_zh.md) | 识别上下文变长后出现的信息遗漏、干扰和错误累积。 |
+| [context-compression](skills/context-compression/SKILL_zh.md) | 在长对话中压缩历史，同时保留继续工作所需的决定和文件信息。 |
+| [context-optimization](skills/context-optimization/SKILL_zh.md) | 使用压缩、遮蔽冗长输出、缓存和上下文分区来管理 token。 |
+| [filesystem-context](skills/filesystem-context/SKILL_zh.md) | 把大段资料和工作状态放入文件，供智能体按需查找和更新。 |
+| [self-managed-context](skills/self-managed-context/SKILL_zh.md) | 让模型通过可编辑文件管理当前上下文，同时保留程序必须遵守的边界。 |
 
-这些技能建立了所有后续上下文工程工作所需的基础理解。
+### 智能体架构
 
-| 技能 | 描述 |
-|-------|-------------|
-| [context-fundamentals](skills/context-fundamentals/) | 理解什么是上下文、为什么重要，以及智能体系统中上下文的剖析 |
-| [context-degradation](skills/context-degradation/) | 识别上下文失败的模式：迷失在中间、中毒、分心和冲突 |
-| [context-compression](skills/context-compression/) | 为长时间运行的会话设计和评估压缩策略 |
+| 技能 | 说明 |
+| --- | --- |
+| [multi-agent-patterns](skills/multi-agent-patterns/SKILL_zh.md) | 比较监督者、点对点和分层协作，设计任务拆分与交接。 |
+| [memory-systems](skills/memory-systems/SKILL_zh.md) | 设计跨轮次记忆、实体关系和检索更新方式。 |
+| [tool-design](skills/tool-design/SKILL_zh.md) | 设计清楚的工具参数、结果和错误信息。 |
+| [hosted-agents](skills/hosted-agents/SKILL_zh.md) | 了解在隔离云端环境中运行的后台编程智能体。 |
+| [latent-briefing](skills/latent-briefing/SKILL_zh.md) | 在运行环境支持时，研究怎样把协调者的相关状态压缩后交给工作智能体。 |
+| [bdi-mental-states](skills/bdi-mental-states/SKILL_zh.md) | 用信念、愿望和意图表示智能体状态，支持可追溯的推理过程。 |
+| [long-horizon-prompting](skills/long-horizon-prompting/SKILL_zh.md) | 为长时间运行的任务写清目标、停止条件、检查点和并行工作边界。 |
 
-### 架构技能
+### 评估与运行框架
 
-这些技能涵盖构建有效智能体系统的模式和结构。
+| 技能 | 说明 |
+| --- | --- |
+| [evaluation](skills/evaluation/SKILL_zh.md) | 为智能体建立可重复的检查、评分标准和质量门槛。 |
+| [advanced-evaluation](skills/advanced-evaluation/SKILL_zh.md) | 学习直接评分、两两比较、评分标准生成和偏差控制。 |
+| [harness-engineering](skills/harness-engineering/SKILL_zh.md) | 设计围绕智能体运行的循环、日志、指标、回退和人工审核边界。 |
+| [self-improvement-loops](skills/self-improvement-loops/SKILL_zh.md) | 研究如何有约束地改进智能体运行框架本身。 |
+| [project-development](skills/project-development/SKILL_zh.md) | 从任务适配分析、原型和分阶段流程开始规划 LLM 项目。 |
 
-| 技能 | 描述 |
-|-------|-------------|
-| [multi-agent-patterns](skills/multi-agent-patterns/) | 掌握编排者、点对点和分层多智能体架构 |
-| [memory-systems](skills/memory-systems/) | 设计短期、长期和基于图的内存架构 |
-| [tool-design](skills/tool-design/) | 构建智能体可以有效使用的工具 |
+## 如何使用
 
-### 运营技能
+先在上面的表格中选一个技能，再打开中文译文阅读。运行前请查看同目录的英文 SKILL.md，将整个技能文件夹安装到智能体所支持的技能目录。文件夹里的 references 和 scripts 可能是正文使用的资料或代码；只复制一份平铺的 Markdown 文件会丢失这些相对路径。
 
-这些技能处理智能体系统的持续运营和优化。
+例如，将单个技能用于使用 Agent Skills 目录布局的项目：
 
-| 技能 | 描述 |
-|-------|-------------|
-| [context-optimization](skills/context-optimization/) | 应用紧缩、屏蔽和缓存策略 |
-| [evaluation](skills/evaluation/) | 构建智能体系统的评估框架 |
-| [advanced-evaluation](skills/advanced-evaluation/) | 掌握 LLM 即评判器技术：直接评分、配对比较、评分标准生成和偏差缓解 |
+~~~bash
+mkdir -p .agents/skills
+cp -R skills/context-fundamentals .agents/skills/
+~~~
 
-### 开发方法论
+如果使用 Claude Code 插件，可在 Claude Code 中添加本仓库并安装插件：
 
-这些技能涵盖构建 LLM 驱动项目的元级别实践。
+~~~text
+/plugin marketplace add refrain2333/skills-study
+/plugin install context-engineering@context-engineering-marketplace
+~~~
 
-| 技能 | 描述 |
-|-------|-------------|
-| [project-development](skills/project-development/) | 从理想到部署设计和构建 LLM 项目，包括任务-模型拟合分析、管道架构和结构化输出设计 |
+Cursor、Codex 和其他插件宿主支持的安装方式可能不同，请按对应工具的官方说明选择插件安装或项目级技能目录。插件清单只发布英文规范技能；中文文件用于阅读。
 
-## 设计理念
+## 示例与配套资料
 
-### 渐进式披露
+- examples/ 收录 LLM 评估、书籍微调、多智能体工作流、思考轨迹实验和长任务提示实验等示例。运行条件和依赖见各示例目录的 README。长任务 Prompt Lab 的 Pages 工作流需手动触发；这个仓库目前未启用 GitHub Pages。
+- researcher/ 记录上游使用的技能评估、资料来源、机制注册、变更门槛和文件化研究流程。其中的榜单与量化结果来自带日期的报告，应结合对应报告理解。
+- Database/ 是这个学习副本早期保留的语义检索数据库示例。它已从当前上游版本移除，目录中的依赖、云服务价格和设置说明属于旧材料，使用前需要按当前服务文档复核。
 
-每项技能的结构都考虑了有效的上下文使用。启动时，智能体仅加载技能名称和描述。只有在为相关任务激活技能时，完整内容才会加载。
+## 参与修改
 
-### 平台无关性
+新增或大幅修改技能时，需要一并维护根目录技能总览、插件清单、技能地图和对应的中文说明。详细结构及上游维护流程见[中文贡献说明](CONTRIBUTING.md)和[上游英文说明](CONTRIBUTING.en.md)。
 
-这些技能专注于可转移原则而非特定供应商的实现。这些模式适用于 Claude Code、Cursor 和任何支持技能或允许自定义指令的智能体平台。
+## 致谢与许可
 
-### 概念基础与实践示例
-
-脚本和示例使用在任何环境中都能运行的 Python 伪代码演示概念，无需特定依赖安装。
-
-## 学习路径
-
-### 快速开始（1小时）
-
-1. 阅读本 README 了解项目结构
-2. 打开 `SKILL.md` 查看技能总览
-3. 选择一个感兴趣的技能模块开始深入
-
-### 系统学习（8-10小时）
-
-1. **基础层**：学习三个基础技能
-   - context-fundamentals
-   - context-degradation
-   - context-compression
-
-2. **架构层**：学习三个架构技能
-   - multi-agent-patterns
-   - memory-systems
-   - tool-design
-
-3. **运营层**：学习三个运营技能
-   - context-optimization
-   - evaluation
-   - advanced-evaluation
-
-4. **项目层**：学习项目开发方法
-   - project-development
-
-### 实践应用
-
-查看 `examples/` 文件夹中的完整项目示例：
-
-| 示例 | 描述 | 关键技能 |
-|---------|-------------|----------------|
-| [llm-as-judge-skills](examples/llm-as-judge-skills/) | LLM 评估工具，TypeScript 实现 | 高级评估、工具设计 |
-| [book-sft-pipeline](examples/book-sft-pipeline/) | 模型微调训练流程 | 项目开发、上下文压缩 |
-| [x-to-book-system](examples/x-to-book-system/) | 多智能体内容生成系统 | 多智能体模式、内存系统 |
-
-## 项目结构
-
-```
-skills-study/
-├── README.md                    # 本文件
-├── SKILL.md                     # 技能集总览
-├── CONTRIBUTING.md              # 贡献指南
-├── skills/                      # 技能模块
-│   ├── context-fundamentals/
-│   ├── context-degradation/
-│   ├── context-compression/
-│   ├── multi-agent-patterns/
-│   ├── memory-systems/
-│   ├── tool-design/
-│   ├── context-optimization/
-│   ├── evaluation/
-│   ├── advanced-evaluation/
-│   └── project-development/
-├── examples/                    # 完整示例项目
-│   ├── llm-as-judge-skills/
-│   ├── book-sft-pipeline/
-│   └── x-to-book-system/
-├── Database/                    # 语义知识库（可选）
-├── getting-started/             # 快速入门指南
-└── template/                    # 技能模板
-```
-
-## 贡献
-
-本学习项目欢迎改进建议。当提交改进时：
-
-1. 遵循现有的技能结构和格式
-2. 提供清晰的示例和说明
-3. 保持每个 SKILL.md 在 500 行以下
-4. 记录权衡和注意事项
-
-## 许可证
-
-MIT 许可证 - 详见 LICENSE 文件。
-
-## 致谢
-
-感谢原作者 [Muratcan Koylan](https://x.com/koylanai) 创建了这个优秀的框架。
-
-- **原仓库**：[muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)
-- **原作者**：Muratcan Koylan
-- **许可证**：MIT
-
-本仓库基于原作者的工作进行学习用复刻，所有内容遵循 MIT 许可证。
+来源项目为 [Agent Skills for Context Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering)，作者 Muratcan Koylan。上游声明采用 MIT 许可证，许可范围以仓库中的 [LICENSE](LICENSE) 为准。
